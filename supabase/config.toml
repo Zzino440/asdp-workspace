@@ -427,3 +427,41 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Progetto cloud di test (Vercel: https://asdp-workspace.vercel.app). Si applica con
+# `supabase config push`; il resto della configurazione arriva dalle sezioni sopra.
+[remotes.test]
+project_id = "uirrkpvkrhuvbobthrna"
+
+# Valori del cloud da non toccare: cambiano solo URL, registrazione, invito e server OAuth.
+[remotes.test.auth]
+site_url = "https://asdp-workspace.vercel.app"
+additional_redirect_urls = [
+  "https://asdp-workspace.vercel.app/**",
+  "https://asdp-workspace-ds-tech4.vercel.app/**",
+  "https://asdp-*-workspace-ds-tech4.vercel.app/**",
+]
+
+[remotes.test.auth.email]
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
+
+[remotes.test.auth.sms]
+enable_confirmations = true
+
+[remotes.test.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[remotes.test.db.pooler]
+default_pool_size = 15
+max_client_conn = 200
+
+[remotes.test.storage.vector]
+enabled = false
+
+# Piano free con email predefinita: i template non si possono cambiare (serve un SMTP).
+[remotes.test.auth.email.template.invite]
+subject = "You've been invited"
+content_path = ""
