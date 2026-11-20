@@ -2,7 +2,7 @@ import "server-only";
 import type { McpServer } from "@modelcontextprotocol/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { DocumentError, listDocuments, readDocument, saveDocument } from "@/lib/documents";
+import { documentLevel, DocumentError, listDocuments, listVersions, readDocument, saveDocument } from "@/lib/documents";
 
 // Tool MCP dell'app: adattatori sottili sopra src/lib/documents/, sempre col client dell'utente.
 // Progetti identificati dal codice (es. "PFS"), documenti dal percorso nella repo.
@@ -21,6 +21,14 @@ async function projectId(supabase: SupabaseClient, code: string) {
 
 const NOT_FOUND = "Progetto non trovato o non accessibile. Usa list_projects per vedere i codici disponibili.";
 
+// Regole minime che il client riceve alla connessione: valgono per ogni modifica.
+export const INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti del framework ASDP di DST, con gli stessi permessi che l'utente ha nell'app.
+- I progetti si indicano con il codice (es. PFS): usa list_projects, poi get_project per team, repo di codice, tipi di documento e permessi dell'utente.
+- I documenti sono file Markdown con frontespizio YAML (GUIDA-FRONT) tra due righe "---", salvati su GitLab.
+- Prima di modificare un documento leggilo con read_document; poi cambia solo le parti necessarie di content e passalo intero a update_document con il last_commit_id letto. Lascia invariato tutto il resto, commenti del frontespizio compresi.
+- Stati del documento: Da fare, In corso, Completo, Approvato. Lo stato Approvato e i campi approvato_da, approvato_il, versione_approvata, evidenza_approvazione li cambia solo chi approva; non modificare versione_frontespizio.
+- Ogni salvataggio è un commit a nome dell'utente: scrivi messaggi di commit brevi e chiari in italiano.`;
+
 export function registerTools(server: McpServer, clientFor: ClientFor) {
   server.registerTool(
     "list_projects",
@@ -36,6 +44,55 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         .order("code");
       if (error) return failure("Impossibile leggere i progetti.");
       return text(data);
+    },
+  );
+
+  server.registerTool(
+    "get_project",
+    {
+      title: "Dettaglio progetto",
+      description:
+        "Dati del progetto, team con ruoli, repo dei documenti e repo di codice collegate, ruoli dell'utente e, per " +
+        "ogni tipo di documento del framework, fase, cartella, livello dell'utente (none/view/edit/approve) e " +
+        "documenti già presenti con stato e versione.",
+      inputSchema: z.object({ project: z.string().describe("Codice del progetto, es. PFS") }),
+    },
+    async ({ project }, ctx) => {
+      const { supabase, userId } = clientFor(ctx);
+      const id = await projectId(supabase, project);
+      if (!id) return failure(NOT_FOUND);
+      const [{ data: info }, { data: members }, { data: repositories }, { data: types }, documents] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("code, name, client, nature, status, current_phase, framework_version, gitlab_project_path, gitlab_branch, docs_root")
+          .eq("id", id)
+          .single(),
+        supabase.from("project_members").select("user_id, roles, profiles(full_name, email)").eq("project_id", id),
+        supabase.from("project_repositories").select("gitlab_path, role, branch").eq("project_id", id),
+        supabase.from("document_types").select("code, name, phase, folder").order("sort_order"),
+        listDocuments(supabase, id),
+      ]);
+      const levels = await Promise.all((types ?? []).map((t) => documentLevel(supabase, id, t.code)));
+      const team = (members ?? []).map((m) => {
+        const profile = m.profiles as unknown as { full_name: string; email: string } | null;
+        return { name: profile?.full_name || profile?.email, email: profile?.email, roles: m.roles };
+      });
+      return text({
+        ...info,
+        team,
+        my_roles: (members ?? []).find((m) => m.user_id === userId)?.roles ?? [],
+        code_repositories: repositories ?? [],
+        document_types: (types ?? []).map((t, i) => ({
+          ...t,
+          my_level: levels[i],
+          documents: documents
+            .filter((d) => d.document_type === t.code)
+            .map((d) => {
+              const front = d.front_matter as Record<string, unknown>;
+              return { path: d.path, state: front.stato ?? null, version: front.versione ?? null };
+            }),
+        })),
+      });
     },
   );
 
@@ -88,6 +145,29 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         front_matter: document.frontMatter,
         content: document.content,
       });
+    },
+  );
+
+  server.registerTool(
+    "list_versions",
+    {
+      title: "Versioni del documento",
+      description:
+        "Storico di un documento: un commit per versione, dal più recente, con autore, data, messaggio e canale (app, mcp, git).",
+      inputSchema: z.object({
+        project: z.string().describe("Codice del progetto, es. PFS"),
+        path: z.string().describe("Percorso nella repo documenti"),
+      }),
+    },
+    async ({ project, path }, ctx) => {
+      const { supabase } = clientFor(ctx);
+      const id = await projectId(supabase, project);
+      if (!id) return failure(NOT_FOUND);
+      const versions = await listVersions(supabase, id, path);
+      if (!versions) return failure("Documento non trovato o non accessibile. Usa list_documents.");
+      return text(
+        versions.map((v) => ({ commit: v.id, title: v.title, author: v.authorName, date: v.authoredDate, via: v.via })),
+      );
     },
   );
 

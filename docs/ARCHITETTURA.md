@@ -114,9 +114,13 @@ permessi, stessi commit.
 6. **Modifica con AI.** Una chiamata Messages API sulla selezione → testo proposto → diff in UI →
    Accetta = salvataggio normale (flusso 1).
 7. **MCP.** Il server MCP dell'app (`/api/mcp`, Streamable HTTP) agisce come l'utente: token
-   OAuth → JWT Supabase → RLS e `document_level()`. Tool: `list_projects`, `get_project`,
-   `list_documents`, `read_document`, `update_document`, `create_document`; con le milestone
-   successive domande aperte, invio in approvazione, avvio skill. Ogni scrittura è un commit
+   OAuth → JWT Supabase → RLS e `document_level()`. Tool: `list_projects`, `get_project` (team,
+   repo, e per ogni tipo di documento livello dell'utente e documenti presenti), `list_documents`,
+   `read_document` (testo esatto in `content`), `list_versions`, `update_document`; poi
+   `create_document` e, con le milestone successive, domande aperte, invio in approvazione, avvio
+   skill. Le regole minime (leggere prima di salvare, modifiche minime, stati, campi di
+   approvazione) arrivano al client come istruzioni del server; le regole dettagliate e i template
+   restano nel plugin `asdp`, senza copie nell'app. Ogni scrittura è un commit
    (flusso 1) con trailer `Via: mcp`; i riservati non sono esposti.
    Login: Supabase Auth fa da server OAuth 2.1 (registrazione dinamica dei client, PKCE). Il
    client trova Supabase dai metadati `/.well-known/oauth-protected-resource/api/mcp`, l'utente
@@ -178,7 +182,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 2a | **Fatto**: lettura e indice: repo collegate, indexer (webhook + Reindicizza), elenco e vista documenti |
 | 2b | **Fatto**: modifica e commit: editor sorgente (CodeMirror) + anteprima, frontespizio come form, concorrenza ottimistica |
 | 2c | **Fatto**: versioni (commit del file con autore e canale App/MCP/Git) e diff rispetto alla versione precedente |
-| 2d | **In corso**: server MCP con login OAuth, tool di lettura e `update_document` (fatto); plugin `asdp`, Claude desktop |
+| 2d | **In corso**: server MCP con login OAuth e tool di lettura e scrittura (fatto); `create_document`, plugin `asdp`, Claude desktop (dopo il deploy di prova) |
 | 3 | Gate e approvazioni |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
 | 5 | Modifica con AI, Domande aperte di progetto |

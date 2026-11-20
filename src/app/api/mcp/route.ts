@@ -1,5 +1,5 @@
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
-import { registerTools } from "@/lib/mcp/server";
+import { INSTRUCTIONS, registerTools } from "@/lib/mcp/server";
 import { createTokenClient } from "@/lib/supabase/token";
 
 // Server MCP dell'app (Streamable HTTP, senza sessioni). Ogni chiamata arriva con il JWT
@@ -11,7 +11,7 @@ const handler = createMcpHandler(
       if (!auth?.token || !auth.extra?.userId) throw new Error("Richiesta senza token.");
       return { supabase: createTokenClient(auth.token), userId: auth.extra.userId };
     }),
-  { serverInfo: { name: "asdp-workspace", version: "0.1.0" } },
+  { serverInfo: { name: "asdp-workspace", version: "0.1.0" }, instructions: INSTRUCTIONS },
 );
 
 // Verifica firma e scadenza del JWT con le chiavi pubbliche di Supabase Auth.
