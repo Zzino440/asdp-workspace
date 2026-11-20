@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { login, type LoginState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,16 @@ import { Label } from "@/components/ui/label";
 const initialState: LoginState = { error: null };
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initialState);
+  const next = useSearchParams().get("next") ?? "";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -21,6 +31,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form action={formAction} className="flex flex-col gap-4">
+            <input type="hidden" name="next" value={next} />
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" autoComplete="email" required />

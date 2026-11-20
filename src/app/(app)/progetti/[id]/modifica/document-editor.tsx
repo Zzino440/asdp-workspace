@@ -40,7 +40,9 @@ const toText = (value: unknown) =>
 function fromText(text: string, original: unknown): Value {
   if (text.trim() === "") return null;
   if (Array.isArray(original)) return text.split(",").map((s) => s.trim()).filter(Boolean);
-  if (typeof original === "number" && !Number.isNaN(Number(text))) return Number(text);
+  // Numero se il campo era numerico, o vuoto e il testo è un numero (es. story_points).
+  const numeric = /^-?\d+(\.\d+)?$/.test(text.trim());
+  if ((typeof original === "number" || original === null || original === undefined) && numeric) return Number(text);
   return text;
 }
 
@@ -84,9 +86,10 @@ export function DocumentEditor(props: {
       .sort((a, b) => b.start - a.start);
     let result = source;
     for (const { start, end, text } of edits) {
-      // Valore vuoto ("gate:"): serve uno spazio dopo i due punti.
+      // Valore vuoto ("gate:"): serve uno spazio dopo i due punti; svuotando si toglie lo spazio.
       const prefix = start === end && text && result[start - 1] === ":" ? " " : "";
-      result = result.slice(0, start) + prefix + text + result.slice(end);
+      const from = !text && result[start - 1] === " " && result[start - 2] === ":" ? start - 1 : start;
+      result = result.slice(0, from) + prefix + text + result.slice(end);
     }
     return result;
   }

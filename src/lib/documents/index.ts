@@ -119,6 +119,7 @@ export async function readDocument(supabase: SupabaseClient, projectId: string, 
     path,
     documentType: indexed.document_type as string | null,
     lastCommitId: file.lastCommitId,
+    content: file.content,
     ...(path.endsWith(".md")
       ? splitFrontMatter(file.content)
       : { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, body: null }),
@@ -135,16 +136,34 @@ export async function documentLevel(supabase: SupabaseClient, projectId: string,
 }
 
 export class DocumentError extends Error {
-  constructor(readonly code: "not_found" | "forbidden" | "conflict") {
+  constructor(readonly code: "not_found" | "forbidden" | "conflict" | "approval_fields") {
     super(code);
   }
+}
+
+// Campi del frontespizio gestiti dal flusso di approvazione: solo chi ha "approve" li cambia.
+const APPROVAL_FIELDS = ["approvato_da", "approvato_il", "versione_approvata", "evidenza_approvazione"];
+
+function changesApproval(before: Record<string, unknown>, after: Record<string, unknown>) {
+  const same = (key: string) => JSON.stringify(before[key] ?? null) === JSON.stringify(after[key] ?? null);
+  const approvedBefore = before.stato === "Approvato";
+  const approvedAfter = after.stato === "Approvato";
+  return approvedBefore !== approvedAfter || !APPROVAL_FIELDS.every(same);
 }
 
 // Salva il testo completo di un documento con un commit a nome dell'utente.
 // lastCommitId è l'ultimo commit visto dall'utente: se il file è cambiato nel frattempo → conflict.
 export async function saveDocument(
   supabase: SupabaseClient,
-  input: { projectId: string; path: string; content: string; lastCommitId: string; message?: string; via: "app" | "mcp" },
+  input: {
+    projectId: string;
+    path: string;
+    content: string;
+    lastCommitId: string;
+    message?: string;
+    via: "app" | "mcp";
+    userId: string;
+  },
 ) {
   const { data: indexed } = await supabase
     .from("documents")
@@ -157,16 +176,27 @@ export async function saveDocument(
   const level = await documentLevel(supabase, input.projectId, indexed.document_type);
   if (level !== "edit" && level !== "approve") throw new DocumentError("forbidden");
 
-  const [{ data: project }, { data: claims }] = await Promise.all([
+  const [{ data: project }, { data: profile }] = await Promise.all([
     loadProject(supabase, input.projectId),
-    supabase.auth.getClaims(),
+    supabase.from("profiles").select("full_name, email").eq("id", input.userId).single(),
   ]);
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, email")
-    .eq("id", claims?.claims.sub ?? "")
-    .single();
   if (!project?.gitlab_project_path || !profile) throw new DocumentError("not_found");
+
+  // Versione da cui parte l'utente: un id che non esiste vale come conflitto (va riletto).
+  let previous: string;
+  try {
+    previous = (await readFile(project.gitlab_project_path, input.lastCommitId, input.path)).content;
+  } catch (error) {
+    if (error instanceof GitLabError && error.status === 404) throw new DocumentError("conflict");
+    throw error;
+  }
+  if (
+    input.path.endsWith(".md") &&
+    level !== "approve" &&
+    changesApproval(splitFrontMatter(previous).frontMatter, splitFrontMatter(input.content).frontMatter)
+  ) {
+    throw new DocumentError("approval_fields");
+  }
 
   const fileName = input.path.split("/").pop();
   let commitId: string;

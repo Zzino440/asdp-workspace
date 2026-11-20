@@ -118,11 +118,14 @@ JSON-RPC `tools/call` POST to `https://stitch.googleapis.com/mcp`, header
 src/app/login/            login page + server actions (login, logout)
 src/app/(app)/            authenticated area: layout with sidebar, one folder per section
 src/app/auth/confirm/     invite link (token_hash) → /imposta-password
+src/app/api/mcp/          MCP server (Streamable HTTP, Bearer JWT from Supabase OAuth)
+src/app/oauth/consent/    OAuth consent page for MCP clients (Claude)
 src/components/ui/        shadcn components (generated, edit only when needed)
-src/lib/supabase/         Supabase clients (admin.ts: service role, invite only)
+src/lib/supabase/         Supabase clients (admin.ts: service role, invite only; token.ts: Bearer JWT for MCP)
 src/lib/labels.ts         Italian labels of the schema enums
 src/lib/gitlab.ts         GitLab REST client (server-only, GITLAB_URL / GITLAB_TOKEN)
 src/lib/documents/        document service layer shared by UI and MCP
+src/lib/mcp/              MCP tools: thin adapters over src/lib/documents/
 src/proxy.ts              auth gate and session refresh
 supabase/migrations/      schema, RLS, framework reference data
 supabase/seed.sql         local-only test users and projects

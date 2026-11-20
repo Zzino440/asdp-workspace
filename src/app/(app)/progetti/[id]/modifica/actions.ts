@@ -18,6 +18,7 @@ const MESSAGES = {
   not_found: "Documento non trovato.",
   forbidden: "Non hai i permessi per modificare questo documento.",
   conflict: "Il documento è stato modificato su GitLab dopo che l'hai aperto.",
+  approval_fields: "Solo chi approva il documento può cambiarne lo stato Approvato o i dati di approvazione.",
 };
 
 export async function saveDocumentAction(input: z.input<typeof saveSchema>): Promise<SaveResult> {
@@ -25,8 +26,10 @@ export async function saveDocumentAction(input: z.input<typeof saveSchema>): Pro
   if (!parsed.success) return { error: "Dati non validi." };
 
   const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims) return { error: "Sessione scaduta: rifai il login." };
   try {
-    const { lastCommitId } = await saveDocument(supabase, { ...parsed.data, via: "app" });
+    const { lastCommitId } = await saveDocument(supabase, { ...parsed.data, via: "app", userId: claims.claims.sub });
     return { error: null, lastCommitId };
   } catch (e) {
     if (e instanceof DocumentError) return { error: MESSAGES[e.code], conflict: e.code === "conflict" };

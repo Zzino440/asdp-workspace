@@ -118,6 +118,11 @@ permessi, stessi commit.
    `list_documents`, `read_document`, `update_document`, `create_document`; con le milestone
    successive domande aperte, invio in approvazione, avvio skill. Ogni scrittura è un commit
    (flusso 1) con trailer `Via: mcp`; i riservati non sono esposti.
+   Login: Supabase Auth fa da server OAuth 2.1 (registrazione dinamica dei client, PKCE). Il
+   client trova Supabase dai metadati `/.well-known/oauth-protected-resource/api/mcp`, l'utente
+   fa login nell'app e autorizza nella pagina `/oauth/consent`, che accetta solo i ritorni verso
+   claude.ai, `claude://` (app desktop) e localhost (Claude Code da terminale). Collegamento da
+   Claude Code: `claude mcp add --transport http asdp <url-app>/api/mcp`, poi `/mcp` → Authenticate.
 
 ## 5. Modello dati
 
@@ -152,6 +157,9 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
   `document_level() >= edit`; GitLab rifiuta il commit se il file è cambiato dopo l'ultimo
   `last_commit_id` visto (conflitto → l'utente ricarica). La riga d'indice la aggiorna chi ha
   "edit" sul tipo (policy `documents_update_editor`).
+- **Campi di approvazione**: `saveDocument` rifiuta, a chi non ha "approve", ogni modifica che
+  mette o toglie `stato: Approvato` o cambia `approvato_da`, `approvato_il`, `versione_approvata`,
+  `evidenza_approvazione` (confronto con la versione di partenza, `last_commit_id`). Vale per UI e MCP.
 - **Webhook firmati**: GitLab con secret token, Anthropic con verifica HMAC.
 - **Riservati**: bucket privato con policy per persona; esclusi da ogni input AI.
 - **Utenti su invito**: registrazione libera disattivata (`enable_signup = false`). L'email di
@@ -170,7 +178,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 2a | **Fatto**: lettura e indice: repo collegate, indexer (webhook + Reindicizza), elenco e vista documenti |
 | 2b | **Fatto**: modifica e commit: editor sorgente (CodeMirror) + anteprima, frontespizio come form, concorrenza ottimistica |
 | 2c | **Fatto**: versioni (commit del file con autore e canale App/MCP/Git) e diff rispetto alla versione precedente |
-| 2d | Server MCP: auth, tool di lettura e scrittura sopra lo stesso livello di servizio |
+| 2d | **In corso**: server MCP con login OAuth, tool di lettura e `update_document` (fatto); plugin `asdp`, Claude desktop |
 | 3 | Gate e approvazioni |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
 | 5 | Modifica con AI, Domande aperte di progetto |
@@ -181,11 +189,10 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 - Skill che chiedono input interattivi oltre ai gate A/B: da verificare sul primo run reale.
 - Costi dei Managed Agents (runtime di sessione + token) per progetto.
 - Editor WYSIWYG da valutare (oggi sorgente CodeMirror + anteprima, senza perdite).
-- Campi di approvazione del frontespizio (`stato: Approvato`, `approvato_*`,
-  `versione_approvata`, `evidenza_approvazione`): la UI li mostra in sola lettura, ma chi ha
-  "edit" può ancora scriverli inviando il testo completo (a mano o via `update_document`). Va
-  chiuso nel livello di servizio in M3, prima di aprire le scritture via MCP in 2d.
-- Auth dell'MCP: Supabase Auth come server OAuth 2.1 (anche in locale?) oppure token personale
-  per Claude Code. Da verificare in 2d.
+- MCP da Claude desktop (pannello Server MCP del tab Code): in locale l'app ottiene l'URL di
+  login ma non apre il browser, probabilmente perché il server OAuth è su `http://`. Da
+  riprovare con un URL `https` (tunnel o deploy di prova); ripiego: token come header.
+- Server OAuth di Supabase in beta; la registrazione dinamica è aperta a chiunque (mitigata dalla
+  lista di ritorni ammessi nella pagina di consenso).
 - Adattare le skill del plugin `asdp` a salvare via MCP invece che su file locali.
 - Teams esce dal giro dei documenti ASDP: diverge dalla Guida §18.4.3, va deciso con il team.

@@ -29,7 +29,9 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     return { error: "Credenziali non valide." };
   }
 
-  redirect("/progetti");
+  // Solo percorsi interni: niente redirect verso altri siti.
+  const next = String(formData.get("next") ?? "");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/progetti");
 }
 
 export async function logout() {

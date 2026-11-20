@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth/confirm", "/api/gitlab/webhook"];
+const PUBLIC_PATHS = ["/login", "/auth/confirm", "/api/gitlab/webhook", "/api/mcp", "/.well-known/"];
 
 // Rinnova la sessione a ogni navigazione e manda al login chi non è autenticato.
 export async function updateSession(request: NextRequest) {
@@ -33,6 +33,8 @@ export async function updateSession(request: NextRequest) {
   if (!data?.claims && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    // Dopo il login si torna alla pagina richiesta (es. il consenso OAuth di un client MCP).
+    url.search = `?next=${encodeURIComponent(request.nextUrl.pathname + request.nextUrl.search)}`;
     return NextResponse.redirect(url);
   }
 
