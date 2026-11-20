@@ -22,6 +22,9 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  if (error?.code === "user_banned") {
+    return { error: "Account sospeso. Contatta un amministratore." };
+  }
   if (error) {
     return { error: "Credenziali non valide." };
   }

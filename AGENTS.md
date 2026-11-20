@@ -22,6 +22,7 @@ before any non-trivial change: it defines the sources of truth, the flows and th
 | Lint | `pnpm lint` |
 | Build | `pnpm build` |
 | Local Supabase (needs Docker) | `pnpm exec supabase start` / `pnpm exec supabase db reset` |
+| RLS tests (pgTAP, local Supabase) | `pnpm exec supabase test db` |
 | New migration | `pnpm exec supabase migration new <name>` |
 | Pull design system from Stitch (needs `STITCH_API_KEY`) | `pnpm design:sync` |
 
@@ -39,7 +40,9 @@ Run typecheck, lint and build before declaring a change done.
 ## Rules
 
 - **Permissions live only in Postgres RLS.** Query with the user's client; never filter by user
-  in TypeScript as a security measure, never use the service role outside webhook handlers.
+  in TypeScript as a security measure. The service role is allowed only in webhook handlers and
+  in the "Invita utente" action (`src/lib/supabase/admin.ts`, after checking `is_admin()` with
+  the user's client); key in `SUPABASE_SERVICE_ROLE_KEY`.
 - **Documents live in GitLab**, not in Supabase. Supabase holds an index derived from GitLab and
   app-only data (see ARCHITETTURA §3).
 - **Schema changes only through new migration files** in `supabase/migrations/`; never edit an
@@ -111,11 +114,15 @@ JSON-RPC `tools/call` POST to `https://stitch.googleapis.com/mcp`, header
 ```
 src/app/login/            login page + server actions (login, logout)
 src/app/(app)/            authenticated area: layout with sidebar, one folder per section
+src/app/auth/confirm/     invite link (token_hash) → /imposta-password
 src/components/ui/        shadcn components (generated, edit only when needed)
-src/lib/supabase/         Supabase clients
+src/lib/supabase/         Supabase clients (admin.ts: service role, invite only)
+src/lib/labels.ts         Italian labels of the schema enums
 src/proxy.ts              auth gate and session refresh
 supabase/migrations/      schema, RLS, framework reference data
 supabase/seed.sql         local-only test users and projects
+supabase/tests/database/  pgTAP RLS tests
+supabase/templates/       auth email templates (invite)
 docs/ARCHITETTURA.md      architecture and milestones
 DESIGN.md                 design system pulled from Stitch (generated, do not edit)
 scripts/sync-design.mjs   Stitch → DESIGN.md sync

@@ -2,7 +2,7 @@
 -- Utenti del seed: 01 admin, 02 PM di PFS, 03 TL, 04 AF di APA, 05 senza progetti.
 -- Progetti: 01 PFS, 02 CRM-EN, 03 APA.
 begin;
-select plan(19);
+select plan(20);
 
 -- PM
 set local role authenticated;
@@ -100,6 +100,15 @@ values ('00000000-0000-0000-0000-000000000000', '10000000-0000-0000-0000-0000000
 select is(
   (select status::text from public.profiles where id = '10000000-0000-0000-0000-000000000099'),
   'invitato', 'un utente invitato nasce con stato invitato');
+
+-- Come fa GoTrue: insert senza invited_at, poi update.
+insert into auth.users (instance_id, id, aud, role, email)
+values ('00000000-0000-0000-0000-000000000000', '10000000-0000-0000-0000-000000000098',
+        'authenticated', 'authenticated', 'invitato2@asdp.test');
+update auth.users set invited_at = now() where id = '10000000-0000-0000-0000-000000000098';
+select is(
+  (select status::text from public.profiles where id = '10000000-0000-0000-0000-000000000098'),
+  'invitato', 'invited_at impostato dopo la creazione porta lo stato a invitato');
 
 update auth.users set last_sign_in_at = now() where id = '10000000-0000-0000-0000-000000000099';
 select is(

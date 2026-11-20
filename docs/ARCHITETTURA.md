@@ -92,15 +92,15 @@ meno.
 
 ## 5. Modello dati
 
-Già nello schema (`supabase/migrations/20261120000000_core.sql`):
+Già nello schema (`supabase/migrations/`):
 
 | Tabella | Contenuto |
 |---|---|
-| `profiles` | Utente (1:1 con `auth.users`), `is_admin`, stato |
+| `profiles` | Utente (1:1 con `auth.users`), `is_admin`, stato (invitato → attivo al primo accesso; sospeso = ban in Auth), ultimo accesso |
 | `projects` | Codice, nome, cliente, natura, stato progetto, fase corrente, versione framework, Project GitLab |
 | `project_members` | Ruoli ASDP della persona nel progetto (`asdp_role[]`: pm, tl, af, designer, developer, qa) |
 | `document_types` | Catalogo dei documenti ASDP con cartella e skill che li produce |
-| `role_permissions` | Livello `none/view/edit/approve` per ruolo e tipo documento, default dal RACI |
+| `role_permissions` | Livello `none/view/edit/approve` per ruolo e tipo documento; `default_level` dal RACI per "Ripristina default framework" |
 
 Nelle milestone: `documents`, `open_questions`, `gates`, `skill_runs`, `comments`,
 `framework_versions`, `reserved_files`, `audit_log`.
@@ -113,17 +113,23 @@ Nelle milestone: `documents`, `open_questions`, `gates`, `skill_runs`, `comments
 - **Segreti solo lato server** (token GitLab, chiave Anthropic, service role Supabase): mai con
   prefisso `NEXT_PUBLIC_`.
 - **Service role Supabase** solo per i webhook (indexer, eventi delle skill), che non hanno un
-  utente.
+  utente, e per l'invito utenti (`auth.admin.inviteUserByEmail`), dopo aver verificato
+  `is_admin()` con il client dell'utente.
 - **Webhook firmati**: GitLab con secret token, Anthropic con verifica HMAC.
 - **Riservati**: bucket privato con policy per persona; esclusi da ogni input AI.
-- **Utenti su invito**: registrazione libera disattivata in produzione.
+- **Utenti su invito**: registrazione libera disattivata (`enable_signup = false`). L'email di
+  invito porta a `/auth/confirm` (token verificato lato server), poi a `/imposta-password`; in
+  produzione il template `supabase/templates/invite.html` va copiato nella dashboard Supabase.
+- **Sospensione**: lo stato `sospeso` (modificabile solo dall'admin, via RLS) imposta
+  `auth.users.banned_until`; login e refresh vengono rifiutati, il JWT già emesso resta valido
+  fino alla scadenza (1 h).
 
 ## 7. Milestone
 
 | # | Contenuto |
 |---|---|
 | 0 | **Fatto**: scaffold, login, layout, schema base con RLS, elenco progetti |
-| 1 | Progetti, team, ruoli e matrice permessi (amministrazione) |
+| 1 | **Fatto**: progetti, team, utenti con invito, ruoli e matrice permessi (amministrazione) |
 | 2 | Documenti: lettura/commit GitLab, indexer, editor Markdown con frontespizio come form, versioni e diff |
 | 3 | Gate e approvazioni |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
