@@ -24,6 +24,13 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   (oggi sono solo Production) e i domini delle anteprime sono già tra i redirect ammessi di
   Supabase (`[remotes.test.auth]` in `supabase/config.toml`).
 
+- [ ] **Token GitLab per i progetti veri.** Oggi `GITLAB_TOKEN` è un project access token della
+  sola sandbox. Per più repo documenti serve un token di gruppo (o un service account) con
+  ruolo Maintainer, che serve anche per creare i webhook in automatico.
+- [ ] **Webhook vecchi al cambio di dominio.** Se cambia l'URL di produzione (es. dominio
+  `dstech.it`), "Reindicizza" crea il nuovo webhook ma non toglie quello vecchio: va rimosso a
+  mano da GitLab.
+
 ## Sicurezza
 
 - [ ] **Permessi di esecuzione delle funzioni `SECURITY DEFINER`** (segnalato dall'advisor di

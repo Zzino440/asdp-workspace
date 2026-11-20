@@ -96,7 +96,9 @@ permessi, stessi commit.
 2. **Indicizzazione.** Webhook push di GitLab (verificato con `X-Gitlab-Token`) → per ogni `.md`
    cambiato sotto `asdp/`: lettura, parsing del frontespizio, estrazione delle `D[N]` → upsert su
    `documents` e `open_questions`. Le modifiche fatte da Claude Code in locale entrano così senza
-   integrazioni.
+   integrazioni. Il webhook lo crea l'app (creazione del progetto e "Reindicizza") sulla repo
+   documenti, verso `https://$VERCEL_PROJECT_PRODUCTION_URL/api/gitlab/webhook`: serve che il
+   token GitLab sia Maintainer della repo. In locale non viene creato (GitLab non raggiunge il PC).
 3. **Skill in cloud.** Avvio asincrono dalla UI → upload degli input come `file` resource →
    sessione Managed Agents con le skill `asdp` della versione del progetto → gli eventi
    aggiornano `skill_runs` (Realtime verso la UI). Ai gate A/B delle skill la sessione si ferma

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { indexProject } from "@/lib/documents";
+import { ensureProjectWebhook, indexProject } from "@/lib/documents";
 import { ASDP_ROLES } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,6 +30,8 @@ export async function createProject(_prev: FormState, formData: FormData): Promi
   if (error?.code === "42501") return { error: "Solo un amministratore può creare progetti." };
   if (error) return { error: "Impossibile creare il progetto." };
 
+  // Un eventuale problema col webhook non blocca la creazione: lo segnala "Reindicizza".
+  await ensureProjectWebhook(supabase, data.id);
   redirect(`/progetti/${data.id}`);
 }
 
@@ -77,15 +79,17 @@ export async function saveTeam(
   return { error: null };
 }
 
-export type ReindexResult = { error: string | null; count?: number };
+export type ReindexResult = { error: string | null; count?: number; warning?: string | null };
 
-// Ricostruisce l'indice dei documenti. La RLS su documents lo permette solo ad admin e PM.
+// Ricostruisce l'indice dei documenti e ricrea il webhook GitLab se manca. La RLS su
+// documents lo permette solo ad admin e PM.
 export async function reindexDocuments(projectId: string): Promise<ReindexResult> {
   const supabase = await createClient();
   try {
     const count = await indexProject(supabase, projectId);
+    const warning = await ensureProjectWebhook(supabase, projectId);
     refresh();
-    return { error: null, count };
+    return { error: null, count, warning };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Indicizzazione non riuscita." };
   }

@@ -24,6 +24,7 @@ export function ReindexButton({ projectId }: { projectId: string }) {
       {result && !result.error && (
         <span className="text-sm text-muted-foreground">{result.count} file indicizzati.</span>
       )}
+      {result?.warning && <span className="text-sm text-destructive">{result.warning}</span>}
     </div>
   );
 }

@@ -52,9 +52,14 @@ quando serve.
   sessione dal frammento e porta a `/imposta-password`; l'invito usa `redirectTo` verso quella
   pagina. Committato su `bugfix/various`. Da fare: merge su `master` (nuovo deploy, che include
   anche `GITLAB_TOKEN`), nuovo invito di prova.
-- [ ] Progetto di prova nell'app (repo documenti `l.belli/sandbox-test`), Reindicizza.
-- [ ] Webhook GitLab della sandbox verso `https://asdp-workspace.vercel.app/api/gitlab/webhook`
-  (secret = `GITLAB_WEBHOOK_SECRET`).
+- [x] Progetto di prova nell'app (repo documenti `l.belli/sandbox-test`), Reindicizza.
+- [ ] **Webhook GitLab automatico** ← punto in cui siamo. Lo crea l'app alla creazione del
+  progetto e a ogni "Reindicizza" (`ensureProjectWebhook` in `src/lib/documents/`), verso
+  `https://$VERCEL_PROJECT_PRODUCTION_URL/api/gitlab/webhook` con `GITLAB_WEBHOOK_SECRET`.
+  Il token della sandbox è un project access token Maintainer (ok). Fatto in codice, non
+  committato. Da fare: deploy, "Reindicizza" sul progetto di prova, controllare il webhook su
+  GitLab (Settings → Webhooks → Test → Push events = 200), poi un commit diretto e verificare che
+  l'indice si aggiorni.
 - [ ] Prova completa: login, progetto, documenti, modifica, versioni; MCP da Claude Code
   (`claude mcp add --transport http asdp https://asdp-workspace.vercel.app/api/mcp`), da Claude
   Desktop e da claude.ai (connettore personalizzato).

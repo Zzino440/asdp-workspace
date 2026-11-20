@@ -101,3 +101,15 @@ export async function compareFile(projectPath: string, from: string, to: string,
   const { diffs } = (await response.json()) as { diffs: { new_path: string; old_path: string; diff: string }[] };
   return diffs.find((d) => d.new_path === filePath || d.old_path === filePath)?.diff ?? "";
 }
+
+// Webhook dei push verso l'app: crea quello con questo URL o lo aggiorna (il secret non si
+// rilegge da GitLab, quindi lo riscrive sempre). Serve il ruolo Maintainer sulla repo.
+export async function ensurePushWebhook(projectPath: string, url: string, token: string) {
+  const hooks = (await (await gitlab(`${project(projectPath)}/hooks`)).json()) as { id: number; url: string }[];
+  const existing = hooks.find((h) => h.url === url);
+  await gitlab(`${project(projectPath)}/hooks${existing ? `/${existing.id}` : ""}`, {
+    method: existing ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, token, push_events: true, enable_ssl_verification: true }),
+  });
+}

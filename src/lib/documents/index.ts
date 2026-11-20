@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "yaml";
-import { compareFile, GitLabError, listFileCommits, listFiles, readFile, updateFile } from "@/lib/gitlab";
+import { compareFile, ensurePushWebhook, GitLabError, listFileCommits, listFiles, readFile, updateFile } from "@/lib/gitlab";
 
 // Livello di servizio unico per i documenti: lo usano le server action della UI e i tool MCP.
 // Riceve sempre un client Supabase: quello dell'utente (RLS) oppure, solo nel webhook, quello
@@ -272,4 +272,23 @@ export async function readVersion(
     diff,
     ...(path.endsWith(".md") ? splitFrontMatter(file.content) : { frontMatter: {}, frontMatterSource: null, body: null }),
   };
+}
+
+// Webhook della repo documenti verso l'URL di produzione dell'app su Vercel. In locale
+// (nessun URL pubblico) non fa nulla. Se non riesce torna un avviso: il progetto funziona
+// lo stesso, ma dopo i push diretti su GitLab serve "Reindicizza".
+export async function ensureProjectWebhook(supabase: SupabaseClient, projectId: string) {
+  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const secret = process.env.GITLAB_WEBHOOK_SECRET;
+  if (!host || !secret) return null;
+
+  const { data: project } = await loadProject(supabase, projectId);
+  if (!project?.gitlab_project_path) return null;
+  try {
+    await ensurePushWebhook(project.gitlab_project_path, `https://${host}/api/gitlab/webhook`, secret);
+    return null;
+  } catch (error) {
+    console.error("Webhook GitLab non configurato", error);
+    return "Webhook GitLab non configurato: il service account deve essere Maintainer della repo documenti. Fino ad allora usa Reindicizza dopo i push diretti.";
+  }
 }
