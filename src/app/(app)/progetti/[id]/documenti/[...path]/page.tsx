@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { History, Pencil } from "lucide-react";
 import { DocumentStateBadge } from "@/components/document-state-badge";
 import { Markdown } from "@/components/markdown";
 import { buttonVariants } from "@/components/ui/button";
@@ -37,15 +37,24 @@ async function DocumentView({ params }: { params: Promise<{ id: string; path: st
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold">{String(front.titolo || document.path.split("/").pop())}</h1>
           <DocumentStateBadge state={front.stato ? String(front.stato) : null} />
-          {canEdit && (
+          <div className="ml-auto flex gap-2">
             <Link
-              href={`/progetti/${id}/modifica/${path.join("/")}`}
-              className={buttonVariants({ variant: "outline", size: "sm", className: "ml-auto" })}
+              href={`/progetti/${id}/versioni/${path.join("/")}`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
             >
-              <Pencil />
-              Modifica
+              <History />
+              Versioni
             </Link>
-          )}
+            {canEdit && (
+              <Link
+                href={`/progetti/${id}/modifica/${path.join("/")}`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <Pencil />
+                Modifica
+              </Link>
+            )}
+          </div>
         </div>
         <span className="font-mono text-xs text-muted-foreground">
           {document.path} · {document.lastCommitId.slice(0, 8)}

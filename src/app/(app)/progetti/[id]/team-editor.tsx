@@ -116,6 +116,7 @@ export function TeamEditor({
               {ASDP_ROLES.map((role) => (
                 <TableCell key={role} className="text-center">
                   <Checkbox
+                    className="mx-auto"
                     aria-label={`${m.name}: ${ROLE_LABELS[role]}`}
                     checked={m.roles.includes(role)}
                     disabled={!canEdit}

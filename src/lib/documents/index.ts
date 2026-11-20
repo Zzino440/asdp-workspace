@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "yaml";
-import { GitLabError, listFiles, readFile, updateFile } from "@/lib/gitlab";
+import { compareFile, GitLabError, listFileCommits, listFiles, readFile, updateFile } from "@/lib/gitlab";
 
 // Livello di servizio unico per i documenti: lo usano le server action della UI e i tool MCP.
 // Riceve sempre un client Supabase: quello dell'utente (RLS) oppure, solo nel webhook, quello
@@ -196,4 +196,50 @@ export async function saveDocument(
   if (error) console.error("Indice non aggiornato dopo il salvataggio", error);
 
   return { lastCommitId: commitId };
+}
+
+// Progetto del documento, solo se la RLS rende visibile la riga d'indice all'utente.
+async function visibleProject(supabase: SupabaseClient, projectId: string, path: string) {
+  const { data: indexed } = await supabase
+    .from("documents")
+    .select("path")
+    .eq("project_id", projectId)
+    .eq("path", path)
+    .maybeSingle();
+  if (!indexed) return null;
+  const { data: project } = await loadProject(supabase, projectId);
+  return project?.gitlab_project_path ? { ...project, gitlab_project_path: project.gitlab_project_path } : null;
+}
+
+// Storico del documento: un commit per versione, con il canale da cui arriva (trailer "Via:").
+export async function listVersions(supabase: SupabaseClient, projectId: string, path: string) {
+  const project = await visibleProject(supabase, projectId, path);
+  if (!project) return null;
+  const commits = await listFileCommits(project.gitlab_project_path, project.gitlab_branch, path);
+  return commits.map((c) => ({
+    ...c,
+    title: c.message.split("\n")[0],
+    via: (/^Via: (app|mcp)$/m.exec(c.message)?.[1] ?? "git") as "app" | "mcp" | "git",
+  }));
+}
+
+// Contenuto di una versione e diff rispetto alla versione precedente (se c'è).
+export async function readVersion(
+  supabase: SupabaseClient,
+  projectId: string,
+  path: string,
+  commitId: string,
+  previousId: string | null,
+) {
+  const project = await visibleProject(supabase, projectId, path);
+  if (!project) return null;
+  const repo = project.gitlab_project_path;
+  const [file, diff] = await Promise.all([
+    readFile(repo, commitId, path),
+    previousId ? compareFile(repo, previousId, commitId, path) : Promise.resolve(null),
+  ]);
+  return {
+    diff,
+    ...(path.endsWith(".md") ? splitFrontMatter(file.content) : { frontMatter: {}, frontMatterSource: null, body: null }),
+  };
 }

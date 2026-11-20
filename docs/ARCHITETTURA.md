@@ -169,7 +169,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 1 | **Fatto**: progetti, team, utenti con invito, ruoli e matrice permessi (amministrazione) |
 | 2a | **Fatto**: lettura e indice: repo collegate, indexer (webhook + Reindicizza), elenco e vista documenti |
 | 2b | **Fatto**: modifica e commit: editor sorgente (CodeMirror) + anteprima, frontespizio come form, concorrenza ottimistica |
-| 2c | Versioni e diff |
+| 2c | **Fatto**: versioni (commit del file con autore e canale App/MCP/Git) e diff rispetto alla versione precedente |
 | 2d | Server MCP: auth, tool di lettura e scrittura sopra lo stesso livello di servizio |
 | 3 | Gate e approvazioni |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |

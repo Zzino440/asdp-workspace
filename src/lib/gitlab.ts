@@ -83,3 +83,21 @@ export async function updateFile(
   const created = (await response.json()) as { id: string };
   return created.id;
 }
+
+type CommitResponse = { id: string; message: string; author_name: string; authored_date: string };
+
+// Commit che hanno toccato un file, dal più recente (fino a 100).
+export async function listFileCommits(projectPath: string, ref: string, filePath: string) {
+  const query = new URLSearchParams({ ref_name: ref, path: filePath, per_page: "100" });
+  const response = await gitlab(`${project(projectPath)}/repository/commits?${query}`);
+  const commits = (await response.json()) as CommitResponse[];
+  return commits.map((c) => ({ id: c.id, message: c.message, authorName: c.author_name, authoredDate: c.authored_date }));
+}
+
+// Diff unificato di un file tra due commit ("" se il file non cambia).
+export async function compareFile(projectPath: string, from: string, to: string, filePath: string) {
+  const query = new URLSearchParams({ from, to, straight: "true" });
+  const response = await gitlab(`${project(projectPath)}/repository/compare?${query}`);
+  const { diffs } = (await response.json()) as { diffs: { new_path: string; old_path: string; diff: string }[] };
+  return diffs.find((d) => d.new_path === filePath || d.old_path === filePath)?.diff ?? "";
+}
