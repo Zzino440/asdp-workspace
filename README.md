@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ASDP Workspace
 
-## Getting Started
+App web per gestire i progetti DST con il framework ASDP: progetti, documenti per ruolo, gate e
+approvazioni, esecuzione delle skill `asdp`. Architettura e milestone in
+[`docs/ARCHITETTURA.md`](docs/ARCHITETTURA.md); regole per gli agenti AI in [`AGENTS.md`](AGENTS.md).
 
-First, run the development server:
+Stack: Next.js 16 · Supabase · Tailwind + shadcn/ui · Vercel.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Avvio in locale
+
+Requisiti: Node 22+, pnpm, Docker Desktop avviato (per Supabase locale).
+
+```powershell
+pnpm install
+pnpm exec supabase start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`supabase start` stampa URL e chiavi. Copia `.env.example` in `.env.local` e compila
+`NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (la "Publishable key").
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```powershell
+pnpm exec supabase db reset
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`db reset` applica le migrazioni e carica `supabase/seed.sql`: utenti di prova e password sono
+indicati in testa al file. Apri http://localhost:3000 e accedi.
 
-## Learn More
+## Senza Docker: progetto Supabase in cloud
 
-To learn more about Next.js, take a look at the following resources:
+1. Crea un progetto su supabase.com e copia URL e Publishable key in `.env.local`.
+2. Collega e applica lo schema:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+pnpm exec supabase link --project-ref <ref-progetto>
+pnpm exec supabase db push
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Il seed non va caricato su un progetto reale: crea gli utenti da Authentication e assegna
+progetti e ruoli dalla tabella `project_members`.
 
-## Deploy on Vercel
+## Comandi
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Comando | Cosa fa |
+|---|---|
+| `pnpm dev` | Server di sviluppo |
+| `pnpm build` | Build di produzione |
+| `pnpm lint` | ESLint |
+| `pnpm exec tsc --noEmit` | Controllo dei tipi |
+| `pnpm exec supabase migration new <nome>` | Nuova migrazione |
