@@ -147,6 +147,11 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
   utente, e per l'invito utenti (`auth.admin.inviteUserByEmail`), dopo aver verificato
   `is_admin()` con il client dell'utente.
 - **MCP**: agisce sempre come l'utente autenticato (mai service role); stessi permessi della UI.
+- **Commit dei documenti**: col token del service account GitLab, con `author` = l'utente
+  (nome ed email dal profilo) e trailer `Via: app|mcp`. Prima del commit `saveDocument` controlla
+  `document_level() >= edit`; GitLab rifiuta il commit se il file è cambiato dopo l'ultimo
+  `last_commit_id` visto (conflitto → l'utente ricarica). La riga d'indice la aggiorna chi ha
+  "edit" sul tipo (policy `documents_update_editor`).
 - **Webhook firmati**: GitLab con secret token, Anthropic con verifica HMAC.
 - **Riservati**: bucket privato con policy per persona; esclusi da ogni input AI.
 - **Utenti su invito**: registrazione libera disattivata (`enable_signup = false`). L'email di
@@ -162,8 +167,8 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 |---|---|
 | 0 | **Fatto**: scaffold, login, layout, schema base con RLS, elenco progetti |
 | 1 | **Fatto**: progetti, team, utenti con invito, ruoli e matrice permessi (amministrazione) |
-| 2a | Lettura e indice: repo collegate, indexer (webhook + Reindicizza), elenco e vista documenti |
-| 2b | Modifica e commit: editor sorgente + anteprima, frontespizio come form, concorrenza ottimistica |
+| 2a | **Fatto**: lettura e indice: repo collegate, indexer (webhook + Reindicizza), elenco e vista documenti |
+| 2b | **Fatto**: modifica e commit: editor sorgente (CodeMirror) + anteprima, frontespizio come form, concorrenza ottimistica |
 | 2c | Versioni e diff |
 | 2d | Server MCP: auth, tool di lettura e scrittura sopra lo stesso livello di servizio |
 | 3 | Gate e approvazioni |
@@ -173,11 +178,13 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 
 ## 8. Punti aperti
 
-- Autore dei commit: service account con `author` dell'utente oppure token per utente.
 - Skill che chiedono input interattivi oltre ai gate A/B: da verificare sul primo run reale.
 - Costi dei Managed Agents (runtime di sessione + token) per progetto.
-- Libreria dell'editor che conservi il Markdown senza perdite (tabelle, frontespizio): in 2b
-  editor sorgente + anteprima, WYSIWYG da valutare.
+- Editor WYSIWYG da valutare (oggi sorgente CodeMirror + anteprima, senza perdite).
+- Campi di approvazione del frontespizio (`stato: Approvato`, `approvato_*`,
+  `versione_approvata`, `evidenza_approvazione`): la UI li mostra in sola lettura, ma chi ha
+  "edit" può ancora scriverli inviando il testo completo (a mano o via `update_document`). Va
+  chiuso nel livello di servizio in M3, prima di aprire le scritture via MCP in 2d.
 - Auth dell'MCP: Supabase Auth come server OAuth 2.1 (anche in locale?) oppure token personale
   per Claude Code. Da verificare in 2d.
 - Adattare le skill del plugin `asdp` a salvare via MCP invece che su file locali.

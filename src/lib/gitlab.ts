@@ -12,8 +12,23 @@ async function gitlab(path: string, init?: RequestInit) {
     headers: { "PRIVATE-TOKEN": process.env.GITLAB_TOKEN!, ...init?.headers },
     cache: "no-store",
   });
-  if (!response.ok) throw new Error(`GitLab ${response.status} su ${path}`);
+  if (!response.ok) throw new GitLabError(response.status, path, await response.text());
   return response;
+}
+
+export class GitLabError extends Error {
+  constructor(
+    readonly status: number,
+    path: string,
+    readonly body: string,
+  ) {
+    super(`GitLab ${status} su ${path}: ${body}`);
+  }
+
+  // GitLab rifiuta l'aggiornamento se il file è cambiato dopo last_commit_id.
+  get isConflict() {
+    return this.status === 400 && this.body.includes("has changed since you started editing");
+  }
 }
 
 const project = (projectPath: string) => `/projects/${encodeURIComponent(projectPath)}`;
@@ -42,4 +57,29 @@ export async function readFile(projectPath: string, ref: string, filePath: strin
     content: Buffer.from(file.content, "base64").toString("utf8"),
     lastCommitId: file.last_commit_id,
   };
+}
+
+// Commit di un file esistente con l'utente come autore (committer resta il service account).
+// GitLab controlla last_commit_id e rifiuta se il file è cambiato nel frattempo.
+export async function updateFile(
+  projectPath: string,
+  branch: string,
+  file: { path: string; content: string; lastCommitId: string },
+  commit: { message: string; authorName: string; authorEmail: string },
+) {
+  const response = await gitlab(`${project(projectPath)}/repository/commits`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      branch,
+      commit_message: commit.message,
+      author_name: commit.authorName,
+      author_email: commit.authorEmail,
+      actions: [
+        { action: "update", file_path: file.path, content: file.content, last_commit_id: file.lastCommitId },
+      ],
+    }),
+  });
+  const created = (await response.json()) as { id: string };
+  return created.id;
 }

@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Pencil } from "lucide-react";
 import { DocumentStateBadge } from "@/components/document-state-badge";
+import { Markdown } from "@/components/markdown";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { readDocument } from "@/lib/documents";
+import { documentLevel, readDocument } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/server";
 
 export default function DocumentoPage({ params }: PageProps<"/progetti/[id]/documenti/[...path]">) {
@@ -16,32 +17,13 @@ export default function DocumentoPage({ params }: PageProps<"/progetti/[id]/docu
   );
 }
 
-// Stili del Markdown con i token del tema (niente plugin typography).
-const markdown: Components = {
-  h1: (props) => <h1 className="mt-6 mb-3 text-2xl font-semibold first:mt-0" {...props} />,
-  h2: (props) => <h2 className="mt-6 mb-3 text-xl font-semibold" {...props} />,
-  h3: (props) => <h3 className="mt-4 mb-2 text-lg font-semibold" {...props} />,
-  p: (props) => <p className="my-3 leading-relaxed" {...props} />,
-  ul: (props) => <ul className="my-3 list-disc pl-6" {...props} />,
-  ol: (props) => <ol className="my-3 list-decimal pl-6" {...props} />,
-  blockquote: (props) => <blockquote className="my-3 border-l-2 pl-4 text-muted-foreground" {...props} />,
-  a: (props) => <a className="text-primary underline-offset-4 hover:underline" {...props} />,
-  code: (props) => <code className="rounded bg-muted px-1 font-mono text-sm" {...props} />,
-  hr: () => <hr className="my-6 border-border" />,
-  table: (props) => (
-    <div className="my-4 overflow-x-auto">
-      <table className="w-full border-collapse text-sm" {...props} />
-    </div>
-  ),
-  th: (props) => <th className="border border-border bg-muted px-2 py-1 text-left font-medium" {...props} />,
-  td: (props) => <td className="border border-border px-2 py-1 align-top" {...props} />,
-};
-
 async function DocumentView({ params }: { params: Promise<{ id: string; path: string[] }> }) {
   const { id, path } = await params;
   const supabase = await createClient();
   const document = await readDocument(supabase, id, path.map(decodeURIComponent).join("/"));
   if (!document) notFound();
+  const level = await documentLevel(supabase, id, document.documentType);
+  const canEdit = document.body !== null && (level === "edit" || level === "approve");
 
   const front = document.frontMatter;
   const entries = Object.entries(front).filter(([, value]) => value !== null && value !== "");
@@ -55,6 +37,15 @@ async function DocumentView({ params }: { params: Promise<{ id: string; path: st
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold">{String(front.titolo || document.path.split("/").pop())}</h1>
           <DocumentStateBadge state={front.stato ? String(front.stato) : null} />
+          {canEdit && (
+            <Link
+              href={`/progetti/${id}/modifica/${path.join("/")}`}
+              className={buttonVariants({ variant: "outline", size: "sm", className: "ml-auto" })}
+            >
+              <Pencil />
+              Modifica
+            </Link>
+          )}
         </div>
         <span className="font-mono text-xs text-muted-foreground">
           {document.path} · {document.lastCommitId.slice(0, 8)}
@@ -84,9 +75,7 @@ async function DocumentView({ params }: { params: Promise<{ id: string; path: st
           {document.body === null ? (
             <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>
           ) : (
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdown}>
-              {document.body}
-            </ReactMarkdown>
+            <Markdown>{document.body}</Markdown>
           )}
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "yaml";
-import { listFiles, readFile } from "@/lib/gitlab";
+import { GitLabError, listFiles, readFile, updateFile } from "@/lib/gitlab";
 
 // Livello di servizio unico per i documenti: lo usano le server action della UI e i tool MCP.
 // Riceve sempre un client Supabase: quello dell'utente (RLS) oppure, solo nel webhook, quello
@@ -13,10 +13,11 @@ type Project = { id: string; gitlab_project_path: string | null; gitlab_branch: 
 // Frontespizio GUIDA-FRONT: blocco YAML tra due righe "---" in testa al file.
 export function splitFrontMatter(content: string) {
   const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(content);
-  if (!match) return { frontMatter: {} as Record<string, unknown>, body: content };
+  if (!match) return { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, body: content };
   const parsed: unknown = parse(match[1]);
   return {
     frontMatter: (parsed && typeof parsed === "object" ? parsed : {}) as Record<string, unknown>,
+    frontMatterSource: match[1],
     body: content.slice(match[0].length),
   };
 }
@@ -120,6 +121,79 @@ export async function readDocument(supabase: SupabaseClient, projectId: string, 
     lastCommitId: file.lastCommitId,
     ...(path.endsWith(".md")
       ? splitFrontMatter(file.content)
-      : { frontMatter: {} as Record<string, unknown>, body: null }),
+      : { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, body: null }),
   };
+}
+
+// Livello dell'utente sul documento, deciso da Postgres (document_level).
+export async function documentLevel(supabase: SupabaseClient, projectId: string, documentType: string | null) {
+  const { data } = await supabase.rpc("document_level", {
+    p_project_id: projectId,
+    p_document_type: documentType,
+  });
+  return (data ?? "none") as "none" | "view" | "edit" | "approve";
+}
+
+export class DocumentError extends Error {
+  constructor(readonly code: "not_found" | "forbidden" | "conflict") {
+    super(code);
+  }
+}
+
+// Salva il testo completo di un documento con un commit a nome dell'utente.
+// lastCommitId è l'ultimo commit visto dall'utente: se il file è cambiato nel frattempo → conflict.
+export async function saveDocument(
+  supabase: SupabaseClient,
+  input: { projectId: string; path: string; content: string; lastCommitId: string; message?: string; via: "app" | "mcp" },
+) {
+  const { data: indexed } = await supabase
+    .from("documents")
+    .select("document_type")
+    .eq("project_id", input.projectId)
+    .eq("path", input.path)
+    .maybeSingle();
+  if (!indexed) throw new DocumentError("not_found");
+
+  const level = await documentLevel(supabase, input.projectId, indexed.document_type);
+  if (level !== "edit" && level !== "approve") throw new DocumentError("forbidden");
+
+  const [{ data: project }, { data: claims }] = await Promise.all([
+    loadProject(supabase, input.projectId),
+    supabase.auth.getClaims(),
+  ]);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", claims?.claims.sub ?? "")
+    .single();
+  if (!project?.gitlab_project_path || !profile) throw new DocumentError("not_found");
+
+  const fileName = input.path.split("/").pop();
+  let commitId: string;
+  try {
+    commitId = await updateFile(
+      project.gitlab_project_path,
+      project.gitlab_branch,
+      { path: input.path, content: input.content, lastCommitId: input.lastCommitId },
+      {
+        message: `${input.message?.trim() || `Aggiorna ${fileName}`}\n\nVia: ${input.via}`,
+        authorName: profile.full_name || profile.email,
+        authorEmail: profile.email,
+      },
+    );
+  } catch (error) {
+    if (error instanceof GitLabError && error.isConflict) throw new DocumentError("conflict");
+    throw error;
+  }
+
+  // Indice aggiornato subito (in locale il webhook non arriva); se fallisce lo ripara il webhook.
+  const { frontMatter } = input.path.endsWith(".md") ? splitFrontMatter(input.content) : { frontMatter: {} };
+  const { error } = await supabase
+    .from("documents")
+    .update({ front_matter: frontMatter, last_commit_id: commitId, indexed_at: new Date().toISOString() })
+    .eq("project_id", input.projectId)
+    .eq("path", input.path);
+  if (error) console.error("Indice non aggiornato dopo il salvataggio", error);
+
+  return { lastCommitId: commitId };
 }
