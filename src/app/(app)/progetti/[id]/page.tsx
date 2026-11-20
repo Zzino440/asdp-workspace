@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NATURE_LABELS, PROJECT_STATUS_LABELS, type AsdpRole } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
+import { DocumentList } from "./document-list";
+import { Repositories } from "./repositories";
 import { TeamEditor } from "./team-editor";
 
 export default function ProgettoPage({ params }: PageProps<"/progetti/[id]">) {
@@ -21,13 +23,14 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
   const { data: project } = await supabase
     .from("projects")
     .select(
-      "id, code, name, client, nature, status, current_phase, framework_version, gitlab_project_path, gitlab_branch",
+      "id, code, name, client, nature, status, current_phase, framework_version, gitlab_project_path, gitlab_branch, docs_root",
     )
     .eq("id", id)
     .maybeSingle();
   if (!project) notFound();
 
-  const [{ data: members }, { data: people }, { data: isAdmin }, { data: isPm }] = await Promise.all([
+  const [{ data: members }, { data: people }, { data: isAdmin }, { data: isPm }, { data: repositories }] =
+    await Promise.all([
     supabase
       .from("project_members")
       .select("user_id, roles, profiles(full_name, email)")
@@ -35,15 +38,18 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
     supabase.from("profiles").select("id, full_name, email").neq("status", "sospeso").order("full_name"),
     supabase.rpc("is_admin"),
     supabase.rpc("has_project_role", { p_project_id: id, p_roles: ["pm"] }),
+    supabase.from("project_repositories").select("id, gitlab_path, role, branch").eq("project_id", id).order("gitlab_path"),
   ]);
+  const canManage = Boolean(isAdmin || isPm);
 
   const details: [string, string][] = [
     ["Cliente", project.client],
     ["Natura", NATURE_LABELS[project.nature]],
     ["Fase corrente", `Fase ${project.current_phase}`],
     ["Framework", `asdp ${project.framework_version}`],
-    ["Project GitLab", project.gitlab_project_path ?? "—"],
+    ["Repo documenti", project.gitlab_project_path ?? "—"],
     ["Branch", project.gitlab_branch],
+    ["Cartella documenti", project.docs_root],
   ];
 
   return (
@@ -79,7 +85,7 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
           <TeamEditor
             key={JSON.stringify(members)}
             projectId={project.id}
-            canEdit={Boolean(isAdmin || isPm)}
+            canEdit={canManage}
             members={(members ?? []).map((m) => {
               // Relazione molti-a-uno: PostgREST restituisce un oggetto, i tipi non generati un array.
               const profile = m.profiles as unknown as { full_name: string; email: string } | null;
@@ -92,6 +98,26 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
             })}
             people={(people ?? []).map((p) => ({ id: p.id, name: p.full_name || p.email, email: p.email }))}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Repository di codice</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Repositories projectId={project.id} canEdit={canManage} repositories={repositories ?? []} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Documenti</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
+            <DocumentList projectId={project.id} canReindex={canManage} />
+          </Suspense>
         </CardContent>
       </Card>
     </div>

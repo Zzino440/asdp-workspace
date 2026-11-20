@@ -43,8 +43,9 @@ export default function NuovoProgettoPage() {
               </p>
             </div>
             <Field id="framework_version" label="Versione framework" defaultValue="0.8.0" required />
-            <Field id="gitlab_project_path" label="Project GitLab" placeholder="dst/cliente/adsp" />
+            <Field id="gitlab_project_path" label="Repo documenti (GitLab)" placeholder="dst/cliente/adsp" />
             <Field id="gitlab_branch" label="Branch" defaultValue="main" required />
+            <Field id="docs_root" label="Cartella documenti" defaultValue="asdp/" required />
             <div className="flex flex-col gap-2 sm:col-span-2">
               {state.error && <p className="text-sm text-destructive">{state.error}</p>}
               <Button type="submit" disabled={pending} className="self-start">

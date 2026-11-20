@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { z } from "zod";
+import { indexProject } from "@/lib/documents";
 import { ASDP_ROLES } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,6 +17,7 @@ const projectSchema = z.object({
   framework_version: z.string().trim().min(1),
   gitlab_project_path: z.string().trim().transform((v) => v || null),
   gitlab_branch: z.string().trim().min(1),
+  docs_root: z.string().trim().min(1),
 });
 
 export async function createProject(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -71,6 +73,53 @@ export async function saveTeam(
     }
   }
 
+  refresh();
+  return { error: null };
+}
+
+export type ReindexResult = { error: string | null; count?: number };
+
+// Ricostruisce l'indice dei documenti. La RLS su documents lo permette solo ad admin e PM.
+export async function reindexDocuments(projectId: string): Promise<ReindexResult> {
+  const supabase = await createClient();
+  try {
+    const count = await indexProject(supabase, projectId);
+    refresh();
+    return { error: null, count };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Indicizzazione non riuscita." };
+  }
+}
+
+const repositorySchema = z.object({
+  gitlab_path: z.string().trim().min(1),
+  role: z.enum(["be", "fe", "altro"]),
+  branch: z.string().trim().min(1),
+});
+
+// Repo di codice collegate al progetto (admin o PM, via RLS).
+export async function addRepository(
+  projectId: string,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const parsed = repositorySchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Indica percorso GitLab, ruolo e branch." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("project_repositories")
+    .insert({ project_id: projectId, ...parsed.data });
+  if (error?.code === "23505") return { error: "Repo già collegata." };
+  if (error) return { error: "Non hai i permessi per modificare le repo del progetto." };
+  refresh();
+  return { error: null };
+}
+
+export async function removeRepository(id: string): Promise<FormState> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("project_repositories").delete().eq("id", id).select("id");
+  if (!data?.length) return { error: "Non hai i permessi per modificare le repo del progetto." };
   refresh();
   return { error: null };
 }

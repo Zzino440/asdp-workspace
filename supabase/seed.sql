@@ -34,7 +34,7 @@ where u.email like '%@asdp.test';
 update public.profiles set is_admin = true where email = 'admin@asdp.test';
 
 insert into public.projects (id, code, name, client, nature, status, current_phase, framework_version, gitlab_project_path) values
-  ('20000000-0000-0000-0000-000000000001', 'PFS', 'Portale Fornitori', 'Comune di Siena', 'greenfield', 'aperto', 2, '0.8.0', 'dst/portale-fornitori/adsp'),
+  ('20000000-0000-0000-0000-000000000001', 'PFS', 'Portale Fornitori', 'Comune di Siena', 'greenfield', 'aperto', 2, '0.8.0', 'l.belli/sandbox-test'),
   ('20000000-0000-0000-0000-000000000002', 'CRM-EN', 'CRM Energia Evolutiva Q1', 'Energia Italia', 'evolutiva', 'in_presidio', 4, '0.8.0', 'dst/crm-energia/adsp'),
   ('20000000-0000-0000-0000-000000000003', 'APA', 'App Prenotazioni', 'ASL Toscana', 'greenfield', 'in_attesa', 1, '0.8.0', null);
 

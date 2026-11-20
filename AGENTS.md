@@ -45,6 +45,9 @@ Run typecheck, lint and build before declaring a change done.
   the user's client); key in `SUPABASE_SERVICE_ROLE_KEY`.
 - **Documents live in GitLab**, not in Supabase. Supabase holds an index derived from GitLab and
   app-only data (see ARCHITETTURA §3).
+- **One service layer for documents**: `src/lib/documents/` (server-only) does every document
+  read/write with the user's Supabase client. Server actions and the MCP tools are thin adapters
+  on top of it; never call GitLab from a page, action or tool directly.
 - **Schema changes only through new migration files** in `supabase/migrations/`; never edit an
   applied migration.
 - **Language**: UI text and team docs in Italian; code, identifiers and code comments may be
@@ -118,6 +121,8 @@ src/app/auth/confirm/     invite link (token_hash) → /imposta-password
 src/components/ui/        shadcn components (generated, edit only when needed)
 src/lib/supabase/         Supabase clients (admin.ts: service role, invite only)
 src/lib/labels.ts         Italian labels of the schema enums
+src/lib/gitlab.ts         GitLab REST client (server-only, GITLAB_URL / GITLAB_TOKEN)
+src/lib/documents/        document service layer shared by UI and MCP
 src/proxy.ts              auth gate and session refresh
 supabase/migrations/      schema, RLS, framework reference data
 supabase/seed.sql         local-only test users and projects
