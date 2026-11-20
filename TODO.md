@@ -12,6 +12,17 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   dell'organizzazione Supabase. Per invitare colleghi: configurare un SMTP (es. Resend) e
   togliere l'override `[remotes.test.auth.email.template.invite]` da `supabase/config.toml`.
 
+- [ ] **Riattivare i deploy di anteprima su Vercel** quando si prepara la vera produzione (oggi
+  sono spenti: solo il push su `master` fa build e deploy). Come:
+  - dashboard Vercel → team `ds-tech4` → progetto `asdp-workspace` → Settings → Git (o Build and
+    Deployment) → riattivare i Preview Deployments;
+  - oppure chiedere a Claude di farlo con l'MCP di Vercel: `update_project` su `asdp-workspace`
+    (slug `ds-tech4`) con `previewDeploymentsDisabled: false`.
+
+  Con le anteprime riattivate le variabili d'ambiente vanno messe anche sull'ambiente Preview
+  (oggi sono solo Production) e i domini delle anteprime sono già tra i redirect ammessi di
+  Supabase (`[remotes.test.auth]` in `supabase/config.toml`).
+
 ## Sicurezza
 
 - [ ] **Permessi di esecuzione delle funzioni `SECURITY DEFINER`** (segnalato dall'advisor di

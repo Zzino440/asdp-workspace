@@ -28,7 +28,9 @@ quando serve.
 
 - [x] Progetto Vercel `asdp-workspace` (team `ds-tech4`), deploy automatico da GitHub
   `Zzino440/asdp-workspace` branch `master`. URL: https://asdp-workspace.vercel.app (la protezione
-  Vercel vale solo per le anteprime; la produzione è pubblica).
+  Vercel vale solo per le anteprime; la produzione è pubblica). Deploy di anteprima disattivati
+  (`previewDeploymentsDisabled`, 2026-11-20): i push sugli altri branch non fanno build. Da
+  rivedere quando si prepara la vera produzione.
 - [x] Progetto Supabase `asdp workspace` (ref `uirrkpvkrhuvbobthrna`, eu-central-2), creato
   dall'integrazione Vercel, che ha già messo su Vercel le variabili Supabase (solo Production).
 - [x] CLI Supabase collegato (`supabase link --project-ref uirrkpvkrhuvbobthrna`).
@@ -89,7 +91,16 @@ quando serve.
 - Sulla sandbox il commit `3b4ecf38` (prova MCP prima della correzione di `read_document`) ha tolto
   i commenti GUIDA-FRONT dal frontespizio di `asdp/risks/T3.1-RISK_REGISTER.md`: da ripristinare
   se serve.
-- Non committati al momento dell'ultimo aggiornamento: `src/app/auth/invito/`,
+- Invito sul cloud: con il template standard di Supabase il link porta la sessione nel frammento
+  `#access_token=…`, che il server non vede (si finiva sul login con "credenziali non valide").
+  Corretto con la pagina `/auth/invito` (legge il frammento, apre la sessione, manda a imposta
+  password) e `redirectTo` nell'invito. Aggiunti in Amministratore → Utenti "Reinvia invito"
+  (utente non confermato) / "Reimposta password" (confermato) ed "Elimina". Provati in locale
+  (2026-11-20). Da pubblicare; poi sbloccare `belluzzino@gmail.com` (confermato senza accesso)
+  con "Reimposta password", o eliminarlo e reinvitarlo.
+- Non committati al momento dell'ultimo aggiornamento: correzione invito e gestione utenti sopra
+  (`src/app/auth/invito/`, `src/app/(app)/amministrazione/utenti/`, `src/lib/supabase/proxy.ts`,
+  `src/lib/supabase/admin.ts`, `AGENTS.md`); `src/app/auth/invito/`,
   `src/lib/supabase/proxy.ts`, `src/app/(app)/amministrazione/utenti/actions.ts` (anche
   `resendAccess` e `deleteUser`, che usano la service role: aggiornare la regola in AGENTS.md),
   `TODO.md`, `docs/STATO.md`.
