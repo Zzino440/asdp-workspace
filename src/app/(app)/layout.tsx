@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { APP_VERSION } from "@/lib/version";
 import { logout } from "../login/actions";
 
 // Il guscio della pagina è statico; la parte che legge la sessione arriva in streaming
@@ -11,7 +12,10 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-60 shrink-0 flex-col gap-6 border-r bg-muted/30 p-4">
-        <div className="px-3 text-sm font-semibold">ASDP Workspace</div>
+        <div className="flex items-baseline justify-between px-3">
+          <span className="text-sm font-semibold">ASDP Workspace</span>
+          <span className="font-mono text-xs text-muted-foreground">v{APP_VERSION}</span>
+        </div>
         {/* Fallback vuoto: AppSidebar legge usePathname(), che sulle route dinamiche
             non è disponibile nel prerender. */}
         <Suspense fallback={null}>

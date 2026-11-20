@@ -62,6 +62,20 @@ Run typecheck, lint and build before declaring a change done.
   components and the simplest code, even if the result drifts a little from the Stitch screen.
   The tokens stay mandatory; the design system is realigned later, in Stitch, if needed.
 
+## Versions and changelog
+
+Semver, same rules as `dst-claude-skills`. The only source is `version` in `package.json`; the
+sidebar and the MCP `serverInfo` read it through `src/lib/version.ts`.
+
+- `PATCH`: fixes and text corrections. `MINOR`: new features (a milestone piece, a new MCP tool,
+  a new screen). `MAJOR`: breaking changes (e.g. an MCP tool removed or renamed, a parameter made
+  required).
+- While `MAJOR` is `0`, a breaking change bumps `MINOR`. `1.0.0` only on an explicit team
+  decision. When in doubt pick the lower level and say why in the changelog.
+- Before merging to `master`: bump `version`, add an entry at the top of `CHANGELOG.md` (Italian,
+  format in the file, with the tests run), then tag `X.Y.Z` on `master`. A released version is
+  never reused.
+
 ## Design system workflow
 
 One-way flow, Stitch is the source while the design system is experimental:
@@ -132,6 +146,7 @@ supabase/seed.sql         local-only test users and projects
 supabase/tests/database/  pgTAP RLS tests
 supabase/templates/       auth email templates (invite)
 docs/ARCHITETTURA.md      architecture and milestones
+CHANGELOG.md              release notes (Italian), one entry per version
 DESIGN.md                 design system pulled from Stitch (generated, do not edit)
 scripts/sync-design.mjs   Stitch → DESIGN.md sync
 .mcp.json                 Stitch MCP server (key from STITCH_API_KEY)
