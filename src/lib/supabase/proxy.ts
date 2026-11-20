@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth/confirm", "/api/gitlab/webhook", "/api/mcp", "/.well-known/"];
+const PUBLIC_PATHS = ["/login", "/auth/confirm", "/auth/invito", "/api/gitlab/webhook", "/api/mcp", "/.well-known/"];
 
 // Rinnova la sessione a ogni navigazione e manda al login chi non è autenticato.
 export async function updateSession(request: NextRequest) {

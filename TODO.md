@@ -7,9 +7,10 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
 
 - [ ] **Email di invito sul progetto cloud.** Sul piano free con l'email predefinita di Supabase il
   template non si può cambiare (`config push` → `entitlement_required`), quindi l'invito usa il
-  link standard (`{{ .ConfirmationURL }}`), che `/auth/confirm` non gestisce, e parte solo verso
-  i membri dell'organizzazione Supabase. Per invitare colleghi: configurare un SMTP (es. Resend)
-  e togliere l'override `[remotes.test.auth.email.template.invite]` da `supabase/config.toml`.
+  link standard (`{{ .ConfirmationURL }}`), gestito dalla pagina `/auth/invito` (sessione nel
+  frammento `#access_token`). Resta il limite: l'email predefinita parte solo verso i membri
+  dell'organizzazione Supabase. Per invitare colleghi: configurare un SMTP (es. Resend) e
+  togliere l'override `[remotes.test.auth.email.template.invite]` da `supabase/config.toml`.
 
 ## Sicurezza
 

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { USER_STATUS_LABELS } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
-import { AdminSwitch, InviteDialog, SuspendButton } from "./user-controls";
+import { AdminSwitch, DeleteUserButton, InviteDialog, ResendAccessButton, SuspendButton } from "./user-controls";
 
 export default function UtentiPage() {
   return (
@@ -77,7 +77,11 @@ async function UsersTable() {
             </TableCell>
             <TableCell>{u.last_sign_in_at ? dateFormat.format(new Date(u.last_sign_in_at)) : "—"}</TableCell>
             <TableCell>
-              <SuspendButton userId={u.id} status={u.status} disabled={u.id === me} />
+              <div className="flex flex-wrap items-center gap-2">
+                <SuspendButton userId={u.id} status={u.status} disabled={u.id === me} />
+                <ResendAccessButton userId={u.id} status={u.status} disabled={u.id === me} />
+                <DeleteUserButton userId={u.id} name={u.full_name || u.email} disabled={u.id === me} />
+              </div>
             </TableCell>
           </TableRow>
         ))}

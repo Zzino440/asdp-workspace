@@ -41,10 +41,15 @@ quando serve.
 - [x] Primo amministratore: `l.belli@dstech.it`, creato dalla dashboard Supabase e reso admin
   (`update public.profiles set is_admin = true where email = ...`). Altri admin: da Amministratore
   → Utenti nell'app, oppure dal Table Editor (`profiles.is_admin`) o dal SQL Editor di Supabase.
-- [ ] **Variabili GitLab su Vercel** ← punto in cui siamo. Fatte `GITLAB_URL` e
-  `GITLAB_WEBHOOK_SECRET` (Production; il secret del cloud è diverso da quello locale e va usato
-  per il webhook della sandbox). Manca `GITLAB_TOKEN`, che Lorenzo inserisce a mano (Sensitive,
-  Production) perché il token non passa dalla chat; poi nuovo deploy.
+- [x] Variabili GitLab su Vercel: `GITLAB_URL`, `GITLAB_WEBHOOK_SECRET` (Production; il secret
+  del cloud è diverso da quello locale e va usato per il webhook della sandbox), `GITLAB_TOKEN`
+  (inserito a mano da Lorenzo).
+- [ ] **Invito utenti sul cloud** ← punto in cui siamo. Il link dell'email standard di Supabase
+  rimandava al login con la sessione nel frammento `#access_token` (il server non lo vede) →
+  "credenziali non valide". Corretto (non committato): pagina pubblica `/auth/invito` che apre la
+  sessione dal frammento e porta a `/imposta-password`; l'invito usa `redirectTo` verso quella
+  pagina. Da fare: commit, push su `master` (nuovo deploy, che include anche `GITLAB_TOKEN`),
+  nuovo invito di prova.
 - [ ] Progetto di prova nell'app (repo documenti `l.belli/sandbox-test`), Reindicizza.
 - [ ] Webhook GitLab della sandbox verso `https://asdp-workspace.vercel.app/api/gitlab/webhook`
   (secret = `GITLAB_WEBHOOK_SECRET`).
@@ -71,11 +76,10 @@ quando serve.
 
 ## Note e problemi aperti
 
-- Deploy automatici da push bloccati su Vercel (`BLOCKED`, "GitHub user not found / Vercel
-  Account Unavailable"): l'autore dei commit (`l.belli@dstech.it`, utente GitHub del repo
-  `Zzino440/asdp-workspace`) non è collegato all'account Vercel `lbelli-3732` membro del team
-  `ds-tech4`. Il primo deploy era passato perché creato dall'import del progetto, non da un push.
-  Soluzione: collegare l'account GitHub all'account Vercel (Account Settings → Authentication).
+- Un deploy da push del commit `5e45134` è finito `BLOCKED` ("Vercel Account Unavailable");
+  5 minuti dopo un nuovo deploy git dello stesso commit è passato. Causa non chiarita. Se un push
+  viene di nuovo bloccato: collegare l'account GitHub all'account Vercel `lbelli-3732`
+  (Account Settings → Authentication).
 - Le funzioni Vercel girano in `iad1` (USA) e il DB è in `eu-central-2` (Zurigo): ogni richiesta
   fa avanti e indietro sull'Atlantico. Valutare la regione `fra1`.
 
@@ -85,5 +89,9 @@ quando serve.
 - Sulla sandbox il commit `3b4ecf38` (prova MCP prima della correzione di `read_document`) ha tolto
   i commenti GUIDA-FRONT dal frontespizio di `asdp/risks/T3.1-RISK_REGISTER.md`: da ripristinare
   se serve.
-- Non committati al momento dell'ultimo aggiornamento: `supabase/config.toml` (blocco
-  `[remotes.test]`), `TODO.md`, `docs/STATO.md`, `AGENTS.md`.
+- Non committati al momento dell'ultimo aggiornamento: `src/app/auth/invito/`,
+  `src/lib/supabase/proxy.ts`, `src/app/(app)/amministrazione/utenti/actions.ts` (anche
+  `resendAccess` e `deleteUser`, che usano la service role: aggiornare la regola in AGENTS.md),
+  `TODO.md`, `docs/STATO.md`.
+- Sulla porta 4100 è rimasto un `node.exe` appeso (vecchio dev server): chiuderlo prima di
+  riavviare `pnpm dev`.

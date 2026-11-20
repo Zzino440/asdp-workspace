@@ -1,7 +1,15 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { inviteUser, setAdmin, setStatus, setUserProjectRoles, type ActionResult } from "./actions";
+import {
+  deleteUser,
+  inviteUser,
+  resendAccess,
+  setAdmin,
+  setStatus,
+  setUserProjectRoles,
+  type ActionResult,
+} from "./actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -55,6 +63,46 @@ export function SuspendButton({ userId, status, disabled }: { userId: string; st
         onClick={() => run(() => setStatus(userId, suspended ? "attivo" : "sospeso"))}
       >
         {suspended ? "Riattiva" : "Sospendi"}
+      </Button>
+      {error && <span className="text-xs text-destructive">{error}</span>}
+    </div>
+  );
+}
+
+export function ResendAccessButton({ userId, status, disabled }: { userId: string; status: string; disabled?: boolean }) {
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<ActionResult | null>(null);
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={disabled || pending}
+        onClick={() => startTransition(async () => setResult(await resendAccess(userId)))}
+      >
+        {status === "invitato" ? "Reinvia invito" : "Reimposta password"}
+      </Button>
+      {result?.error && <span className="text-xs text-destructive">{result.error}</span>}
+      {result?.message && <span className="text-xs text-muted-foreground">{result.message}</span>}
+    </div>
+  );
+}
+
+export function DeleteUserButton({ userId, name, disabled }: { userId: string; name: string; disabled?: boolean }) {
+  const { pending, error, run } = useServerAction();
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="destructive"
+        size="sm"
+        disabled={disabled || pending}
+        onClick={() => {
+          if (confirm(`Eliminare ${name}? L'account e i ruoli nei progetti vengono cancellati e non si possono recuperare.`)) {
+            run(() => deleteUser(userId));
+          }
+        }}
+      >
+        Elimina
       </Button>
       {error && <span className="text-xs text-destructive">{error}</span>}
     </div>

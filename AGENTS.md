@@ -46,7 +46,8 @@ Run typecheck, lint and build before declaring a change done.
 
 - **Permissions live only in Postgres RLS.** Query with the user's client; never filter by user
   in TypeScript as a security measure. The service role is allowed only in webhook handlers and
-  in the "Invita utente" action (`src/lib/supabase/admin.ts`, after checking `is_admin()` with
+  in the account actions of Amministratore → Utenti (invite, resend access, delete;
+  `src/lib/supabase/admin.ts`, after checking `is_admin()` with
   the user's client); key in `SUPABASE_SERVICE_ROLE_KEY`.
 - **Documents live in GitLab**, not in Supabase. Supabase holds an index derived from GitLab and
   app-only data (see ARCHITETTURA §3).

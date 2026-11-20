@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { ASDP_ROLES } from "@/lib/labels";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -23,12 +24,51 @@ export async function inviteUser(_prev: ActionResult, formData: FormData): Promi
 
   const { error } = await createAdminClient().auth.admin.inviteUserByEmail(parsed.data.email, {
     data: { full_name: parsed.data.full_name },
+    // Usato solo dal template standard del cloud; il template locale va su /auth/confirm.
+    redirectTo: `${(await headers()).get("origin")}/auth/invito`,
   });
   if (error?.code === "email_exists") return { error: "Esiste già un utente con questa email." };
   if (error) return { error: "Impossibile inviare l'invito." };
 
   refresh();
   return { error: null, message: `Invito inviato a ${parsed.data.email}.` };
+}
+
+// Rimanda l'accesso a chi non è riuscito a entrare: invito se non ha ancora aperto il link,
+// altrimenti email di reimpostazione password. Entrambe portano a /auth/invito → imposta password.
+export async function resendAccess(userId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) return { error: NO_PERMISSION };
+
+  const admin = createAdminClient();
+  const { data, error: userError } = await admin.auth.admin.getUserById(userId);
+  const email = data.user?.email;
+  if (userError || !email) return { error: "Utente non trovato." };
+
+  const redirectTo = `${(await headers()).get("origin")}/auth/invito`;
+  const { error } = data.user!.email_confirmed_at
+    ? await admin.auth.resetPasswordForEmail(email, { redirectTo })
+    : await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
+  if (error?.code === "over_email_send_rate_limit") return { error: "Email già inviata da poco: riprova tra un minuto." };
+  if (error) return { error: "Impossibile inviare l'email." };
+  return { error: null, message: `Email inviata a ${email}.` };
+}
+
+// Elimina l'account: con il profilo spariscono anche le appartenenze ai progetti (on delete
+// cascade). I commit già fatti su GitLab restano.
+export async function deleteUser(userId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const [{ data: isAdmin }, { data: claims }] = await Promise.all([
+    supabase.rpc("is_admin"),
+    supabase.auth.getClaims(),
+  ]);
+  if (!isAdmin || claims?.claims.sub === userId) return { error: NO_PERMISSION };
+
+  const { error } = await createAdminClient().auth.admin.deleteUser(userId);
+  if (error) return { error: "Impossibile eliminare l'utente." };
+  refresh();
+  return { error: null };
 }
 
 // Le modifiche ai profili passano dal client dell'utente: la RLS le permette solo all'admin.
