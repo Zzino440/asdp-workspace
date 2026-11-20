@@ -52,6 +52,9 @@ Run typecheck, lint and build before declaring a change done.
   `src/app/globals.css`, Tailwind classes built on them); no hard-coded colors, radii or spacing.
   The source is Stitch: never edit `DESIGN.md` by hand, run `pnpm design:sync` and then align
   `globals.css` to the diff. Stitch screens are layout references, not code to copy.
+- **Simple code over Stitch fidelity**: Stitch is a guideline, not a spec. Prefer stock shadcn/ui
+  components and the simplest code, even if the result drifts a little from the Stitch screen.
+  The tokens stay mandatory; the design system is realigned later, in Stitch, if needed.
 
 ## Design system workflow
 
@@ -73,8 +76,8 @@ Stitch (project "ASDP Delivery Workspace", id 148620745884280817)
    `stitch` MCP server (`list_screens`, `get_screen` with project id above) as a layout reference.
 2. Build it with the shadcn components in `src/components/ui/` and the tokens; never paste the
    Stitch HTML.
-3. If the screen needs a token or component missing from `DESIGN.md`, stop and ask: it is added
-   in Stitch first, then synced.
+3. If the screen needs a component `DESIGN.md` does not describe, use the stock shadcn one and
+   mention it. If it needs a missing token, stop and ask: it is added in Stitch first, then synced.
 
 **Token mapping** (`DESIGN.md` → `globals.css`)
 

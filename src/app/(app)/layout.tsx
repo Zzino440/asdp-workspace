@@ -12,7 +12,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
     <div className="flex min-h-screen">
       <aside className="flex w-60 shrink-0 flex-col gap-6 border-r bg-muted/30 p-4">
         <div className="px-3 text-sm font-semibold">ASDP Workspace</div>
-        <Suspense fallback={<AppSidebar isAdmin={false} />}>
+        {/* Fallback vuoto: AppSidebar legge usePathname(), che sulle route dinamiche
+            non è disponibile nel prerender. */}
+        <Suspense fallback={null}>
           <SidebarForUser />
         </Suspense>
       </aside>

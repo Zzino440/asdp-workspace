@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -8,28 +10,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { buttonVariants } from "@/components/ui/button";
+import { NATURE_LABELS, PROJECT_STATUS_LABELS as STATUS_LABELS } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
-
-const NATURE_LABELS: Record<string, string> = {
-  greenfield: "Greenfield",
-  evolutiva: "Evolutiva",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  aperto: "Aperto",
-  in_presidio: "In presidio",
-  in_attesa: "In attesa",
-  chiuso: "Chiuso",
-};
 
 export default function ProgettiPage() {
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Progetti</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">Progetti</h1>
+        <Suspense>
+          <NewProjectButton />
+        </Suspense>
+      </div>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
         <ProjectsTable />
       </Suspense>
     </div>
+  );
+}
+
+// Il bottone è solo una comodità: la creazione è permessa dalla RLS solo all'admin.
+async function NewProjectButton() {
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) return null;
+  return (
+    <Link href="/progetti/nuovo" className={buttonVariants()}>
+      <Plus />
+      Nuovo progetto
+    </Link>
   );
 }
 
@@ -63,7 +73,10 @@ async function ProjectsTable() {
             {projects.map((project) => (
               <TableRow key={project.id}>
                 <TableCell className="font-medium">
-                  {project.name} <span className="text-muted-foreground">· {project.code}</span>
+                  <Link href={`/progetti/${project.id}`} className="hover:underline">
+                    {project.name}
+                  </Link>{" "}
+                  <span className="text-muted-foreground">· {project.code}</span>
                 </TableCell>
                 <TableCell>{project.client}</TableCell>
                 <TableCell>{NATURE_LABELS[project.nature]}</TableCell>

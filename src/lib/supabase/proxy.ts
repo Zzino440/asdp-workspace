@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/auth/confirm"];
 
 // Rinnova la sessione a ogni navigazione e manda al login chi non è autenticato.
 export async function updateSession(request: NextRequest) {
