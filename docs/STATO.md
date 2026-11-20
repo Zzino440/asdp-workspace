@@ -41,8 +41,10 @@ quando serve.
 - [x] Primo amministratore: `l.belli@dstech.it`, creato dalla dashboard Supabase e reso admin
   (`update public.profiles set is_admin = true where email = ...`). Altri admin: da Amministratore
   → Utenti nell'app, oppure dal Table Editor (`profiles.is_admin`) o dal SQL Editor di Supabase.
-- [ ] **Variabili GitLab su Vercel** ← punto in cui siamo (`GITLAB_URL`, `GITLAB_TOKEN`, `GITLAB_WEBHOOK_SECRET`,
-  Production) e nuovo deploy.
+- [ ] **Variabili GitLab su Vercel** ← punto in cui siamo. Fatte `GITLAB_URL` e
+  `GITLAB_WEBHOOK_SECRET` (Production; il secret del cloud è diverso da quello locale e va usato
+  per il webhook della sandbox). Manca `GITLAB_TOKEN`, che Lorenzo inserisce a mano (Sensitive,
+  Production) perché il token non passa dalla chat; poi nuovo deploy.
 - [ ] Progetto di prova nell'app (repo documenti `l.belli/sandbox-test`), Reindicizza.
 - [ ] Webhook GitLab della sandbox verso `https://asdp-workspace.vercel.app/api/gitlab/webhook`
   (secret = `GITLAB_WEBHOOK_SECRET`).
@@ -68,6 +70,14 @@ quando serve.
 | GitLab | Istanza https://git.dstech.info, repo di prova `l.belli/sandbox-test` (id 946, branch `main`), documenti sotto `asdp/`. Token del service account in `GITLAB_TOKEN` (`.env.local`, mai in chat) |
 
 ## Note e problemi aperti
+
+- Deploy automatici da push bloccati su Vercel (`BLOCKED`, "GitHub user not found / Vercel
+  Account Unavailable"): l'autore dei commit (`l.belli@dstech.it`, utente GitHub del repo
+  `Zzino440/asdp-workspace`) non è collegato all'account Vercel `lbelli-3732` membro del team
+  `ds-tech4`. Il primo deploy era passato perché creato dall'import del progetto, non da un push.
+  Soluzione: collegare l'account GitHub all'account Vercel (Account Settings → Authentication).
+- Le funzioni Vercel girano in `iad1` (USA) e il DB è in `eu-central-2` (Zurigo): ogni richiesta
+  fa avanti e indietro sull'Atlantico. Valutare la regione `fra1`.
 
 - Claude Desktop (pannello Server MCP del tab Code) in locale ottiene l'URL di login ma non apre
   il browser, probabilmente perché il server OAuth è su `http://`: da riprovare sul cloud
