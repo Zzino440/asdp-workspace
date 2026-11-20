@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 export type ActionResult = { error: string | null; message?: string };
 
 const NO_PERMISSION = "Operazione non permessa.";
+// Senza SMTP Supabase invia poche email all'ora per tutto il progetto (o la stessa email troppo presto).
+const EMAIL_LIMIT = "Limite di invio email raggiunto: riprova più tardi.";
 
 const inviteSchema = z.object({ email: z.email(), full_name: z.string().trim().min(1) });
 
@@ -28,6 +30,7 @@ export async function inviteUser(_prev: ActionResult, formData: FormData): Promi
     redirectTo: `${(await headers()).get("origin")}/auth/invito`,
   });
   if (error?.code === "email_exists") return { error: "Esiste già un utente con questa email." };
+  if (error?.code === "over_email_send_rate_limit") return { error: EMAIL_LIMIT };
   if (error) return { error: "Impossibile inviare l'invito." };
 
   refresh();
@@ -50,7 +53,7 @@ export async function resendAccess(userId: string): Promise<ActionResult> {
   const { error } = data.user!.email_confirmed_at
     ? await admin.auth.resetPasswordForEmail(email, { redirectTo })
     : await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
-  if (error?.code === "over_email_send_rate_limit") return { error: "Email già inviata da poco: riprova tra un minuto." };
+  if (error?.code === "over_email_send_rate_limit") return { error: EMAIL_LIMIT };
   if (error) return { error: "Impossibile inviare l'email." };
   return { error: null, message: `Email inviata a ${email}.` };
 }

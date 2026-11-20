@@ -50,8 +50,8 @@ quando serve.
   rimandava al login con la sessione nel frammento `#access_token` (il server non lo vede) →
   "credenziali non valide". Corretto (non committato): pagina pubblica `/auth/invito` che apre la
   sessione dal frammento e porta a `/imposta-password`; l'invito usa `redirectTo` verso quella
-  pagina. Da fare: commit, push su `master` (nuovo deploy, che include anche `GITLAB_TOKEN`),
-  nuovo invito di prova.
+  pagina. Committato su `bugfix/various`. Da fare: merge su `master` (nuovo deploy, che include
+  anche `GITLAB_TOKEN`), nuovo invito di prova.
 - [ ] Progetto di prova nell'app (repo documenti `l.belli/sandbox-test`), Reindicizza.
 - [ ] Webhook GitLab della sandbox verso `https://asdp-workspace.vercel.app/api/gitlab/webhook`
   (secret = `GITLAB_WEBHOOK_SECRET`).
@@ -98,11 +98,7 @@ quando serve.
   (utente non confermato) / "Reimposta password" (confermato) ed "Elimina". Provati in locale
   (2026-11-20). Da pubblicare; poi sbloccare `belluzzino@gmail.com` (confermato senza accesso)
   con "Reimposta password", o eliminarlo e reinvitarlo.
-- Non committati al momento dell'ultimo aggiornamento: correzione invito e gestione utenti sopra
-  (`src/app/auth/invito/`, `src/app/(app)/amministrazione/utenti/`, `src/lib/supabase/proxy.ts`,
-  `src/lib/supabase/admin.ts`, `AGENTS.md`); `src/app/auth/invito/`,
-  `src/lib/supabase/proxy.ts`, `src/app/(app)/amministrazione/utenti/actions.ts` (anche
-  `resendAccess` e `deleteUser`, che usano la service role: aggiornare la regola in AGENTS.md),
-  `TODO.md`, `docs/STATO.md`.
+- Correzione invito e gestione utenti committate su `bugfix/various` (`7d8dbce`, `f793b45`): da
+  portare su `master` per il deploy.
 - Sulla porta 4100 è rimasto un `node.exe` appeso (vecchio dev server): chiuderlo prima di
   riavviare `pnpm dev`.

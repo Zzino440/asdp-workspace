@@ -9,7 +9,8 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   template non si può cambiare (`config push` → `entitlement_required`), quindi l'invito usa il
   link standard (`{{ .ConfirmationURL }}`), gestito dalla pagina `/auth/invito` (sessione nel
   frammento `#access_token`). Resta il limite: l'email predefinita parte solo verso i membri
-  dell'organizzazione Supabase. Per invitare colleghi: configurare un SMTP (es. Resend) e
+  dell'organizzazione Supabase, con un limite di poche email all'ora per tutto il progetto
+  (errore `over_email_send_rate_limit`, provato il 2026-11-20). Per invitare colleghi: configurare un SMTP (es. Resend) e
   togliere l'override `[remotes.test.auth.email.template.invite]` da `supabase/config.toml`.
 
 - [ ] **Riattivare i deploy di anteprima su Vercel** quando si prepara la vera produzione (oggi
