@@ -11,7 +11,7 @@ import { logout } from "../login/actions";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col gap-6 border-r bg-muted/30 p-4">
+      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col gap-6 overflow-y-auto border-r bg-muted/30 p-4">
         <div className="flex items-baseline justify-between px-3">
           <span className="text-sm font-semibold">ASDP Workspace</span>
           <span className="font-mono text-xs text-muted-foreground">v{APP_VERSION}</span>

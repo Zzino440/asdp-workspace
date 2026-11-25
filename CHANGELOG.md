@@ -35,6 +35,12 @@
   casella ne crea un'altra; Annulla annulla anche la spunta. Gli altri elenchi non cambiano.
   La casella ha lo stesso aspetto del Checkbox dell'app (bordo, sfondo e spunta con i token).
 - **UI**: al salvataggio la riga `Altro: ___________` non diventa più `Altro: \_\_\_…`.
+- **UI**: "In questa pagina" (documenti e Guida) evidenzia la sezione come nelle documentazioni:
+  l'ultimo titolo salito sopra una linea sotto l'intestazione; negli ultimi pixel di scorrimento
+  la linea scende fino al fondo dello schermo, così anche gli ultimi titoli si accendono uno alla
+  volta, in ordine. Un clic su una voce la evidenzia finché non si scorre di nuovo. Prima a fine
+  pagina restava ferma su una sezione precedente, perché gli ultimi titoli non arrivavano mai
+  nella fascia in alto.
 - **Guida**: Rispondere alle domande D[N] dice che la casella si spunta anche da Modifica testo.
   PATCH: toglie un limite dichiarato nella Guida, senza nuove API.
 
@@ -46,6 +52,9 @@
 - In locale sulla T1.4 della sandbox (senza salvare): caselle visibili, spunta e Annulla, nella
   bozza solo la riga spuntata passa a `- [x]` e la lunghezza del testo resta uguale, `___` non
   viene più scappato, Invio crea una nuova casella, gli elenchi puntati restano uguali.
+- Indice sull'Architettura della sandbox: scorrendo dall'alto al fondo a passi di 10–30 px le
+  sezioni si accendono tutte in ordine (1 → 9, ADR-001 compreso); il clic su "8. Rischi tecnici"
+  la evidenzia anche a fine pagina, la rotella torna a seguire lo scorrimento.
 
 ## [0.4.0] 2026-11-25 — Creazione dei documenti dal connettore
 

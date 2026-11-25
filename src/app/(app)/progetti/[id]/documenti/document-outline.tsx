@@ -21,13 +21,18 @@ export function DocumentOutline({ containerId }: { containerId: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- i titoli si leggono dal DOM
     setItems(headings.map((h) => ({ id: h.id, text: h.textContent ?? "", level: h.tagName === "H2" ? 2 : 3 })));
     if (headings.length === 0) return;
-    // Come nelle documentazioni: attivo l'ultimo titolo già salito sotto l'intestazione; in fondo
-    // alla pagina l'ultimo titolo, anche se non può salire fin lì.
+    // Attivo l'ultimo titolo sopra una linea a 200px (sotto l'intestazione). Negli ultimi pixel di
+    // scorrimento la linea scende fino al fondo dello schermo: gli ultimi titoli, che non possono
+    // salire fin lì, la attraversano comunque uno alla volta, in ordine.
     const update = () => {
       if (pinned.current) return;
-      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-      const passed = headings.filter((h) => h.getBoundingClientRect().top <= 200); // scrollMarginTop + margine
-      setActive((atBottom ? headings.at(-1) : (passed.at(-1) ?? headings[0]))!.id);
+      const top = 200;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const range = Math.min(window.innerHeight - top, maxScroll);
+      const remaining = maxScroll - window.scrollY;
+      const line = range > 0 && remaining < range ? top + (window.innerHeight - top) * (1 - remaining / range) : top;
+      const passed = headings.filter((h) => h.getBoundingClientRect().top <= line);
+      setActive((passed.at(-1) ?? headings[0]).id);
     };
     // Dopo un clic sull'indice resta la voce cliccata finché l'utente non scorre di nuovo.
     const unpin = () => {
