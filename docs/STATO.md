@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-25 sera — Lorenzo Belli con Claude Code
+**Ultimo aggiornamento**: 2026-11-26 — Lorenzo Belli con Claude Code
 
 ## Versione
 
@@ -254,6 +254,32 @@ vengono dopo.
 8. Fuori dall'app, da decidere col team: allineare Guida e plugin (RACI di T3.1/T4.1, chi
    definisce gli NFR, doppio significato di G1/G2/G3, gerarchia degli ID).
 9. Voci di `TODO.md`.
+
+## File di progetto da Teams/SharePoint (milestone 7, in sospeso)
+
+Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF):
+
+- Non si costruisce un gestore di file su GitLab: per Word ed Excel Git non ha diff né merge e
+  non permette di modificarli nel browser. GitLab resta per i soli documenti ASDP.
+- Navigatore unico per progetto con due sorgenti: documenti ASDP (GitLab) e file di progetto
+  dalla cartella del canale Teams del progetto (SharePoint, Microsoft Graph, account Microsoft
+  dell'utente), aperti in Office per il web. Quasi tutti i progetti hanno già un Team o un canale.
+- Riservati: restano in Supabase Storage (su SharePoint li leggerebbero Copilot e i connettori M365).
+- Aperto: clienti esterni (guest).
+- App registration `ASDP` su Entra (solo organizzazione DST) fatta da Lorenzo, con redirect
+  `http://localhost:4100/api/microsoft/callback`, segreto e permessi; variabili `MICROSOFT_*`
+  solo in `.env.local`.
+- **Bloccata**: al login con l'account DST compare "L'approvazione è necessaria". Il tenant non
+  permette il consenso degli utenti: serve che l'IT clicchi "Concedi consenso amministratore per
+  Dst" (ASDP → Autorizzazioni API). Elenco dei permessi in ARCHITETTURA, punti aperti.
+- Prova nascosta in `0.8.1` (branch `feature/microsoft-integration`): migrazione
+  `20261125231607_microsoft_accounts.sql` (refresh token per utente, RLS solo la propria riga;
+  applicata in locale) e test pgTAP; `src/lib/microsoft.ts` (OAuth con state e PKCE, Graph con
+  `fetch`); route `/api/microsoft/login` e `/callback`; pagina `/file-microsoft` (Team →
+  cartelle dei canali → file in Office web, sola lettura), fuori dal menu. Senza
+  `MICROSOFT_CLIENT_ID` pagina e route rispondono 404, quindi sul cloud non si vede. Aprire
+  l'app da `localhost`, non da `127.0.0.1`. Quando arriva il consenso: provare il login e i
+  file, poi registrare l'URI di produzione e le variabili su Vercel.
 
 ## Ambienti
 

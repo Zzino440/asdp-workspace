@@ -25,6 +25,32 @@
 
 ## Storia
 
+## [0.8.1] 2026-11-26 — Prova nascosta del collegamento Microsoft
+
+**Autore**: Lorenzo Belli
+
+PATCH e non MINOR: la funzione è nascosta (fuori dal menu e disattivata senza variabili), nessun
+cambiamento visibile per gli utenti.
+
+### Cosa è cambiato
+- **Microsoft Graph** (milestone 7, in sospeso per il consenso dell'IT): "Collega account
+  Microsoft" con OAuth (state e PKCE) e pagina di prova `/file-microsoft`, che mostra i Team
+  dell'utente e i file dei canali in sola lettura e li apre in Office per il web.
+  Pagina e route rispondono 404 se manca `MICROSOFT_CLIENT_ID`.
+
+### Migrazioni e configurazione
+- Migrazione `20261125231607_microsoft_accounts.sql`: tabella `microsoft_accounts` (refresh
+  token per utente, RLS solo la propria riga).
+- Variabili facoltative `MICROSOFT_TENANT_ID`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`
+  (oggi solo in `.env.local`; sul cloud non vanno messe finché la funzione è in sospeso).
+
+### Test eseguiti
+- Typecheck, lint, build.
+- Test RLS pgTAP (`supabase test db`), compreso `microsoft_accounts.test.sql`.
+- In locale: la pagina mostra "Collega account Microsoft" e Microsoft accetta la richiesta di
+  login; con l'account DST compare "L'approvazione è necessaria" (consenso dell'IT da chiedere).
+- Senza `MICROSOFT_CLIENT_ID`: `/file-microsoft` e `/api/microsoft/login` rispondono 404.
+
 ## [0.8.0] 2026-11-25 — Approvazioni più funzionali
 
 **Autore**: Lorenzo Belli

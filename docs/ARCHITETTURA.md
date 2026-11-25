@@ -16,6 +16,7 @@ Problemi che risolve (call Lorenzo–Denis del 2026-11-18):
 | Skill da installare sul PC | Le skill partono dall'app (cloud) oppure da Claude Code in locale, a scelta |
 | Framework copiato in ogni progetto | Una sola fonte versionata (plugin `asdp`); ogni progetto dichiara la versione |
 | SharePoint senza versioning | GitLab è la fonte; su SharePoint si pubblicano solo copie in sola lettura degli approvati |
+| File di progetto sparsi tra Teams, OneDrive e GitLab | Navigatore unico per progetto: documenti ASDP da GitLab, gli altri file (Word, Excel, PDF…) dalla cartella Teams/SharePoint del progetto via Microsoft Graph |
 | File sensibili (`reserved`) | Area Riservati fuori da Git, mai inviata all'AI |
 | Troppe domande sparse nei documenti | Vista unica delle `D[N]` di progetto, risposte in blocco, rigenerazione in aggiornamento |
 
@@ -84,7 +85,9 @@ permessi, stessi commit.
 | Codice | Repo BE/FE del progetto (`project_repositories`) | L'app non ci scrive; le skill che leggono codice le usano come input |
 | Indice documenti, `D[N]` estratte | Supabase (derivato) | Ricostruito dall'indexer a ogni push; non si modifica a mano |
 | Utenti, ruoli per progetto, permessi, gate, run, commenti, risposte `D[N]` | Supabase | Dati che esistono solo nell'app |
-| File riservati, evidenze di approvazione | Supabase Storage | Fuori da Git; i riservati non vanno mai all'AI |
+| File riservati, evidenze di approvazione | Supabase Storage | Fuori da Git; i riservati non vanno mai all'AI. Restano qui e non su SharePoint: lì li leggerebbero Copilot e i connettori M365 |
+| File di progetto non ASDP (Word, Excel, PDF, verbali…) | SharePoint, cartella del canale Teams del progetto | L'app li sfoglia, carica e sposta via Microsoft Graph con l'account Microsoft dell'utente; si aprono in Office per il web (co-editing e versioni di SharePoint). Mai copiati su GitLab |
+| Account Microsoft collegato | Supabase, `microsoft_accounts` | Refresh token dell'utente per Graph; RLS: solo la propria riga |
 | Framework (skill `asdp`) | repo `dst-claude-skills` | Versione fissata per progetto, pubblicata sulla Skills API |
 
 ## 4. Flussi
@@ -172,6 +175,9 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
   (`changeApproval`) richiedono "approve", tranne Segna come completo ("edit").
 - **Webhook firmati**: GitLab con secret token, Anthropic con verifica HMAC.
 - **Riservati**: bucket privato con policy per persona; esclusi da ogni input AI.
+- **File di progetto su SharePoint**: deroga voluta alla regola "permessi solo in RLS". L'app
+  chiama Graph con il token delegato dell'utente, quindi decide SharePoint chi vede e modifica;
+  la RLS decide solo quale cartella è collegata al progetto e chi può cambiarla.
 - **Utenti su invito**: registrazione libera disattivata (`enable_signup = false`). L'email di
   invito porta a `/auth/confirm` (token verificato lato server), poi a `/imposta-password`; in
   produzione il template `supabase/templates/invite.html` va copiato nella dashboard Supabase.
@@ -196,6 +202,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
 | 5 | Modifica con AI, Domande aperte di progetto (anticipabili dopo 2f: risposta alle D[N] con un clic) |
 | 6 | Riservati, Pubblica su SharePoint (Microsoft Graph), login Microsoft Entra, deploy Vercel |
+| 7 | **In sospeso** (consenso dell'IT): file di progetto da Teams/SharePoint (Graph, account Microsoft dell'utente): 7a sfoglia e apri in Office per il web; 7b carica, cartelle, sposta, rinomina; 7c file come input delle skill; la pubblicazione degli approvati (6) scrive nella stessa cartella. Fatta la prova nascosta `/file-microsoft` (0.8.1) |
 
 ## 8. Punti aperti
 
@@ -207,7 +214,17 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 - Server OAuth di Supabase in beta; la registrazione dinamica è aperta a chiunque (mitigata dalla
   lista di ritorni ammessi nella pagina di consenso).
 - Adattare le skill del plugin `asdp` a salvare via MCP invece che su file locali.
-- Teams esce dal giro dei documenti ASDP: diverge dalla Guida §18.4.3, va deciso con il team.
+- Teams esce dal giro dei documenti ASDP (diverge dalla Guida §18.4.3, va deciso con il team);
+  rientra per i file non ASDP (milestone 7, decisione di Lorenzo del 2026-11-26).
+- File di progetto: clienti esterni (guest SharePoint, ruolo nell'app) da decidere.
+- File di progetto: app registration `ASDP` su Entra del tenant DST (fatta da Lorenzo, permessi
+  già aggiunti). Il tenant non permette il consenso degli utenti: serve il consenso
+  amministratore dell'IT, una volta per tutti i permessi delegati previsti: `openid`, `profile`,
+  `email`, `offline_access`, `User.Read` (login Entra, milestone 6), `User.ReadBasic.All` (scelta
+  delle persone), `Team.ReadBasic.All`, `Channel.ReadBasic.All` (Team e canale del progetto),
+  `Files.ReadWrite.All`, `Sites.ReadWrite.All` (file e pubblicazione degli approvati),
+  `ChannelMessage.Send` (avvisi nel canale, se servono). Nessun permesso applicativo: tutto
+  agisce come l'utente.
 - Guida del framework e plugin `asdp` divergono su alcuni punti (RACI di T3.1 e T4.1, chi definisce
   gli NFR, G1/G2/G3 usati sia per i gate di Fase 4 sia per gli artefatti di governance): la Guida
   nell'app descrive come funziona con le skill e segnala la differenza; da decidere col team.
