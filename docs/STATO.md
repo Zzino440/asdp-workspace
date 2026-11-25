@@ -22,7 +22,11 @@
   `feature/flusso-approvazione-m3`, 2026-11-25: committata, non pushata; tag dopo il merge su
   `master`.
 - `0.7.0` (coda delle approvazioni in `/approvazioni`) sullo stesso branch, 2026-11-25:
-  committata, non pushata. Provata in locale sulla sandbox (T2.2,
+  committata, non pushata.
+- `0.8.0` (Approvazioni: schede Da approvare / Approvati, gruppi per progetto, filtri,
+  ordinamento, G2 su una riga, badge sul menu, prossimo da approvare) sullo stesso branch,
+  2026-11-25: committata, non pushata. Sulla sandbox: T2.2 Approvato, T3.1 In corso (modifiche
+  richieste). Provata in locale sulla sandbox (T2.2,
   utente TL); sulla sandbox il T2.2 è rimasto In corso.
 - `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
   `feature/vari-miglioramenti`: tag

@@ -6,7 +6,7 @@ import { DocumentWorkspace } from "../document-workspace";
 import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { documentLevel, listDocuments, listVersions, readDocument, readVersion } from "@/lib/documents";
+import { documentLevel, listDocuments, listToApprove, listVersions, readDocument, readVersion } from "@/lib/documents";
 import { gateFor } from "@/lib/gates";
 import { guidaHrefForType } from "@/lib/guida";
 import { PHASES } from "@/lib/labels";
@@ -52,6 +52,11 @@ async function DocumentView({
   ]);
   if (!document) notFound();
   const level = await documentLevel(supabase, id, document.documentType);
+  // Dopo Approva o Richiedi modifiche (?esito=…): il prossimo documento della coda.
+  const esito = query.esito === "approvato" || query.esito === "modifiche" ? query.esito : null;
+  const next = esito
+    ? (await listToApprove(supabase)).find((d) => !(d.project_id === id && d.path === document.path))
+    : undefined;
   const types = (typeRows ?? []) as DocType[];
   const type = types.find((t) => t.code === document.documentType) ?? null;
 
@@ -91,6 +96,18 @@ async function DocumentView({
       canEdit={document.body !== null && (level === "edit" || level === "approve")}
       canApprove={level === "approve"}
       gate={gateFor(document.documentType)}
+      outcome={
+        esito && {
+          esito,
+          next: next
+            ? {
+                title: String(next.front_matter?.titolo || next.path.split("/").pop()),
+                project: (next.projects as unknown as { name: string } | null)?.name ?? "",
+                href: `/progetti/${next.project_id}/documenti/${next.path.split("/").map(encodeURIComponent).join("/")}`,
+              }
+            : null,
+        }
+      }
       readView={
         document.body === null ? (
           <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { History, Pencil, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "cn";
@@ -56,6 +57,8 @@ export function DocumentWorkspace(props: {
   canEdit: boolean;
   canApprove: boolean;
   gate: Gate;
+  // Esito dell'ultima decisione di approvazione, con il prossimo documento della coda.
+  outcome: { esito: "approvato" | "modifiche"; next: { title: string; project: string; href: string } | null } | null;
   readView: ReactNode;
   versionView: ReactNode | null;
   // Il primo titolo del testo coincide con il titolo della pagina: in lettura non si ripete.
@@ -325,6 +328,31 @@ export function DocumentWorkspace(props: {
                   : null
             }
           />
+        )}
+
+        {props.outcome && !isEditing && (
+          <Alert>
+            <AlertTitle>
+              {props.outcome.esito === "approvato" ? "Documento approvato." : "Modifiche richieste."}
+            </AlertTitle>
+            <AlertDescription>
+              {props.outcome.next ? (
+                <span>
+                  Prossimo da approvare:{" "}
+                  <Link href={props.outcome.next.href} className="font-medium text-foreground hover:underline">
+                    {props.outcome.next.title} · {props.outcome.next.project} →
+                  </Link>
+                </span>
+              ) : (
+                <span>
+                  Non hai altri documenti da approvare.{" "}
+                  <Link href="/approvazioni" className="text-foreground hover:underline">
+                    Vai alle Approvazioni
+                  </Link>
+                </span>
+              )}
+            </AlertDescription>
+          </Alert>
         )}
 
         {isEditing && state === "Approvato" && (

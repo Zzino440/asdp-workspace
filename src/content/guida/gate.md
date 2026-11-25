@@ -63,6 +63,13 @@ L'evidenza, se la lasci vuota, è il riferimento alla versione approvata (`commi
 
 Ogni passo è una versione nuova a nome di chi lo fa. Chi approva può anche correggere i dati di approvazione da **Tutti i dettagli**, o chiedere a Claude collegato di aggiornare il frontespizio.
 
-La voce **Approvazioni** del menu elenca i documenti Completo che puoi approvare, in tutti i tuoi progetti, con il gate e il link al documento.
+### La pagina Approvazioni
+
+La voce **Approvazioni** del menu mostra accanto il numero di documenti che ti aspettano. La pagina ha due schede:
+
+- **Da approvare**: i documenti Completo che puoi approvare, divisi per progetto, con gate, da quanti giorni aspettano, scadenza (in rosso se passata) e autore. Puoi filtrare per progetto e per gate e ordinare per attesa, scadenza o tipo di documento. **Rivedi** apre il documento: si approva sempre dopo averlo letto. Analisi Tecnica e Piano di lavoro della stessa Feature stanno su una riga sola, perché il G2 si fa in una seduta.
+- **Approvati**: i documenti approvati negli ultimi 30 giorni, con chi li ha approvati e quale versione.
+
+Dopo **Approva** o **Richiedi modifiche** la pagina del documento ti propone il prossimo documento da approvare, così smaltisci la coda senza tornare all'elenco.
 
 > **Nota:** sono in arrivo l'upload dell'evidenza del cliente e l'aiuto di Claude per controllare la checklist del gate.

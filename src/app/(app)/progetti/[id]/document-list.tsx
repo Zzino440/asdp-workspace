@@ -1,12 +1,11 @@
 import { listDocuments } from "@/lib/documents";
+import { featureOf } from "@/lib/features";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectMap, type MapDoc, type MapType, type NextStep } from "./project-map";
 
 const DONE_STATES = ["Completo", "Approvato"];
 const isDone = (doc: MapDoc) => doc.state !== null && DONE_STATES.includes(doc.state);
 
-// Feature di un documento per-feature, dal percorso (asdp/delivery/F02/T4.3-F02-US01.md → F02).
-const featureOf = (path: string) => /(?:^|[/-])(F\d+)(?=[/.-]|$)/.exec(path)?.[1] ?? null;
 
 // Mappa del percorso ASDP: catalogo dei tipi con skill (document_types) incrociato con l'indice.
 export async function DocumentList({

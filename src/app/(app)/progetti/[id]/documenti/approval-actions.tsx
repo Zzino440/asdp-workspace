@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Check, CheckCheck, Undo2, MessageSquareWarning } from "lucide-react";
 import { changeApprovalAction } from "./actions";
 import { Alert, AlertTitle } from "@/components/ui/alert";
@@ -44,6 +44,7 @@ export function ApprovalActions(props: {
   gate: Gate;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [step, setStep] = useState<Exclude<Step, "complete"> | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
   const [evidence, setEvidence] = useState("");
@@ -67,6 +68,10 @@ export function ApprovalActions(props: {
         return;
       }
       setStep(null);
+      // Dopo una decisione la pagina propone il prossimo documento da approvare.
+      if (next === "approve" || next === "request_changes") {
+        router.replace(`${pathname}?esito=${next === "approve" ? "approvato" : "modifiche"}`);
+      }
       router.refresh();
     });
   }

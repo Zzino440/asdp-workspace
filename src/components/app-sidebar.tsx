@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, CheckSquare, FolderKanban, LayoutDashboard, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -13,7 +14,7 @@ const NAV_ITEMS = [
   { href: "/amministrazione", label: "Amministrazione", icon: Settings, adminOnly: true },
 ];
 
-export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
+export function AppSidebar({ isAdmin, toApprove }: { isAdmin: boolean; toApprove: number }) {
   const pathname = usePathname();
 
   return (
@@ -29,6 +30,11 @@ export function AppSidebar({ isAdmin }: { isAdmin: boolean }) {
         >
           <Icon className="size-4" />
           {label}
+          {href === "/approvazioni" && toApprove > 0 && (
+            <Badge className="ml-auto" aria-label={`${toApprove} da approvare`}>
+              {toApprove}
+            </Badge>
+          )}
         </Link>
       ))}
     </nav>

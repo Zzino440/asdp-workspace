@@ -134,6 +134,18 @@ export async function listToApprove(supabase: SupabaseClient) {
   return rows.filter((r) => levels.get(`${r.project_id}|${r.document_type ?? ""}`) === "approve");
 }
 
+// Documenti approvati negli ultimi `days` giorni, visibili all'utente (RLS), dal più recente.
+export async function listApproved(supabase: SupabaseClient, days = 30) {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("documents")
+    .select("project_id, path, document_type, front_matter, projects(name, code)")
+    .eq("front_matter->>stato", "Approvato")
+    .gte("front_matter->>approvato_il", since)
+    .order("front_matter->>approvato_il", { ascending: false });
+  return data ?? [];
+}
+
 // Legge un documento da GitLab solo se la RLS lo rende visibile all'utente.
 export async function readDocument(supabase: SupabaseClient, projectId: string, path: string) {
   const { data: indexed } = await supabase

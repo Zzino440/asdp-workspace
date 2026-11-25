@@ -25,6 +25,36 @@
 
 ## Storia
 
+## [0.8.0] 2026-11-25 — Approvazioni più funzionali
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **UI, Approvazioni**: due schede.
+  - **Da approvare**: documenti divisi per progetto (in alto i progetti con scaduti o attese più
+    lunghe), filtri per progetto e gate, ordinamento per attesa, scadenza o tipo. Ogni riga:
+    gate, da quanti giorni aspetta (da `completato_il`, altrimenti dall'ultimo salvataggio),
+    scadenza in rosso se passata, autore, pulsante **Rivedi**. Analisi Tecnica e Piano di lavoro
+    della stessa Feature, entrambi Completo, su una riga sola (G2).
+  - **Approvati**: ultimi 30 giorni, con chi ha approvato, data e versione.
+- **UI**: numero dei documenti da approvare accanto alla voce **Approvazioni** del menu.
+- **UI**: dopo **Approva** o **Richiedi modifiche**, la pagina del documento propone il prossimo
+  documento da approvare (o dice che la coda è vuota).
+- **Documenti**: `listApproved` nel service layer; `featureOf` spostato in `src/lib/features.ts`.
+- **Guida**, `TODO.md`, ARCHITETTURA: confine tra Approvazioni (decisioni di gate) e la futura
+  Dashboard (panoramica personale).
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm build`: ok.
+- In locale sulla sandbox: come TL coda con il solo T2.2 e badge 1; come admin due documenti,
+  badge 2, filtro per gate, Approva sul T2.2 → proposto il Risk Register, Richiedi modifiche sul
+  Risk Register → "Non hai altri documenti da approvare" e badge sparito; scheda Approvati con
+  T2.2 e Verbale kickoff.
+- Non provato: riga unica del G2 (nessun T4.2/T4.3-INDEX sulla sandbox).
+
 ## [0.7.0] 2026-11-25 — Coda delle approvazioni
 
 **Autore**: Lorenzo Belli
