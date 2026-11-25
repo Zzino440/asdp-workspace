@@ -1,82 +1,86 @@
-import Link from "next/link";
-import { DocumentStateBadge } from "@/components/document-state-badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { listDocuments } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/server";
-import { ReindexButton } from "./reindex-button";
+import { ProjectMap, type MapDoc, type MapType, type NextStep } from "./project-map";
 
-// Documenti del progetto visibili all'utente, raggruppati per fase del tipo documento.
-export async function DocumentList({ projectId, canReindex }: { projectId: string; canReindex: boolean }) {
+const DONE_STATES = ["Completo", "Approvato"];
+const isDone = (doc: MapDoc) => doc.state !== null && DONE_STATES.includes(doc.state);
+
+// Feature di un documento per-feature, dal percorso (asdp/delivery/F02/T4.3-F02-US01.md → F02).
+const featureOf = (path: string) => /(?:^|[/-])(F\d+)(?=[/.-]|$)/.exec(path)?.[1] ?? null;
+
+// Mappa del percorso ASDP: catalogo dei tipi con skill (document_types) incrociato con l'indice.
+export async function DocumentList({
+  projectId,
+  currentPhase,
+  canReindex,
+}: {
+  projectId: string;
+  currentPhase: number;
+  canReindex: boolean;
+}) {
   const supabase = await createClient();
   const [documents, { data: types }] = await Promise.all([
     listDocuments(supabase, projectId),
-    supabase.from("document_types").select("code, name, phase"),
+    supabase
+      .from("document_types")
+      .select("code, name, phase, skill_name, per_feature, sort_order")
+      .not("skill_name", "is", null)
+      .order("sort_order"),
   ]);
-  const typeByCode = new Map((types ?? []).map((t) => [t.code, t]));
-  const phaseOf = (code: string | null) => (code ? (typeByCode.get(code)?.phase ?? null) : null);
-  const groups = [0, 1, 2, 3, 4, null]
-    .map((phase) => ({ phase, items: documents.filter((d) => phaseOf(d.document_type) === phase) }))
-    .filter((g) => g.items.length > 0);
-  const dateFormat = new Intl.DateTimeFormat("it-IT", { dateStyle: "short" });
+
+  const toDoc = (d: (typeof documents)[number]): MapDoc => {
+    const front = d.front_matter as Record<string, unknown>;
+    return {
+      path: d.path,
+      href: `/progetti/${projectId}/documenti/${d.path.split("/").map(encodeURIComponent).join("/")}`,
+      title: String(front.titolo || d.path.split("/").pop()),
+      state: front.stato ? String(front.stato) : null,
+      version: front.versione ? String(front.versione) : null,
+      typeCode: d.document_type,
+      feature: featureOf(d.path),
+    };
+  };
+
+  const mapTypes: MapType[] = (types ?? []).map((t) => ({
+    code: t.code,
+    name: t.name,
+    phase: t.phase as number,
+    skill: t.skill_name as string,
+    perFeature: t.per_feature,
+    docs: documents.filter((d) => d.document_type === t.code).map(toDoc),
+  }));
+  const catalog = new Set(mapTypes.map((t) => t.code));
+  const otherFiles = documents.filter((d) => !d.document_type || !catalog.has(d.document_type)).map(toDoc);
+  const features = [
+    ...new Set(mapTypes.filter((t) => t.perFeature).flatMap((t) => t.docs.map((d) => d.feature ?? ""))),
+  ].sort();
+
+  // Prossimo passo: il primo tipo in ordine sort_order che manca o ha un documento non
+  // Completo/Approvato. I tipi per-feature si valutano Feature per Feature (le Feature sono
+  // quelle che hanno già almeno un documento per-feature); senza Feature, il primo tipo
+  // per-feature è il prossimo passo per la prima Feature.
+  let next: NextStep | null = null;
+  for (const type of mapTypes) {
+    const groups = type.perFeature && features.length > 0 ? features : [null];
+    for (const feature of groups) {
+      const docs = type.perFeature && feature !== null ? type.docs.filter((d) => (d.feature ?? "") === feature) : type.docs;
+      if (docs.length === 0 || docs.some((d) => !isDone(d))) {
+        next = { code: type.code, name: type.name, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null };
+        break;
+      }
+    }
+    if (next) break;
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      {canReindex && <ReindexButton projectId={projectId} />}
-      {documents.length === 0 && (
-        <p className="text-sm text-muted-foreground">Nessun documento indicizzato.</p>
-      )}
-      {groups.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Documento</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Stato</TableHead>
-              <TableHead>Versione</TableHead>
-              <TableHead>Indicizzato</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {groups.map((group) => [
-              <TableRow key={`phase-${group.phase}`}>
-                <TableCell colSpan={5} className="text-xs font-medium text-muted-foreground">
-                  {group.phase === null ? "Altri file" : `Fase ${group.phase}`}
-                </TableCell>
-              </TableRow>,
-              ...group.items.map((d) => {
-                const front = d.front_matter as Record<string, unknown>;
-                const type = d.document_type ? typeByCode.get(d.document_type) : null;
-                return (
-                  <TableRow key={d.path}>
-                    <TableCell>
-                      <Link
-                        href={`/progetti/${projectId}/documenti/${d.path.split("/").map(encodeURIComponent).join("/")}`}
-                        className="font-medium hover:underline"
-                      >
-                        {String(front.titolo || d.path.split("/").pop())}
-                      </Link>
-                      <div className="font-mono text-xs text-muted-foreground">{d.path}</div>
-                    </TableCell>
-                    <TableCell>{type ? `${type.code} ${type.name}` : "—"}</TableCell>
-                    <TableCell>
-                      <DocumentStateBadge state={front.stato ? String(front.stato) : null} />
-                    </TableCell>
-                    <TableCell>{front.versione ? String(front.versione) : "—"}</TableCell>
-                    <TableCell>{dateFormat.format(new Date(d.indexed_at))}</TableCell>
-                  </TableRow>
-                );
-              }),
-            ])}
-          </TableBody>
-        </Table>
-      )}
-    </div>
+    <ProjectMap
+      projectId={projectId}
+      currentPhase={currentPhase}
+      canReindex={canReindex}
+      types={mapTypes}
+      features={features}
+      otherFiles={otherFiles}
+      next={next}
+    />
   );
 }

@@ -112,6 +112,17 @@ Se nel frattempo ci sono migrazioni nuove: dopo il restore lanciare
 blocco `[remotes.test]` di `supabase/config.toml`, `pnpm exec supabase config push`. Il codice
 nuovo arriva su Vercel con il merge su `master`.
 
+## Blocco 1 (intuitività per PM/AF): mappa del percorso
+
+- [x] Pagina progetto come mappa per fasi 0–4 (2026-11-25, branch `claude/jolly-cerf-704e2e`):
+  catalogo dei tipi con skill × indice documenti, "Da creare" con la skill, tipi per-feature
+  raggruppati per Feature (`F\d+` nel percorso), "Prossimo passo" (primo tipo per `sort_order`
+  non Completo/Approvato), filtro lato client, "Reindicizza" nel menu `⋯`. Verificata in locale
+  con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Non mergiata.
+- Da sistemare in `src/lib/documents/` (sessione del documento): `detectType` non riconosce i
+  file `T4.3-F{nn}-US{nn}.md` (non iniziano con `T4.3-part`, cartella condivisa da 3 tipi) se
+  il frontespizio non ha `template_origine: T4.3-part`: finiscono in "Altri file".
+
 ## Dopo
 
 1. `create_document` (decidere da dove prendere i template: plugin `asdp` o repo

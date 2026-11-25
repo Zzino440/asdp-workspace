@@ -62,6 +62,17 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
 
       <Card>
         <CardHeader>
+          <CardTitle>Percorso ASDP</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
+            <DocumentList projectId={project.id} currentPhase={project.current_phase} canReindex={canManage} />
+          </Suspense>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Dati del progetto</CardTitle>
         </CardHeader>
         <CardContent>
@@ -110,16 +121,6 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Documenti</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
-            <DocumentList projectId={project.id} canReindex={canManage} />
-          </Suspense>
-        </CardContent>
-      </Card>
     </div>
   );
 }
