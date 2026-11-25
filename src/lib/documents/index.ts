@@ -113,6 +113,27 @@ export async function listDocuments(supabase: SupabaseClient, projectId: string)
   return data ?? [];
 }
 
+// Coda delle approvazioni: documenti Completo (= in approvazione) visibili all'utente, tenuti solo
+// dove ha "approve". Il filtro serve a mostrare la coda giusta; il permesso lo verifica changeApproval.
+export async function listToApprove(supabase: SupabaseClient) {
+  const { data } = await supabase
+    .from("documents")
+    .select("project_id, path, document_type, front_matter, indexed_at, projects(name, code)")
+    .eq("front_matter->>stato", "Completo")
+    .order("indexed_at", { ascending: false });
+  const rows = data ?? [];
+  const keys = [...new Set(rows.map((r) => `${r.project_id}|${r.document_type ?? ""}`))];
+  const levels = new Map(
+    await Promise.all(
+      keys.map(async (key) => {
+        const [projectId, type] = key.split("|");
+        return [key, await documentLevel(supabase, projectId, type || null)] as const;
+      }),
+    ),
+  );
+  return rows.filter((r) => levels.get(`${r.project_id}|${r.document_type ?? ""}`) === "approve");
+}
+
 // Legge un documento da GitLab solo se la RLS lo rende visibile all'utente.
 export async function readDocument(supabase: SupabaseClient, projectId: string, path: string) {
   const { data: indexed } = await supabase

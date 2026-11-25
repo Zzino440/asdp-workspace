@@ -71,5 +71,3 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
     con `approve` solo per chi ha "approve" e dopo conferma esplicita dell'utente in chat;
   - nella finestra Approva: esito di Claude accanto a ogni voce della checklist, da spuntare a mano;
   - approvazione del cliente (T1.4) con upload dell'evidenza in Storage invece del testo libero.
-- [ ] **Coda delle approvazioni** (pagina `/approvazioni`, oggi segnaposto): documenti Completo
-  dove l'utente ha "approve", con link diretto al documento.

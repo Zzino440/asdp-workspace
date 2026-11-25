@@ -63,4 +63,6 @@ L'evidenza, se la lasci vuota, è il riferimento alla versione approvata (`commi
 
 Ogni passo è una versione nuova a nome di chi lo fa. Chi approva può anche correggere i dati di approvazione da **Tutti i dettagli**, o chiedere a Claude collegato di aggiornare il frontespizio.
 
-> **Nota:** sono in arrivo la coda delle approvazioni da fare (voce **Approvazioni** del menu), l'upload dell'evidenza del cliente e l'aiuto di Claude per controllare la checklist del gate.
+La voce **Approvazioni** del menu elenca i documenti Completo che puoi approvare, in tutti i tuoi progetti, con il gate e il link al documento.
+
+> **Nota:** sono in arrivo l'upload dell'evidenza del cliente e l'aiuto di Claude per controllare la checklist del gate.

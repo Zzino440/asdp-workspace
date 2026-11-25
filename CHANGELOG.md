@@ -25,6 +25,26 @@
 
 ## Storia
 
+## [0.7.0] 2026-11-25 — Coda delle approvazioni
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **UI**: la voce **Approvazioni** del menu non è più un segnaposto. Elenca i documenti Completo
+  che l'utente può approvare, in tutti i suoi progetti: titolo con link al documento, progetto,
+  gate, autore, data di completamento.
+- **Documenti**: `listToApprove` nel service layer (indice filtrato dalla RLS, tenuti i documenti
+  dove l'utente ha "approve").
+- **Guida**: Gate e Come usare l'app citano la coda.
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm build`: ok.
+- In locale come `tl@asdp.test`: il T2.2 Completo di Portale Fornitori compare con link e gate.
+- Non provato: utente senza "approve" (coda vuota).
+
 ## [0.6.0] 2026-11-25 — Flusso di approvazione manuale
 
 **Autore**: Lorenzo Belli

@@ -73,7 +73,9 @@ L'app conserva i documenti, le versioni e lo stato. **Le skill non partono dall'
 - Per collegare Claude: [Collegare Claude](/guida/collegare-claude).
 - Per usare una skill: [Lanciare una skill](/guida/lanciare-skill).
 
-> **Nota:** la coda delle **Approvazioni** e la **Dashboard** sono in arrivo. Per ora si approva dalla pagina del documento.
+La voce **Approvazioni** del menu raccoglie i documenti Completo che puoi approvare, in tutti i tuoi progetti.
+
+> **Nota:** la **Dashboard** è in arrivo.
 
 ## Permessi per ruolo
 

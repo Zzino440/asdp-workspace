@@ -191,7 +191,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 2d | **In corso**: server MCP con login OAuth, tool di lettura e scrittura e `create_document` (fatto); skill del plugin `asdp` che salvano dall'MCP (sul branch); verifica da Cowork e chat di Claude Desktop (sul cloud di prova) |
 | 2e | **In corso**: Guida al framework nell'app (`/guida`): fasi, documenti, ruoli, stati, gate, lavoro con Claude; link dalla mappa e dal documento |
 | 2f | Ponte passo → Claude: prompt pronto per ogni passo, `next_step`, prompt MCP, pagina "Collega Claude" |
-| 3 | **In corso**: gate e approvazioni. Fatto il flusso manuale nella pagina del documento (Completo = in approvazione, checklist del gate da `src/lib/gates.ts`, `changeApproval`); mancano coda, AI/MCP, evidenza esterna in Storage |
+| 3 | **In corso**: gate e approvazioni. Fatto il flusso manuale nella pagina del documento (Completo = in approvazione, checklist del gate da `src/lib/gates.ts`, `changeApproval`) e coda `/approvazioni` (`listToApprove`); mancano AI/MCP, evidenza esterna in Storage |
 | 3b | Dashboard "Tocca a me"; profilo progetto (Nuovo/Evolutiva/BugFix) e fase modificabile |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
 | 5 | Modifica con AI, Domande aperte di progetto (anticipabili dopo 2f: risposta alle D[N] con un clic) |
