@@ -15,11 +15,12 @@
 - `0.4.0` (`create_document` e Guida "Desktop + plugin") su `master`, committata il 2026-11-25 (non pushata).
 - `0.4.1` (caselle delle D[N] spuntabili in Modifica testo, evidenziazione di "In questa pagina", barra laterale e barra dell'editor ancorate) su `master`, 2026-11-25: committata (4f156ac, 8c8002c e "Ancora la barra dell'editor…"), non pushata; tag dopo il push.
 - `0.5.0` («Tutti i dettagli» permette a chi ha `approve` di scegliere `Approvato` e modificare
-  i campi `approvato_*`, prop `canApprove` da `documentLevel`) su `master`, 2026-11-25:
-  committata, non pushata; tag dopo il push. Prova nel browser non ancora fatta.
+  i campi `approvato_*`, prop `canApprove` da `documentLevel`) su `master` (3c98eaf), già su
+  `origin/master`; tag `0.5.0` da fare.
 - `0.6.0` (flusso di approvazione manuale: Segna come completo, Approva con checklist del gate,
-  Richiedi modifiche, Revoca; testo cambiato su un Approvato → In corso) su `master`,
-  2026-11-25: committata, non pushata; tag dopo il push. Provata in locale sulla sandbox (T2.2,
+  Richiedi modifiche, Revoca; testo cambiato su un Approvato → In corso) sul branch
+  `feature/flusso-approvazione-m3`, 2026-11-25: committata, non pushata; tag dopo il merge su
+  `master`. Provata in locale sulla sandbox (T2.2,
   utente TL); sulla sandbox il T2.2 è rimasto In corso.
 - `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
   `feature/vari-miglioramenti`: tag
