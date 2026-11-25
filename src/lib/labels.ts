@@ -24,6 +24,15 @@ export const PROJECT_STATUS_LABELS: Record<string, string> = {
   chiuso: "Chiuso",
 };
 
+// Nomi delle fasi dalla Guida ASDP (§6–§10).
+export const PHASES = [
+  { n: 0, name: "Setup progetto" },
+  { n: 1, name: "Analisi" },
+  { n: 2, name: "Architettura" },
+  { n: 3, name: "Rischi" },
+  { n: 4, name: "Preparazione delivery" },
+];
+
 // Campi del frontespizio GUIDA-FRONT (delivery-tech/Templates/GUIDA-FRONT.md).
 export const FRONT_MATTER_LABELS: Record<string, string> = {
   versione_frontespizio: "Versione frontespizio",

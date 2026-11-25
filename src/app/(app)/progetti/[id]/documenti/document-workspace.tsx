@@ -2,14 +2,16 @@
 
 import { type ReactNode, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { History, Info, Pencil, X } from "lucide-react";
+import { cn } from "cn";
 import { parse, parseDocument, stringify } from "yaml";
 import { saveDocumentAction } from "./actions";
+import { DocumentOutline } from "./document-outline";
 import { MilkdownEditor } from "./milkdown-editor";
 import { DocumentStateBadge } from "@/components/document-state-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +23,11 @@ import { Markdown } from "@/components/markdown";
 const LOCKED = new Set(["versione_frontespizio", "approvato_da", "approvato_il", "versione_approvata", "evidenza_approvazione"]);
 const STATES = ["Da fare", "In corso", "Completo"].map((s) => ({ value: s, label: s }));
 const DATE_FIELDS = new Set(["creato_il", "scadenza", "completato_il"]);
+// Campi del frontespizio utili a chi legge; gli altri stanno in "Dati tecnici".
+const KEY_FIELDS = ["stato", "versione", "autore", "ruolo_owner", "scadenza", "creato_il", "completato_il", "approvato_da", "approvato_il"];
+const CONTENT_ID = "contenuto-documento";
+
+type Panel = "dettagli" | "cronologia" | null;
 
 type Value = string | number | boolean | null | Value[];
 // baseline: testo dell'editor da cui è partita la bozza, per ritrovare cosa ha cambiato l'utente.
@@ -43,7 +50,7 @@ function fromText(text: string, original: unknown): Value {
 const MESSAGE_LEAVE = "Hai modifiche non salvate. Uscire senza salvarle?";
 
 // Lettura e modifica dello stesso documento nella stessa pagina: il corpo con l'editor visuale,
-// il frontespizio come form nel pannello laterale. Il server la rimonta (key) a ogni nuova
+// il frontespizio nel pannello Dettagli. Il server la rimonta (key) a ogni nuova
 // versione salvata.
 export function DocumentWorkspace(props: {
   projectId: string;
@@ -55,7 +62,12 @@ export function DocumentWorkspace(props: {
   canEdit: boolean;
   readView: ReactNode;
   versionView: ReactNode | null;
-  aside: ReactNode;
+  // Il primo titolo del testo coincide con il titolo della pagina: in lettura non si ripete.
+  hideFirstHeading: boolean;
+  breadcrumb: ReactNode;
+  updated: string | null;
+  tree: ReactNode;
+  history: ReactNode;
 }) {
   const router = useRouter();
   const draftKey = `asdp-bozza:${props.projectId}:${props.path}`;
@@ -69,6 +81,7 @@ export function DocumentWorkspace(props: {
   const initialFields = useMemo(() => Object.fromEntries(Object.entries(front).map(([k, v]) => [k, toText(v)])), [front]);
 
   const [editing, setEditing] = useState(false);
+  const [panel, setPanel] = useState<Panel>(props.versionView ? "cronologia" : null);
   const [fields, setFields] = useState(initialFields);
   const [bodyDirty, setBodyDirty] = useState(false);
   const [resume, setResume] = useState<string | null>(null);
@@ -222,208 +235,272 @@ export function DocumentWorkspace(props: {
     });
   }
 
-  const readFrontMatter = Object.entries(front).filter(([, value]) => value !== null && value !== "");
+
+  // Pannello a destra: Dettagli, Cronologia o (di default) l'indice delle sezioni. In modifica
+  // l'indice non c'è e al suo posto si aprono i Dettagli.
+  const shownPanel = panel ?? (isEditing ? "dettagli" : null);
+  const togglePanel = (next: Panel) => setPanel(panel === next ? null : next);
+  // I dati di approvazione compaiono solo quando ci sono.
+  const keyFields = KEY_FIELDS.filter((key) => key in front && (!key.startsWith("approvato") || toText(front[key])));
+  const otherFields = Object.keys(front).filter((key) => !KEY_FIELDS.includes(key));
+  const isEditable = (key: string) => editable.some(([k]) => k === key);
+
+  function field(key: string) {
+    if (!isEditing || !isEditable(key))
+      return (
+        <div key={key} className="flex flex-col gap-0.5">
+          <dt className="text-xs text-muted-foreground">{label(key)}</dt>
+          <dd className="text-sm break-words">{toText(front[key]) || "—"}</dd>
+        </div>
+      );
+    return (
+      <div key={key} className="flex flex-col gap-1.5">
+        <Label htmlFor={`fm-${key}`}>{label(key)}</Label>
+        {key === "stato" ? (
+          <Select items={STATES} value={fields.stato} onValueChange={(v) => setField("stato", String(v))}>
+            <SelectTrigger id={`fm-${key}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            id={`fm-${key}`}
+            type={DATE_FIELDS.has(key) && /^(\d{4}-\d{2}-\d{2})?$/.test(fields[key]) ? "date" : "text"}
+            value={fields[key]}
+            placeholder={Array.isArray(front[key]) ? "Valori separati da virgola" : undefined}
+            onChange={(e) => setField(key, e.target.value)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const meta = [
+    front.versione ? `v${String(front.versione).replace(/^v/, "")}` : null,
+    front.autore ? `${String(front.autore)}${front.ruolo_owner ? ` (${String(front.ruolo_owner)})` : ""}` : null,
+    props.updated,
+  ].filter(Boolean);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold">{props.title}</h1>
-        <DocumentStateBadge state={front.stato ? String(front.stato) : null} />
-        {dirty && <span className="text-xs text-muted-foreground">Modifiche non salvate</span>}
-        <div className="ml-auto flex items-center gap-2">
-          {isEditing ? (
-            <>
-              <Button variant="ghost" size="sm" onClick={cancel} disabled={pending}>
-                Annulla
-              </Button>
-              <Button size="sm" onClick={save} disabled={pending || !dirty}>
-                {pending ? "Salvataggio…" : "Salva"}
-              </Button>
-            </>
-          ) : (
-            props.canEdit &&
-            !props.versionView && (
-              <Button variant="outline" size="sm" onClick={() => startEditing(null)}>
-                <Pencil />
-                Modifica
-              </Button>
-            )
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col gap-6 lg:flex-row">
+      <nav aria-label="Documenti del progetto" className="hidden w-56 shrink-0 xl:block">
+        <div className="sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto">{props.tree}</div>
+      </nav>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="flex min-w-0 flex-col gap-4">
-          {result && (
-            <Alert variant="destructive">
-              <AlertTitle>{result.error}</AlertTitle>
-              {result.conflict && (
-                <AlertDescription className="flex flex-col items-start gap-2">
-                  Qualcuno ha salvato una nuova versione mentre lavoravi. Le tue modifiche sono conservate in questo
-                  browser: ricarica la pagina e scegli «Modifica con la mia bozza a fianco».
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      leaving.current = true;
-                      window.location.reload();
-                    }}
-                  >
-                    Ricarica
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <header className="sticky top-0 z-20 -mx-2 flex flex-col gap-1 bg-background px-2 pt-2 pb-3">
+          {props.breadcrumb}
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold">{props.title}</h1>
+            <div className="ml-auto flex items-center gap-2">
+              {isEditing ? (
+                <>
+                  {dirty && <span className="text-xs text-muted-foreground">Modifiche non salvate</span>}
+                  <Button variant="ghost" size="sm" onClick={cancel} disabled={pending}>
+                    Annulla
                   </Button>
-                </AlertDescription>
+                  <Button size="sm" onClick={save} disabled={pending || !dirty}>
+                    {pending ? "Salvataggio…" : "Salva"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant={shownPanel === "dettagli" ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => togglePanel("dettagli")}
+                  >
+                    <Info />
+                    Dettagli
+                  </Button>
+                  <Button
+                    variant={shownPanel === "cronologia" ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => togglePanel("cronologia")}
+                  >
+                    <History />
+                    Cronologia
+                  </Button>
+                  {props.canEdit && !props.versionView && (
+                    <Button size="sm" onClick={() => startEditing(null)}>
+                      <Pencil />
+                      Modifica
+                    </Button>
+                  )}
+                </>
               )}
-            </Alert>
-          )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            {front.stato ? <DocumentStateBadge state={String(front.stato)} /> : null}
+            {meta.map((item, i) => (
+              <span key={item} className={cn((i > 0 || Boolean(front.stato)) && "before:mr-2 before:content-['·']")}>
+                {item}
+              </span>
+            ))}
+          </div>
+        </header>
 
-          {draft && !isEditing && props.canEdit && !props.versionView && (
-            <Alert>
-              <AlertTitle>
-                Hai una bozza non salvata del{" "}
-                {new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(new Date(draft.savedAt))}
-              </AlertTitle>
-              {draft.baseCommit === props.lastCommitId ? (
-                <AlertDescription className="flex gap-2">
-                  <Button size="sm" onClick={() => startEditing(draft)}>
-                    Riprendi la bozza
+        {result && (
+          <Alert variant="destructive">
+            <AlertTitle>{result.error}</AlertTitle>
+            {result.conflict && (
+              <AlertDescription className="flex flex-col items-start gap-2">
+                Qualcuno ha salvato una nuova versione mentre lavoravi. Le tue modifiche sono conservate in questo
+                browser: ricarica la pagina e scegli «Modifica con la mia bozza a fianco».
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    leaving.current = true;
+                    window.location.reload();
+                  }}
+                >
+                  Ricarica
+                </Button>
+              </AlertDescription>
+            )}
+          </Alert>
+        )}
+
+        {draft && !isEditing && props.canEdit && !props.versionView && (
+          <Alert>
+            <AlertTitle>
+              Hai una bozza non salvata del{" "}
+              {new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(new Date(draft.savedAt))}
+            </AlertTitle>
+            {draft.baseCommit === props.lastCommitId ? (
+              <AlertDescription className="flex gap-2">
+                <Button size="sm" onClick={() => startEditing(draft)}>
+                  Riprendi la bozza
+                </Button>
+                <Button size="sm" variant="ghost" onClick={clearDraft}>
+                  Scarta
+                </Button>
+              </AlertDescription>
+            ) : (
+              <AlertDescription className="flex flex-col items-start gap-2">
+                Nel frattempo qualcuno ha salvato una versione nuova. Apri la versione nuova: accanto
+                all&apos;editor trovi le parti che avevi cambiato, da riportare dove servono.
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => startFromStaleDraft(draft)}>
+                    Modifica con la mia bozza a fianco
                   </Button>
                   <Button size="sm" variant="ghost" onClick={clearDraft}>
                     Scarta
                   </Button>
-                </AlertDescription>
-              ) : (
-                <AlertDescription className="flex flex-col items-start gap-2">
-                  Nel frattempo qualcuno ha salvato una versione nuova. Apri la versione nuova: accanto
-                  all&apos;editor trovi le parti che avevi cambiato, da riportare dove servono.
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => startFromStaleDraft(draft)}>
-                      Modifica con la mia bozza a fianco
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={clearDraft}>
-                      Scarta
-                    </Button>
-                  </div>
-                </AlertDescription>
-              )}
-            </Alert>
-          )}
-
-          {isEditing && mine && (
-            <Alert>
-              <AlertTitle>Le tue modifiche nella bozza</AlertTitle>
-              <AlertDescription className="flex w-full flex-col gap-2">
-                {mine.blocks.length === 0 && mine.fields.length === 0 && "Nessuna differenza da riportare."}
-                {mine.blocks.map((block, i) => (
-                  <div key={i} className="rounded-md border p-2 text-foreground">
-                    <Markdown>{block}</Markdown>
-                  </div>
-                ))}
-                {mine.fields.map(([key, value]) => (
-                  <span key={key}>
-                    {label(key)}: <span className="text-foreground">{value || "—"}</span>
-                  </span>
-                ))}
+                </div>
               </AlertDescription>
-            </Alert>
-          )}
+            )}
+          </Alert>
+        )}
 
-          <Card>
-            <CardContent>
-              {props.versionView ??
-                (isEditing && props.body !== null ? (
-                  <MilkdownEditor
-                    initial={originalBody}
-                    draft={resume}
-                    onReady={(baseline, read) => {
-                      editor.current = { baseline, read };
-                      const current = read();
-                      setBodyDirty(current !== baseline);
-                    }}
-                    onChange={(markdown) => {
-                      if (!editor.current) return;
-                      setBodyDirty(markdown !== editor.current.baseline);
-                      storeDraft(markdown, fields);
-                    }}
-                  />
-                ) : (
-                  props.readView
-                ))}
-            </CardContent>
-          </Card>
+        {isEditing && mine && (
+          <Alert>
+            <AlertTitle>Le tue modifiche nella bozza</AlertTitle>
+            <AlertDescription className="flex w-full flex-col gap-2">
+              {mine.blocks.length === 0 && mine.fields.length === 0 && "Nessuna differenza da riportare."}
+              {mine.blocks.map((block, i) => (
+                <div key={i} className="rounded-md border p-2 text-foreground">
+                  <Markdown>{block}</Markdown>
+                </div>
+              ))}
+              {mine.fields.map(([key, value]) => (
+                <span key={key}>
+                  {label(key)}: <span className="text-foreground">{value || "—"}</span>
+                </span>
+              ))}
+            </AlertDescription>
+          </Alert>
+        )}
 
-          {isEditing && (
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Nota sulla modifica (facoltativa)"
-              aria-label="Nota sulla modifica"
-              maxLength={200}
-              className="max-w-xl"
-            />
-          )}
-        </div>
+        <Card>
+          <CardContent>
+            {props.versionView ??
+              (isEditing && props.body !== null ? (
+                <MilkdownEditor
+                  initial={originalBody}
+                  draft={resume}
+                  onReady={(baseline, read) => {
+                    editor.current = { baseline, read };
+                    const current = read();
+                    setBodyDirty(current !== baseline);
+                  }}
+                  onChange={(markdown) => {
+                    if (!editor.current) return;
+                    setBodyDirty(markdown !== editor.current.baseline);
+                    storeDraft(markdown, fields);
+                  }}
+                />
+              ) : (
+                <div id={CONTENT_ID} className={cn(props.hideFirstHeading && "[&>h1:first-child]:hidden")}>
+                  {props.readView}
+                </div>
+              ))}
+          </CardContent>
+        </Card>
 
-        <aside className="flex flex-col gap-4">
-          {props.frontMatterSource !== null && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Frontespizio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isEditing ? (
-                  <div className="flex flex-col gap-4">
-                    {editable.map(([key, value]) => (
-                      <div key={key} className="flex flex-col gap-2">
-                        <Label htmlFor={`fm-${key}`}>{label(key)}</Label>
-                        {key === "stato" ? (
-                          <Select items={STATES} value={fields.stato} onValueChange={(v) => setField("stato", String(v))}>
-                            <SelectTrigger id={`fm-${key}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATES.map((s) => (
-                                <SelectItem key={s.value} value={s.value}>
-                                  {s.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            id={`fm-${key}`}
-                            type={DATE_FIELDS.has(key) && /^(\d{4}-\d{2}-\d{2})?$/.test(fields[key]) ? "date" : "text"}
-                            value={fields[key]}
-                            placeholder={Array.isArray(value) ? "Valori separati da virgola" : undefined}
-                            onChange={(e) => setField(key, e.target.value)}
-                          />
-                        )}
-                      </div>
-                    ))}
-                    {Object.keys(front)
-                      .filter((key) => !editable.some(([k]) => k === key))
-                      .map((key) => (
-                        <div key={key} className="flex flex-col gap-1">
-                          <span className="text-xs text-muted-foreground">{label(key)} · sola lettura</span>
-                          <span className="text-sm">{toText(front[key]) || "—"}</span>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <dl className="flex flex-col gap-3">
-                    {readFrontMatter.map(([key, value]) => (
-                      <div key={key} className="flex flex-col gap-0.5">
-                        <dt className="text-xs text-muted-foreground">{label(key)}</dt>
-                        <dd className="text-sm break-words">{toText(value)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
-              </CardContent>
-            </Card>
-          )}
-          {props.aside}
-        </aside>
+        {isEditing && (
+          <Input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Nota sulla modifica (facoltativa)"
+            aria-label="Nota sulla modifica"
+            maxLength={200}
+            className="max-w-xl"
+          />
+        )}
       </div>
+
+      <aside className={cn("w-full shrink-0 lg:w-72", shownPanel ? "block" : "hidden xl:block")}>
+        <div className="sticky top-8 flex max-h-[calc(100vh-4rem)] flex-col gap-3 overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">
+              {shownPanel === "dettagli" ? "Dettagli" : shownPanel === "cronologia" ? "Cronologia" : "In questa pagina"}
+            </h2>
+            {panel && (
+              <Button variant="ghost" size="icon-sm" aria-label="Chiudi il pannello" onClick={() => setPanel(null)}>
+                <X />
+              </Button>
+            )}
+          </div>
+
+          {shownPanel === "dettagli" && (
+            <div className="flex flex-col gap-4">
+              {keyFields.length > 0 ? (
+                <dl className="flex flex-col gap-3">{keyFields.map(field)}</dl>
+              ) : (
+                <p className="text-sm text-muted-foreground">Questo documento non ha un frontespizio.</p>
+              )}
+              <details className="group rounded-md border p-3">
+                <summary className="cursor-pointer text-sm text-muted-foreground select-none group-open:mb-3">
+                  Dati tecnici
+                </summary>
+                <dl className="flex flex-col gap-3">
+                  {otherFields.map(field)}
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="text-xs text-muted-foreground">File</dt>
+                    <dd className="font-mono text-xs break-all">{props.path}</dd>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="text-xs text-muted-foreground">Ultimo commit</dt>
+                    <dd className="font-mono text-xs">{props.lastCommitId.slice(0, 8)}</dd>
+                  </div>
+                </dl>
+              </details>
+            </div>
+          )}
+          {shownPanel === "cronologia" && props.history}
+          {shownPanel === null && <DocumentOutline containerId={CONTENT_ID} />}
+        </div>
+      </aside>
     </div>
   );
 }

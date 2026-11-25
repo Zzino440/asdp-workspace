@@ -8,6 +8,7 @@ import { DocumentStateBadge } from "@/components/document-state-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ReindexMenu } from "./reindex-button";
+import { PHASES } from "@/lib/labels";
 
 export type MapDoc = {
   path: string;
@@ -35,15 +36,6 @@ export type NextStep = {
   feature: string | null;
   doc: MapDoc | null;
 };
-
-// Nomi delle fasi dalla Guida ASDP (§6–§10).
-const PHASES = [
-  { n: 0, name: "Setup progetto" },
-  { n: 1, name: "Analisi" },
-  { n: 2, name: "Architettura" },
-  { n: 3, name: "Rischi" },
-  { n: 4, name: "Preparazione delivery" },
-];
 
 const isDone = (d: MapDoc) => d.state === "Completo" || d.state === "Approvato";
 

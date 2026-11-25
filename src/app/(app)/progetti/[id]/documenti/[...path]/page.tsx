@@ -6,8 +6,8 @@ import { DocumentWorkspace } from "../document-workspace";
 import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { documentLevel, listDocuments, listVersions, readDocument, readVersion } from "@/lib/documents";
+import { PHASES } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 
 export default function DocumentoPage({ params, searchParams }: PageProps<"/progetti/[id]/documenti/[...path]">) {
@@ -21,6 +21,16 @@ export default function DocumentoPage({ params, searchParams }: PageProps<"/prog
 const VIA_LABELS = { app: "App", mcp: "MCP", git: "Git" };
 const dateFormat = new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" });
 
+// Pallino di stato nell'albero (token --state-* di DESIGN.md).
+const STATE_DOT: Record<string, string> = {
+  "Da fare": "bg-(--state-todo-border)",
+  "In corso": "bg-(--state-progress-border)",
+  Completo: "bg-(--state-complete-border)",
+  Approvato: "bg-(--state-approved-border)",
+};
+
+type DocType = { code: string; name: string; phase: number | null; sort_order: number; per_feature: boolean };
+
 async function DocumentView({
   params,
   searchParams,
@@ -31,16 +41,20 @@ async function DocumentView({
   const [{ id, path }, query] = await Promise.all([params, searchParams]);
   const filePath = path.map(decodeURIComponent).join("/");
   const supabase = await createClient();
-  const [document, versions, documents, { data: types }] = await Promise.all([
+  const [document, versions, documents, { data: typeRows }, { data: project }] = await Promise.all([
     readDocument(supabase, id, filePath),
     listVersions(supabase, id, filePath),
     listDocuments(supabase, id),
-    supabase.from("document_types").select("code, phase, sort_order"),
+    supabase.from("document_types").select("code, name, phase, sort_order, per_feature").order("sort_order"),
+    supabase.from("projects").select("name").eq("id", id).maybeSingle(),
   ]);
   if (!document) notFound();
   const level = await documentLevel(supabase, id, document.documentType);
+  const types = (typeRows ?? []) as DocType[];
+  const type = types.find((t) => t.code === document.documentType) ?? null;
 
-  const baseHref = `/progetti/${id}/documenti/${path.join("/")}`;
+  const hrefOf = (p: string) => `/progetti/${id}/documenti/${p.split("/").map(encodeURIComponent).join("/")}`;
+  const baseHref = hrefOf(document.path);
   const selectedIndex = versions?.findIndex((v) => v.id === query.v) ?? -1;
   const versionView =
     versions && selectedIndex >= 0 ? (
@@ -54,100 +68,135 @@ async function DocumentView({
       />
     ) : null;
 
-  // Altri documenti del progetto, nell'ordine del percorso ASDP (fase, poi tipo).
-  const typeOrder = new Map((types ?? []).map((t) => [t.code as string, (t.phase ?? 9) * 1000 + t.sort_order]));
-  const siblings = [...documents].sort(
-    (a, b) => (typeOrder.get(a.document_type) ?? 99999) - (typeOrder.get(b.document_type) ?? 99999) || a.path.localeCompare(b.path),
-  );
+  // Titolo: frontespizio, poi il primo titolo del testo, poi il nome del tipo o del file.
+  const firstHeading = /^# +(.+?)\s*$/m.exec((document.body ?? "").trimStart().split("\n")[0] ?? "")?.[1] ?? null;
+  const title = String(document.frontMatter.titolo || firstHeading || type?.name || document.path.split("/").pop());
+  const latest = versions?.[0];
+
+  const docTitle = (d: (typeof documents)[number]) =>
+    String(d.front_matter?.titolo || (types.find((t) => t.code === d.document_type && !t.per_feature)?.name ?? d.path.split("/").pop()));
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <Link href={`/progetti/${id}`} className="text-sm text-muted-foreground hover:underline">
-          ← Torna al progetto
-        </Link>
-        <span className="font-mono text-xs text-muted-foreground">{document.path}</span>
-      </div>
-      <DocumentWorkspace
-        key={document.lastCommitId}
-        projectId={id}
-        path={document.path}
-        title={String(document.frontMatter.titolo || document.path.split("/").pop())}
-        frontMatterSource={document.frontMatterSource}
-        body={document.body}
-        lastCommitId={document.lastCommitId}
-        canEdit={document.body !== null && (level === "edit" || level === "approve")}
-        readView={
-          document.body === null ? (
-            <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>
-          ) : (
-            <Markdown>{document.body}</Markdown>
-          )
-        }
-        versionView={versionView}
-        aside={
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Versioni</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ol className="flex max-h-80 flex-col gap-1 overflow-y-auto">
-                  {(versions ?? []).map((v, i) => (
-                    <li key={v.id}>
-                      <Link
-                        href={`${baseHref}?v=${v.id}`}
+    <DocumentWorkspace
+      key={document.lastCommitId}
+      projectId={id}
+      path={document.path}
+      title={title}
+      hideFirstHeading={firstHeading !== null && firstHeading === title}
+      frontMatterSource={document.frontMatterSource}
+      body={document.body}
+      lastCommitId={document.lastCommitId}
+      canEdit={document.body !== null && (level === "edit" || level === "approve")}
+      readView={
+        document.body === null ? (
+          <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>
+        ) : (
+          <Markdown>{document.body}</Markdown>
+        )
+      }
+      versionView={versionView}
+      updated={latest ? `Aggiornato il ${dateFormat.format(new Date(latest.authoredDate))} da ${latest.authorName}` : null}
+      breadcrumb={
+        <nav aria-label="Percorso" className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+          <Link href={`/progetti/${id}`} className="hover:text-foreground hover:underline">
+            {project?.name ?? "Progetto"}
+          </Link>
+          <span>›</span>
+          <span>{type?.phase != null ? `Fase ${type.phase} · ${PHASES[type.phase]?.name}` : "Altri file"}</span>
+          {type && (
+            <>
+              <span>›</span>
+              <span>
+                {type.code} {type.name}
+              </span>
+            </>
+          )}
+        </nav>
+      }
+      tree={
+        <div className="flex flex-col gap-4 text-sm">
+          {PHASES.map((phase) => (
+            <div key={phase.n} className="flex flex-col gap-0.5">
+              <span className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+                {phase.n} · {phase.name}
+              </span>
+              {types
+                .filter((t) => t.phase === phase.n)
+                .flatMap((t) => {
+                  const docs = documents.filter((d) => d.document_type === t.code);
+                  if (docs.length === 0)
+                    return t.per_feature
+                      ? []
+                      : [
+                          <span key={t.code} className="flex items-center gap-2 px-2 py-1 text-muted-foreground/60">
+                            <span className="size-2 shrink-0 rounded-full border border-current" />
+                            <span className="truncate">{t.name}</span>
+                          </span>,
+                        ];
+                  return docs.map((d) => (
+                    <Link
+                      key={d.path}
+                      href={hrefOf(d.path)}
+                      aria-current={d.path === document.path ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted",
+                        d.path === document.path && "bg-accent font-medium",
+                      )}
+                    >
+                      <span
                         className={cn(
-                          "flex flex-col rounded-md px-2 py-1.5 text-sm hover:bg-muted",
-                          i === selectedIndex && "bg-accent",
+                          "size-2 shrink-0 rounded-full",
+                          STATE_DOT[String(d.front_matter?.stato)] ?? "border border-muted-foreground",
                         )}
-                      >
-                        <span className="truncate">
-                          {v.title}
-                          {i === 0 && <span className="text-muted-foreground"> · attuale</span>}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {v.authorName} · {dateFormat.format(new Date(v.authoredDate))} · {VIA_LABELS[v.via]}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-            {siblings.length > 1 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Documenti del progetto</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
-                    {siblings.map((d) => (
-                      <li key={d.path}>
-                        <Link
-                          href={`/progetti/${id}/documenti/${d.path.split("/").map(encodeURIComponent).join("/")}`}
-                          className={cn(
-                            "flex items-baseline gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted",
-                            d.path === document.path && "bg-accent",
-                          )}
-                        >
-                          {d.document_type && (
-                            <span className="shrink-0 font-mono text-xs text-muted-foreground">{d.document_type}</span>
-                          )}
-                          <span className="truncate">{String(d.front_matter?.titolo || d.path.split("/").pop())}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        }
-      />
-    </div>
+                      />
+                      <span className="truncate">{docTitle(d)}</span>
+                    </Link>
+                  ));
+                })}
+            </div>
+          ))}
+          {documents.some((d) => !types.some((t) => t.code === d.document_type)) && (
+            <div className="flex flex-col gap-0.5">
+              <span className="px-2 pb-1 text-xs font-medium text-muted-foreground">Altri file</span>
+              {documents
+                .filter((d) => !types.some((t) => t.code === d.document_type))
+                .map((d) => (
+                  <Link
+                    key={d.path}
+                    href={hrefOf(d.path)}
+                    className={cn("truncate rounded-md px-2 py-1 hover:bg-muted", d.path === document.path && "bg-accent font-medium")}
+                  >
+                    {docTitle(d)}
+                  </Link>
+                ))}
+            </div>
+          )}
+        </div>
+      }
+      history={
+        <ol className="flex flex-col gap-1">
+          {(versions ?? []).map((v, i) => (
+            <li key={v.id}>
+              <Link
+                href={`${baseHref}?v=${v.id}`}
+                className={cn("flex flex-col rounded-md px-2 py-1.5 text-sm hover:bg-muted", i === selectedIndex && "bg-accent")}
+              >
+                <span className="truncate">
+                  {v.title}
+                  {i === 0 && <span className="text-muted-foreground"> · attuale</span>}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {v.authorName} · {dateFormat.format(new Date(v.authoredDate))} · {VIA_LABELS[v.via]}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      }
+    />
   );
 }
+
 
 async function VersionView(props: {
   projectId: string;

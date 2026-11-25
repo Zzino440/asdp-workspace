@@ -38,9 +38,16 @@
   - Editor visuale (Milkdown) con una barra essenziale.
   - Salvando si riscrivono solo i blocchi cambiati: le parti non toccate restano identiche nel
     commit, compresi commenti, tabelle e domande D[N].
-  - Frontespizio nel pannello laterale, con etichette in italiano e campi data.
-  - Elenco delle versioni con il diff sulla stessa pagina.
-  - Elenco degli altri documenti del progetto.
+  - Layout a tre colonne, come GitBook e Confluence:
+    - a sinistra l'albero dei documenti del progetto per fase, con pallino di stato e i
+      documenti ancora da creare in grigio;
+    - al centro il testo;
+    - a destra «In questa pagina», l'indice delle sezioni che evidenzia quella corrente.
+  - Intestazione fissa con percorso (progetto › fase › tipo), titolo mostrato una volta sola e
+    una riga con stato, versione, autore e ultimo aggiornamento.
+  - Pannello «Dettagli»: i campi utili del frontespizio, con etichette in italiano e campi data;
+    gli altri sono chiusi in «Dati tecnici».
+  - Pannello «Cronologia» con le versioni; cliccandone una, il diff compare al posto del testo.
 - **Modifiche non salvate**: indicatore e conferma prima di uscire dalla pagina. La bozza resta
   nel browser e si può riprendere. Se qualcuno ha salvato nel frattempo, si apre la versione
   nuova e a fianco compaiono le parti cambiate nella bozza, da riportare: le modifiche degli altri

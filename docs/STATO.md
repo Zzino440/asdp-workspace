@@ -137,6 +137,11 @@ nuovo arriva su Vercel con il merge su `master`.
   - Salvataggio a blocchi (`src/lib/markdown-splice.ts`): i blocchi non toccati restano identici
     al sorgente. Lo spike ha dato 24/24 identici al byte su template e output reali.
   - Frontespizio nel pannello laterale, con etichette in `FRONT_MATTER_LABELS`.
+  - Layout rivisto il 2026-11-25, scelte di Lorenzo. A sinistra l'albero per fase (solo da 1280 px);
+    intestazione fissa con percorso, titolo e riga di stato. A destra «In questa pagina»
+    (`document-outline.tsx`), che lascia il posto ai pannelli «Dettagli» (campi chiave + «Dati
+    tecnici») e «Cronologia». `PHASES` è stato spostato in `src/lib/labels.ts`. Verificato a 1440 e
+    1100 px.
   - Bozza in `localStorage` per uscite e conflitti.
   - Versione `0.2.0` con voce in `CHANGELOG.md`.
   - Bozza superata (qualcuno ha salvato nel frattempo): si apre la versione nuova e a fianco si
