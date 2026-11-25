@@ -182,7 +182,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 0 | **Fatto**: scaffold, login, layout, schema base con RLS, elenco progetti |
 | 1 | **Fatto**: progetti, team, utenti con invito, ruoli e matrice permessi (amministrazione) |
 | 2a | **Fatto**: lettura e indice: repo collegate, indexer (webhook + Reindicizza), elenco e vista documenti |
-| 2b | **Fatto**: modifica e commit: editor sorgente (CodeMirror) + anteprima, frontespizio come form, concorrenza ottimistica |
+| 2b | **Fatto**: modifica e commit: editor visuale (Milkdown) nella stessa pagina della lettura, salvataggio a blocchi che lascia identico il Markdown non toccato (`src/lib/markdown-splice.ts`), frontespizio come form, concorrenza ottimistica con bozza locale |
 | 2c | **Fatto**: versioni (commit del file con autore e canale App/MCP/Git) e diff rispetto alla versione precedente |
 | 2d | **In corso**: server MCP con login OAuth e tool di lettura e scrittura (fatto); `create_document`, plugin `asdp`, Claude desktop (dopo il deploy di prova) |
 | 3 | Gate e approvazioni |
@@ -194,7 +194,6 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 
 - Skill che chiedono input interattivi oltre ai gate A/B: da verificare sul primo run reale.
 - Costi dei Managed Agents (runtime di sessione + token) per progetto.
-- Editor WYSIWYG da valutare (oggi sorgente CodeMirror + anteprima, senza perdite).
 - MCP da Claude desktop (pannello Server MCP del tab Code): in locale l'app ottiene l'URL di
   login ma non apre il browser, probabilmente perché il server OAuth è su `http://`. Da
   riprovare con un URL `https` (tunnel o deploy di prova); ripiego: token come header.

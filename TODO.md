@@ -43,3 +43,13 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   - non tocca `rls_auto_enable`, che è di Supabase.
 
   Verifica: `pnpm exec supabase test db` verde, advisor senza i due avvisi per le nostre funzioni.
+
+## Framework e permessi
+
+- [ ] **RACI del seed diverso dalla Guida ASDP** (`delivery-tech/DST-ASDP-Guida-Framework.md`
+  §4.3, confronto del 2026-11-25). Da decidere con il team quale vale, poi correggere la
+  migrazione dei permessi oppure la Guida:
+  - T3.1 Risk Register: per la Guida lo produce il PM, nel seed ha "edit" il TL;
+  - T4.1 Backlog: per la Guida lo produce il BA/AF, nel seed hanno "edit" AF e TL;
+  - T1.4 Analisi Funzionale: per la Guida la approva il PO cliente dopo la revisione del TL,
+    nel seed la approva il PM.

@@ -25,6 +25,45 @@
 
 ## Storia
 
+## [0.2.0] 2026-11-25 — Mappa del progetto e documento in vista unica
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **Pagina progetto**: in cima c'è la mappa del percorso ASDP per fasi 0–4. Mostra i documenti
+  attesi, anche quelli ancora da creare (con la skill che li produce), lo stato e il prossimo
+  passo. Si possono filtrare. "Reindicizza" ora sta nel menu `⋯`.
+- **Documento**: lettura, modifica e versioni stanno nella stessa pagina. Le pagine separate
+  "Modifica" e "Versioni" non ci sono più.
+  - Editor visuale (Milkdown) con una barra essenziale.
+  - Salvando si riscrivono solo i blocchi cambiati: le parti non toccate restano identiche nel
+    commit, compresi commenti, tabelle e domande D[N].
+  - Frontespizio nel pannello laterale, con etichette in italiano e campi data.
+  - Elenco delle versioni con il diff sulla stessa pagina.
+  - Elenco degli altri documenti del progetto.
+- **Modifiche non salvate**: indicatore e conferma prima di uscire dalla pagina. La bozza resta
+  nel browser e si può riprendere, anche dopo un conflitto con una versione più recente.
+- Il messaggio di commit diventa una "nota sulla modifica" facoltativa.
+
+### Migrazioni e configurazione
+- Nessuna migrazione.
+- Dipendenze aggiunte: `@milkdown/kit`, `unified`, `remark-parse`.
+- Dipendenze tolte: `@uiw/react-codemirror`, `@codemirror/lang-markdown`.
+
+### Test eseguiti
+- Round-trip dell'editor su 24 documenti (template delle skill `asdp` e output reali delle
+  skill):
+  - senza modifiche, 24/24 identici al byte;
+  - con una modifica, 24/24 con diff limitato al blocco toccato.
+- In locale con `pm@asdp.test` sul progetto Portale Fornitori (sandbox GitLab):
+  - mappa del progetto;
+  - modifica e salvataggio del T1.4: diff di una riga, tabella intatta;
+  - conferma all'uscita con modifiche;
+  - bozza ripresa dopo l'uscita e salvata, con la sandbox riportata al testo di partenza;
+  - form del frontespizio del T3.1.
+- `tsc --noEmit`, `eslint src` e `pnpm build` ok.
+- Non provato: conflitto reale, cioè un commit su GitLab durante la modifica.
+
 ## [0.1.0] 2026-11-20 — Prima versione
 
 **Autore**: Lorenzo Belli

@@ -6,12 +6,14 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-20 — Lorenzo Belli con Claude Code
+**Ultimo aggiornamento**: 2026-11-25 — Lorenzo Belli con Claude Code
 
 ## Versione
 
 - `0.1.0` (`package.json`, `CHANGELOG.md`), su `master` dal commit "Add app version and
   changelog". Tag git `0.1.0` su `master`: da fare dopo il merge.
+- `0.2.0` (mappa del progetto e documento in vista unica) su `feature/vari-miglioramenti`: tag
+  dopo il merge su `master`.
 
 ## Milestone
 
@@ -118,7 +120,22 @@ nuovo arriva su Vercel con il merge su `master`.
   catalogo dei tipi con skill × indice documenti, "Da creare" con la skill, tipi per-feature
   raggruppati per Feature (`F\d+` nel percorso), "Prossimo passo" (primo tipo per `sort_order`
   non Completo/Approvato), filtro lato client, "Reindicizza" nel menu `⋯`. Verificata in locale
-  con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Non mergiata.
+  con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Su `feature/vari-miglioramenti`
+  (commit `4420644`).
+- [x] Documento in vista unica (2026-11-25, branch `feature/vari-miglioramenti`, non
+  committato). Lettura, modifica e versioni stanno sulla stessa pagina (`documenti/[...path]`);
+  le route `modifica/` e `versioni/` sono state eliminate.
+  - Editor visuale Milkdown (`documenti/milkdown-editor.tsx`).
+  - Salvataggio a blocchi (`src/lib/markdown-splice.ts`): i blocchi non toccati restano identici
+    al sorgente. Lo spike ha dato 24/24 identici al byte su template e output reali.
+  - Frontespizio nel pannello laterale, con etichette in `FRONT_MATTER_LABELS`.
+  - Bozza in `localStorage` per uscite e conflitti.
+  - Versione `0.2.0` con voce in `CHANGELOG.md`.
+  - Verificato in locale con `pm@asdp.test`: sulla sandbox ci sono due commit di prova che si
+    annullano a vicenda (25/11, 20:56 e 20:57).
+  - Da provare: un conflitto reale (commit su GitLab mentre si modifica).
+- Da decidere (Lorenzo): i campi "array" del frontespizio restano testo separato da virgole,
+  senza chip (scelta per tenere il codice semplice).
 - Da sistemare in `src/lib/documents/` (sessione del documento): `detectType` non riconosce i
   file `T4.3-F{nn}-US{nn}.md` (non iniziano con `T4.3-part`, cartella condivisa da 3 tipi) se
   il frontespizio non ha `template_origine: T4.3-part`: finiscono in "Altri file".
