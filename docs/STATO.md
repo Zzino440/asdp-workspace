@@ -141,7 +141,17 @@ nuovo arriva su Vercel con il merge su `master`.
     intestazione fissa con percorso, titolo e riga di stato. A destra «In questa pagina»
     (`document-outline.tsx`), che lascia il posto ai pannelli «Dettagli» (campi chiave + «Dati
     tecnici») e «Cronologia». `PHASES` è stato spostato in `src/lib/labels.ts`. Verificato a 1440 e
-    1100 px.
+    1100 px (commit `c88a440`).
+  - Frontespizio rivisto il 2026-11-25, scelte di Lorenzo (non committato). Sotto il titolo, sempre
+    visibili: Stato, Owner, Scadenza (in rosso se scaduta) e Approvazione. Il pannello «Dettagli»
+    non c'è più: «Tutti i dettagli» apre una finestra larga (`document-details.tsx`) con i temi a
+    schede a sinistra (in riga sul telefono), i campi del tema su 3 colonne, un pallino sui temi
+    con modifiche e un «Salva» suo, che cambia solo il frontespizio (messaggio "Aggiorna i dettagli:
+    …"). Mentre si modifica il testo la finestra è in sola lettura; «Modifica» diventa «Modifica
+    testo». Un campo svuotato ora si scrive `null`, come nei template. Si modificano solo i campi
+    già presenti nel frontespizio: una scadenza mancante non si può aggiungere. Verificato sul
+    T3.1: `gate` G3 e ritorno a `null`, diff di una riga ciascuno; la sandbox è al testo di
+    partenza.
   - Bozza in `localStorage` per uscite e conflitti.
   - Versione `0.2.0` con voce in `CHANGELOG.md`.
   - Bozza superata (qualcuno ha salvato nel frattempo): si apre la versione nuova e a fianco si

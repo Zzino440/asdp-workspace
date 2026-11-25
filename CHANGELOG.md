@@ -45,8 +45,12 @@
     - a destra «In questa pagina», l'indice delle sezioni che evidenzia quella corrente.
   - Intestazione fissa con percorso (progetto › fase › tipo), titolo mostrato una volta sola e
     una riga con stato, versione, autore e ultimo aggiornamento.
-  - Pannello «Dettagli»: i campi utili del frontespizio, con etichette in italiano e campi data;
-    gli altri sono chiusi in «Dati tecnici».
+  - Sotto il titolo, sempre visibili: stato, owner, scadenza (in rosso se scaduta) e
+    approvazione.
+  - «Tutti i dettagli» apre una finestra con il frontespizio completo, a schede per tema (stato e
+    date, responsabilità, approvazione, identità, dati tecnici), etichette in italiano e campi data.
+    Ha un «Salva» suo che cambia solo il frontespizio, senza entrare in modifica del testo. Un
+    campo svuotato diventa `null`, come nei template.
   - Pannello «Cronologia» con le versioni; cliccandone una, il diff compare al posto del testo.
 - **Modifiche non salvate**: indicatore e conferma prima di uscire dalla pagina. La bozza resta
   nel browser e si può riprendere. Se qualcuno ha salvato nel frattempo, si apre la versione
@@ -71,7 +75,7 @@
   - bozza ripresa dopo l'uscita e salvata, con la sandbox riportata al testo di partenza;
   - conflitto con due schede: salvataggio rifiutato, bozza conservata, versione nuova con le
     proprie modifiche a fianco, quelle dell'altra scheda intatte;
-  - form del frontespizio del T3.1.
+  - finestra dei dettagli del T3.1: `gate` impostato e svuotato, diff di una riga ciascuno.
 - `tsc --noEmit`, `eslint . --ignore-pattern ".claude/**"` e `pnpm build` ok. `pnpm lint` da
   solo fallisce perché analizza anche i worktree di Claude in `.claude/worktrees/`.
 

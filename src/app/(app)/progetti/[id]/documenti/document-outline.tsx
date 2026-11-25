@@ -15,7 +15,7 @@ export function DocumentOutline({ containerId }: { containerId: string }) {
     const headings = [...root.querySelectorAll<HTMLElement>("h2, h3")];
     headings.forEach((h, i) => {
       if (!h.id) h.id = `sezione-${i + 1}`;
-      h.style.scrollMarginTop = "8rem"; // sotto l'intestazione fissa
+      h.style.scrollMarginTop = "11rem"; // sotto l'intestazione fissa
     });
     // eslint-disable-next-line react-hooks/set-state-in-effect -- i titoli si leggono dal DOM
     setItems(headings.map((h) => ({ id: h.id, text: h.textContent ?? "", level: h.tagName === "H2" ? 2 : 3 })));
@@ -24,7 +24,7 @@ export function DocumentOutline({ containerId }: { containerId: string }) {
         const visible = entries.find((e) => e.isIntersecting);
         if (visible) setActive(visible.target.id);
       },
-      { rootMargin: "-120px 0px -70% 0px" },
+      { rootMargin: "-170px 0px -60% 0px" },
     );
     headings.forEach((h) => observer.observe(h));
     return () => observer.disconnect();

@@ -2,10 +2,11 @@
 
 import { type ReactNode, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { History, Info, Pencil, X } from "lucide-react";
+import { History, Pencil, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "cn";
-import { parse, parseDocument, stringify } from "yaml";
+import { parse } from "yaml";
 import { saveDocumentAction } from "./actions";
+import { DocumentDetails, toText } from "./document-details";
 import { DocumentOutline } from "./document-outline";
 import { MilkdownEditor } from "./milkdown-editor";
 import { DocumentStateBadge } from "@/components/document-state-badge";
@@ -13,45 +14,36 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FRONT_MATTER_LABELS } from "@/lib/labels";
 import { changedBlocks, spliceMarkdown } from "@/lib/markdown-splice";
 import { Markdown } from "@/components/markdown";
 
-// Campi gestiti dal flusso di approvazione (milestone 3) o dallo schema: solo lettura qui.
-const LOCKED = new Set(["versione_frontespizio", "approvato_da", "approvato_il", "versione_approvata", "evidenza_approvazione"]);
-const STATES = ["Da fare", "In corso", "Completo"].map((s) => ({ value: s, label: s }));
-const DATE_FIELDS = new Set(["creato_il", "scadenza", "completato_il"]);
-// Campi del frontespizio utili a chi legge; gli altri stanno in "Dati tecnici".
-const KEY_FIELDS = ["stato", "versione", "autore", "ruolo_owner", "scadenza", "creato_il", "completato_il", "approvato_da", "approvato_il"];
 const CONTENT_ID = "contenuto-documento";
 
-type Panel = "dettagli" | "cronologia" | null;
-
-type Value = string | number | boolean | null | Value[];
 // baseline: testo dell'editor da cui è partita la bozza, per ritrovare cosa ha cambiato l'utente.
-type Draft = { baseCommit: string; baseline: string; body: string; fields: Record<string, string>; savedAt: string };
-
-const label = (key: string) => FRONT_MATTER_LABELS[key] ?? key;
-const toText = (value: unknown) =>
-  value === null || value === undefined ? "" : Array.isArray(value) ? value.join(", ") : String(value);
-
-// Riporta il testo del form al tipo originale del campo, così i campi non toccati non cambiano.
-function fromText(text: string, original: unknown): Value {
-  if (text.trim() === "") return null;
-  if (Array.isArray(original)) return text.split(",").map((s) => s.trim()).filter(Boolean);
-  // Numero se il campo era numerico, o vuoto e il testo è un numero (es. story_points).
-  const numeric = /^-?\d+(\.\d+)?$/.test(text.trim());
-  if ((typeof original === "number" || original === null || original === undefined) && numeric) return Number(text);
-  return text;
-}
+type Draft = { baseCommit: string; baseline: string; body: string; savedAt: string };
 
 const MESSAGE_LEAVE = "Hai modifiche non salvate. Uscire senza salvarle?";
+const dateTimeFormat = new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" });
 
-// Lettura e modifica dello stesso documento nella stessa pagina: il corpo con l'editor visuale,
-// il frontespizio nel pannello Dettagli. Il server la rimonta (key) a ogni nuova
-// versione salvata.
+// "2026-12-12" → "12/12/2026"; altri formati restano come sono.
+const formatDate = (value: unknown) => {
+  const text = toText(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : text;
+};
+
+function Property({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-sm">{children}</dd>
+    </div>
+  );
+}
+
+// Lettura e modifica dello stesso documento nella stessa pagina: il testo con l'editor visuale,
+// i dati chiave del frontespizio sotto il titolo e il resto nella finestra «Tutti i dettagli».
+// Il server la rimonta (key) a ogni nuova versione salvata.
 export function DocumentWorkspace(props: {
   projectId: string;
   path: string;
@@ -78,30 +70,24 @@ export function DocumentWorkspace(props: {
     () => (props.frontMatterSource ? (parse(props.frontMatterSource) as Record<string, unknown>) : {}),
     [props.frontMatterSource],
   );
-  const initialFields = useMemo(() => Object.fromEntries(Object.entries(front).map(([k, v]) => [k, toText(v)])), [front]);
 
   const [editing, setEditing] = useState(false);
-  const [panel, setPanel] = useState<Panel>(props.versionView ? "cronologia" : null);
-  const [fields, setFields] = useState(initialFields);
+  const [historyOpen, setHistoryOpen] = useState(Boolean(props.versionView));
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [bodyDirty, setBodyDirty] = useState(false);
   const [resume, setResume] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   // Bozza partita da una versione precedente: le parti cambiate dall'utente, da riapplicare.
-  const [mine, setMine] = useState<{ blocks: string[]; fields: [string, string][] } | null>(null);
+  const [mine, setMine] = useState<string[] | null>(null);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<{ error: string; conflict?: boolean } | null>(null);
   const [pending, startTransition] = useTransition();
   const editor = useRef<{ baseline: string; read: () => string } | null>(null);
   const leaving = useRef(false);
 
-  const editable = Object.entries(front).filter(
-    ([key, value]) =>
-      !LOCKED.has(key) && !(key === "stato" && value === "Approvato") && (typeof value !== "object" || value === null || Array.isArray(value)),
-  );
-  const fieldsDirty = editable.some(([key]) => fields[key] !== initialFields[key]);
-  // Aprendo una versione dal pannello l'editor si chiude.
+  // Aprendo una versione dalla cronologia l'editor si chiude.
   const isEditing = editing && !props.versionView;
-  const dirty = isEditing && (bodyDirty || fieldsDirty);
+  const dirty = isEditing && bodyDirty;
 
   // Bozza rimasta in questo browser (salvataggio non riuscito, pagina chiusa, conflitto).
   useEffect(() => {
@@ -112,12 +98,11 @@ export function DocumentWorkspace(props: {
     } catch {}
   }, [draftKey]);
 
-  function storeDraft(body: string, nextFields: Record<string, string>) {
+  function storeDraft(body: string) {
     const baseline = editor.current?.baseline ?? originalBody;
-    const unchanged = body === baseline && editable.every(([key]) => nextFields[key] === initialFields[key]);
     try {
-      if (unchanged) return localStorage.removeItem(draftKey);
-      const value: Draft = { baseCommit: props.lastCommitId, baseline, body, fields: nextFields, savedAt: new Date().toISOString() };
+      if (body === baseline) return localStorage.removeItem(draftKey);
+      const value: Draft = { baseCommit: props.lastCommitId, baseline, body, savedAt: new Date().toISOString() };
       localStorage.setItem(draftKey, JSON.stringify(value));
     } catch {}
   }
@@ -148,15 +133,8 @@ export function DocumentWorkspace(props: {
     };
   }, [dirty]);
 
-  function setField(key: string, value: string) {
-    const next = { ...fields, [key]: value };
-    setFields(next);
-    storeDraft(editor.current?.read() ?? originalBody, next);
-  }
-
   function startEditing(fromDraft: Draft | null) {
     setResume(fromDraft?.body ?? null);
-    setFields(fromDraft ? { ...initialFields, ...fromDraft.fields } : initialFields);
     setBodyDirty(false);
     setResult(null);
     setEditing(true);
@@ -165,10 +143,7 @@ export function DocumentWorkspace(props: {
   // Il documento è cambiato dopo la bozza: si modifica la versione nuova e si mostrano a fianco
   // solo le parti cambiate dall'utente, così non si cancellano le modifiche degli altri.
   function startFromStaleDraft(stale: Draft) {
-    setMine({
-      blocks: changedBlocks(stale.baseline, stale.body),
-      fields: Object.entries(stale.fields).filter(([key, value]) => key in initialFields && value !== initialFields[key]),
-    });
+    setMine(changedBlocks(stale.baseline, stale.body));
     startEditing(null);
   }
 
@@ -178,32 +153,6 @@ export function DocumentWorkspace(props: {
     editor.current = null;
     setMine(null);
     setEditing(false);
-    setFields(initialFields);
-  }
-
-  // Sostituisce nel YAML originale solo il testo dei valori cambiati: commenti, allineamenti e
-  // tutto il resto restano identici.
-  function frontMatterText() {
-    const source = props.frontMatterSource;
-    if (source === null) return null;
-    const doc = parseDocument(source);
-    const edits = editable
-      .filter(([key]) => fields[key] !== initialFields[key])
-      .map(([key, value]) => {
-        const next = fromText(fields[key], value);
-        const range = (doc.get(key, true) as { range?: [number, number, number] } | undefined)?.range;
-        const text = next === null ? "" : stringify(next, { collectionStyle: "flow", flowCollectionPadding: false }).trimEnd();
-        return { start: range![0], end: range![1], text };
-      })
-      .sort((a, b) => b.start - a.start);
-    let out = source;
-    for (const { start, end, text } of edits) {
-      // Valore vuoto ("gate:"): serve uno spazio dopo i due punti; svuotando si toglie lo spazio.
-      const prefix = start === end && text && out[start - 1] === ":" ? " " : "";
-      const from = !text && out[start - 1] === " " && out[start - 2] === ":" ? start - 1 : start;
-      out = out.slice(0, from) + prefix + text + out.slice(end);
-    }
-    return out;
   }
 
   function bodyText() {
@@ -214,8 +163,8 @@ export function DocumentWorkspace(props: {
   }
 
   function save() {
-    const yamlText = frontMatterText();
     const body = bodyText();
+    const yamlText = props.frontMatterSource;
     const content = yamlText === null ? body : `---${newline}${yamlText}${newline}---${newline}${body}`;
     startTransition(async () => {
       const response = await saveDocumentAction({
@@ -235,58 +184,22 @@ export function DocumentWorkspace(props: {
     });
   }
 
+  // Dati chiave sempre visibili sotto il titolo.
+  const hasFront = props.frontMatterSource !== null;
+  const state = front.stato ? String(front.stato) : null;
+  const owner = [toText(front.autore), front.ruolo_owner ? `(${toText(front.ruolo_owner)})` : ""].filter(Boolean).join(" ");
+  const deadline = toText(front.scadenza);
+  const overdue =
+    /^\d{4}-\d{2}-\d{2}$/.test(deadline) &&
+    deadline < new Date().toISOString().slice(0, 10) &&
+    state !== "Completo" &&
+    state !== "Approvato";
+  const approval = front.approvato_da
+    ? `${toText(front.approvato_da)}${front.approvato_il ? ` il ${formatDate(front.approvato_il)}` : ""}`
+    : null;
+  const meta = [front.versione ? `v${toText(front.versione).replace(/^v/, "")}` : null, props.updated].filter(Boolean);
 
-  // Pannello a destra: Dettagli, Cronologia o (di default) l'indice delle sezioni. In modifica
-  // l'indice non c'è e al suo posto si aprono i Dettagli.
-  const shownPanel = panel ?? (isEditing ? "dettagli" : null);
-  const togglePanel = (next: Panel) => setPanel(panel === next ? null : next);
-  // I dati di approvazione compaiono solo quando ci sono.
-  const keyFields = KEY_FIELDS.filter((key) => key in front && (!key.startsWith("approvato") || toText(front[key])));
-  const otherFields = Object.keys(front).filter((key) => !KEY_FIELDS.includes(key));
-  const isEditable = (key: string) => editable.some(([k]) => k === key);
-
-  function field(key: string) {
-    if (!isEditing || !isEditable(key))
-      return (
-        <div key={key} className="flex flex-col gap-0.5">
-          <dt className="text-xs text-muted-foreground">{label(key)}</dt>
-          <dd className="text-sm break-words">{toText(front[key]) || "—"}</dd>
-        </div>
-      );
-    return (
-      <div key={key} className="flex flex-col gap-1.5">
-        <Label htmlFor={`fm-${key}`}>{label(key)}</Label>
-        {key === "stato" ? (
-          <Select items={STATES} value={fields.stato} onValueChange={(v) => setField("stato", String(v))}>
-            <SelectTrigger id={`fm-${key}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATES.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            id={`fm-${key}`}
-            type={DATE_FIELDS.has(key) && /^(\d{4}-\d{2}-\d{2})?$/.test(fields[key]) ? "date" : "text"}
-            value={fields[key]}
-            placeholder={Array.isArray(front[key]) ? "Valori separati da virgola" : undefined}
-            onChange={(e) => setField(key, e.target.value)}
-          />
-        )}
-      </div>
-    );
-  }
-
-  const meta = [
-    front.versione ? `v${String(front.versione).replace(/^v/, "")}` : null,
-    front.autore ? `${String(front.autore)}${front.ruolo_owner ? ` (${String(front.ruolo_owner)})` : ""}` : null,
-    props.updated,
-  ].filter(Boolean);
+  const showHistory = historyOpen;
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
@@ -295,7 +208,7 @@ export function DocumentWorkspace(props: {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <header className="sticky top-0 z-20 -mx-2 flex flex-col gap-1 bg-background px-2 pt-2 pb-3">
+        <header className="sticky top-0 z-20 -mx-2 flex flex-col gap-1 border-b bg-background px-2 pt-2 pb-3">
           {props.breadcrumb}
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold">{props.title}</h1>
@@ -313,17 +226,9 @@ export function DocumentWorkspace(props: {
               ) : (
                 <>
                   <Button
-                    variant={shownPanel === "dettagli" ? "secondary" : "ghost"}
+                    variant={showHistory ? "secondary" : "ghost"}
                     size="sm"
-                    onClick={() => togglePanel("dettagli")}
-                  >
-                    <Info />
-                    Dettagli
-                  </Button>
-                  <Button
-                    variant={shownPanel === "cronologia" ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => togglePanel("cronologia")}
+                    onClick={() => setHistoryOpen(!historyOpen)}
                   >
                     <History />
                     Cronologia
@@ -331,22 +236,62 @@ export function DocumentWorkspace(props: {
                   {props.canEdit && !props.versionView && (
                     <Button size="sm" onClick={() => startEditing(null)}>
                       <Pencil />
-                      Modifica
+                      Modifica testo
                     </Button>
                   )}
                 </>
               )}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-            {front.stato ? <DocumentStateBadge state={String(front.stato)} /> : null}
-            {meta.map((item, i) => (
-              <span key={item} className={cn((i > 0 || Boolean(front.stato)) && "before:mr-2 before:content-['·']")}>
-                {item}
-              </span>
-            ))}
-          </div>
+          {hasFront && (
+            <div className="flex flex-wrap items-end gap-x-8 gap-y-3 pt-2">
+              <dl className="flex flex-wrap gap-x-8 gap-y-3">
+                <Property label="Stato">
+                  <DocumentStateBadge state={state} />
+                </Property>
+                <Property label="Owner">{owner || <span className="text-muted-foreground">—</span>}</Property>
+                <Property label="Scadenza">
+                  {deadline ? (
+                    <span className={cn(overdue && "font-medium text-destructive")}>
+                      {formatDate(deadline)}
+                      {overdue && " · scaduta"}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </Property>
+                <Property label="Approvazione">
+                  {approval ?? <span className="text-muted-foreground">Da approvare</span>}
+                </Property>
+              </dl>
+              <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)}>
+                <SlidersHorizontal />
+                Tutti i dettagli
+              </Button>
+            </div>
+          )}
+          {meta.length > 0 && <p className="pt-1 text-xs text-muted-foreground">{meta.join(" · ")}</p>}
         </header>
+
+        {hasFront && props.body !== null && (
+          <DocumentDetails
+            open={detailsOpen}
+            onOpenChange={setDetailsOpen}
+            projectId={props.projectId}
+            path={props.path}
+            lastCommitId={props.lastCommitId}
+            frontMatterSource={props.frontMatterSource!}
+            body={props.body}
+            front={front}
+            readOnlyReason={
+              !props.canEdit
+                ? "Non hai i permessi per modificare questo documento."
+                : isEditing
+                  ? "Stai modificando il testo: salvalo o annulla per cambiare i dettagli."
+                  : null
+            }
+          />
+        )}
 
         {result && (
           <Alert variant="destructive">
@@ -372,10 +317,7 @@ export function DocumentWorkspace(props: {
 
         {draft && !isEditing && props.canEdit && !props.versionView && (
           <Alert>
-            <AlertTitle>
-              Hai una bozza non salvata del{" "}
-              {new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(new Date(draft.savedAt))}
-            </AlertTitle>
+            <AlertTitle>Hai una bozza non salvata del {dateTimeFormat.format(new Date(draft.savedAt))}</AlertTitle>
             {draft.baseCommit === props.lastCommitId ? (
               <AlertDescription className="flex gap-2">
                 <Button size="sm" onClick={() => startEditing(draft)}>
@@ -406,16 +348,11 @@ export function DocumentWorkspace(props: {
           <Alert>
             <AlertTitle>Le tue modifiche nella bozza</AlertTitle>
             <AlertDescription className="flex w-full flex-col gap-2">
-              {mine.blocks.length === 0 && mine.fields.length === 0 && "Nessuna differenza da riportare."}
-              {mine.blocks.map((block, i) => (
+              {mine.length === 0 && "Nessuna differenza da riportare."}
+              {mine.map((block, i) => (
                 <div key={i} className="rounded-md border p-2 text-foreground">
                   <Markdown>{block}</Markdown>
                 </div>
-              ))}
-              {mine.fields.map(([key, value]) => (
-                <span key={key}>
-                  {label(key)}: <span className="text-foreground">{value || "—"}</span>
-                </span>
               ))}
             </AlertDescription>
           </Alert>
@@ -430,13 +367,12 @@ export function DocumentWorkspace(props: {
                   draft={resume}
                   onReady={(baseline, read) => {
                     editor.current = { baseline, read };
-                    const current = read();
-                    setBodyDirty(current !== baseline);
+                    setBodyDirty(read() !== baseline);
                   }}
                   onChange={(markdown) => {
                     if (!editor.current) return;
                     setBodyDirty(markdown !== editor.current.baseline);
-                    storeDraft(markdown, fields);
+                    storeDraft(markdown);
                   }}
                 />
               ) : (
@@ -459,46 +395,18 @@ export function DocumentWorkspace(props: {
         )}
       </div>
 
-      <aside className={cn("w-full shrink-0 lg:w-72", shownPanel ? "block" : "hidden xl:block")}>
+      {/* A destra: l'indice delle sezioni o la cronologia. In modifica l'indice non c'è. */}
+      <aside className={cn("w-full shrink-0 lg:w-72", showHistory ? "block" : isEditing ? "hidden" : "hidden xl:block")}>
         <div className="sticky top-8 flex max-h-[calc(100vh-4rem)] flex-col gap-3 overflow-y-auto">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">
-              {shownPanel === "dettagli" ? "Dettagli" : shownPanel === "cronologia" ? "Cronologia" : "In questa pagina"}
-            </h2>
-            {panel && (
-              <Button variant="ghost" size="icon-sm" aria-label="Chiudi il pannello" onClick={() => setPanel(null)}>
+            <h2 className="text-sm font-semibold">{showHistory ? "Cronologia" : "In questa pagina"}</h2>
+            {historyOpen && (
+              <Button variant="ghost" size="icon-sm" aria-label="Chiudi la cronologia" onClick={() => setHistoryOpen(false)}>
                 <X />
               </Button>
             )}
           </div>
-
-          {shownPanel === "dettagli" && (
-            <div className="flex flex-col gap-4">
-              {keyFields.length > 0 ? (
-                <dl className="flex flex-col gap-3">{keyFields.map(field)}</dl>
-              ) : (
-                <p className="text-sm text-muted-foreground">Questo documento non ha un frontespizio.</p>
-              )}
-              <details className="group rounded-md border p-3">
-                <summary className="cursor-pointer text-sm text-muted-foreground select-none group-open:mb-3">
-                  Dati tecnici
-                </summary>
-                <dl className="flex flex-col gap-3">
-                  {otherFields.map(field)}
-                  <div className="flex flex-col gap-0.5">
-                    <dt className="text-xs text-muted-foreground">File</dt>
-                    <dd className="font-mono text-xs break-all">{props.path}</dd>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <dt className="text-xs text-muted-foreground">Ultimo commit</dt>
-                    <dd className="font-mono text-xs">{props.lastCommitId.slice(0, 8)}</dd>
-                  </div>
-                </dl>
-              </details>
-            </div>
-          )}
-          {shownPanel === "cronologia" && props.history}
-          {shownPanel === null && <DocumentOutline containerId={CONTENT_ID} />}
+          {showHistory ? props.history : !isEditing && <DocumentOutline containerId={CONTENT_ID} />}
         </div>
       </aside>
     </div>
