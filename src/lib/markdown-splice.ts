@@ -18,6 +18,33 @@ function blocks(markdown: string) {
   });
 }
 
+// Sottosequenza comune più lunga tra due liste di blocchi.
+function lcsTable(b: { text: string }[], c: { text: string }[]) {
+  const lcs = Array.from({ length: b.length + 1 }, () => new Int32Array(c.length + 1));
+  for (let i = b.length - 1; i >= 0; i--)
+    for (let j = c.length - 1; j >= 0; j--)
+      lcs[i][j] = b[i].text === c[j].text ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+  return lcs;
+}
+
+// Blocchi di "after" che non c'erano in "before": le parti cambiate o aggiunte.
+export function changedBlocks(before: string, after: string) {
+  const b = blocks(before);
+  const c = blocks(after);
+  const lcs = lcsTable(b, c);
+  const changed: string[] = [];
+  let i = 0;
+  let j = 0;
+  while (j < c.length) {
+    if (i < b.length && b[i].text === c[j].text) {
+      i++;
+      j++;
+    } else if (i < b.length && lcs[i + 1][j] >= lcs[i][j + 1]) i++;
+    else changed.push(c[j++].text);
+  }
+  return changed;
+}
+
 // null se i blocchi del sorgente e della baseline non si corrispondono uno a uno.
 export function spliceMarkdown(original: string, baseline: string, current: string): string | null {
   const o = blocks(original);
@@ -25,13 +52,9 @@ export function spliceMarkdown(original: string, baseline: string, current: stri
   const c = blocks(current);
   if (o.length !== b.length) return null;
 
-  // Sottosequenza comune più lunga tra blocchi della baseline e blocchi attuali.
   const n = b.length;
   const m = c.length;
-  const lcs = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
-  for (let i = n - 1; i >= 0; i--)
-    for (let j = m - 1; j >= 0; j--)
-      lcs[i][j] = b[i].text === c[j].text ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+  const lcs = lcsTable(b, c);
 
   // orig: indice del blocco originale di cui il pezzo prende il posto (null = blocco nuovo).
   const pieces: { orig: number | null; text: string }[] = [];
