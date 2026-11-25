@@ -3,11 +3,12 @@
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { ensureProjectWebhook, indexProject } from "@/lib/documents";
+import { checkRepository, ensureProjectWebhook, indexProject } from "@/lib/documents";
 import { ASDP_ROLES } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 
-export type FormState = { error: string | null };
+// ok distingue il salvataggio riuscito dallo stato iniziale (serve ai dialog per chiudersi).
+export type FormState = { error: string | null; ok?: boolean; warning?: string | null };
 
 const projectSchema = z.object({
   code: z.string().trim().min(1).max(20),
@@ -42,6 +43,43 @@ const teamSchema = z.array(
 
 // Salva il team intero: chi ha almeno un ruolo viene inserito o aggiornato, chi non ne ha più
 // viene rimosso. I permessi (admin o PM del progetto) li applica la RLS.
+const projectUpdateSchema = z.object({
+  name: z.string().trim().min(1),
+  client: z.string().trim().min(1),
+  nature: z.enum(["greenfield", "evolutiva"]),
+  status: z.enum(["aperto", "in_presidio", "in_attesa", "chiuso"]),
+  current_phase: z.coerce.number().int().min(0).max(4),
+  framework_version: z.string().trim().min(1),
+});
+
+// Dati del progetto (admin o PM del progetto, via RLS). Repo documenti, branch e cartella
+// restano fissi: cambiarli richiederebbe reindicizzare e rifare il webhook.
+export async function updateProject(projectId: string, _prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = projectUpdateSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Compila tutti i campi obbligatori." };
+
+  const supabase = await createClient();
+  const { data } = await supabase.from("projects").update(parsed.data).eq("id", projectId).select("id");
+  if (!data?.length) return { error: "Non hai i permessi per modificare questo progetto." };
+  refresh();
+  return { error: null, ok: true };
+}
+
+export async function advancePhase(projectId: string, phase: number): Promise<FormState> {
+  const parsed = z.number().int().min(0).max(4).safeParse(phase);
+  if (!parsed.success) return { error: "Fase non valida." };
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("projects")
+    .update({ current_phase: parsed.data })
+    .eq("id", projectId)
+    .select("id");
+  if (!data?.length) return { error: "Non hai i permessi per modificare questo progetto." };
+  refresh();
+  return { error: null, ok: true };
+}
+
 export async function saveTeam(
   projectId: string,
   _prev: FormState,
@@ -76,7 +114,7 @@ export async function saveTeam(
   }
 
   refresh();
-  return { error: null };
+  return { error: null, ok: true };
 }
 
 export type ReindexResult = { error: string | null; count?: number; warning?: string | null };
@@ -116,8 +154,9 @@ export async function addRepository(
     .insert({ project_id: projectId, ...parsed.data });
   if (error?.code === "23505") return { error: "Repo già collegata." };
   if (error) return { error: "Non hai i permessi per modificare le repo del progetto." };
+  const warning = await checkRepository(parsed.data.gitlab_path, parsed.data.branch);
   refresh();
-  return { error: null };
+  return { error: null, ok: true, warning };
 }
 
 export async function removeRepository(id: string): Promise<FormState> {

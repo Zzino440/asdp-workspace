@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "yaml";
 import {
+  branchExists,
   compareFile,
   createFile,
   ensurePushWebhook,
@@ -542,4 +543,16 @@ export async function ensureProjectWebhook(supabase: SupabaseClient, projectId: 
     console.error("Webhook GitLab non configurato", error);
     return "Webhook GitLab non configurato: il service account deve essere Maintainer della repo documenti. Fino ad allora usa Reindicizza dopo i push diretti.";
   }
+}
+
+// Controllo di una repo di codice collegata: torna un avviso se l'app non la trova. Non
+// blocca, perché le skill leggono il codice da un clone locale e il token dell'app può non
+// avere accesso a tutte le repo.
+export async function checkRepository(gitlabPath: string, branch: string) {
+  try {
+    if (await branchExists(gitlabPath, branch)) return null;
+  } catch (error) {
+    console.error("Verifica repo GitLab non riuscita", error);
+  }
+  return "Repo collegata, ma non trovata su GitLab con l'accesso dell'app: controlla percorso e branch.";
 }

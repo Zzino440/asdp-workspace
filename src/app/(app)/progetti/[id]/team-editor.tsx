@@ -1,9 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Users } from "lucide-react";
 import { saveTeam, type FormState } from "../actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -21,12 +24,12 @@ type Person = { id: string; name: string; email: string };
 
 const initialState: FormState = { error: null };
 
-// Matrice persone × ruoli ASDP. I controlli compaiono solo ad admin e PM del progetto, ma è la
-// RLS a decidere se il salvataggio passa.
+// Team del progetto: elenco con i ruoli per tutti; admin e PM lo modificano in un dialog con la
+// matrice persone × ruoli. È la RLS a decidere se il salvataggio passa.
 export function TeamEditor({
   projectId,
   canEdit,
-  members: initialMembers,
+  members,
   people,
 }: {
   projectId: string;
@@ -34,8 +37,76 @@ export function TeamEditor({
   members: Member[];
   people: Person[];
 }) {
+  const [open, setOpen] = useState(false);
+  const missing = (["pm", "tl"] as const).filter((role) => !members.some((m) => m.roles.includes(role)));
+
+  return (
+    <div className="flex flex-col gap-4">
+      {members.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nessuna persona nel team.</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {members.map((m) => (
+            <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium">{m.name}</div>
+                <div className="truncate text-xs text-muted-foreground">{m.email}</div>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {ASDP_ROLES.filter((r) => m.roles.includes(r)).map((r) => (
+                  <Badge key={r} variant="secondary">
+                    {ROLE_LABELS[r]}
+                  </Badge>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {missing.length > 0 && (
+        <p className="text-sm text-destructive">
+          Manca {missing.map((r) => (r === "pm" ? "un Project Manager" : "un Tech Lead")).join(" e ")}.
+        </p>
+      )}
+      {canEdit && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger render={<Button variant="outline" className="self-start" />}>
+            <Users />
+            Gestisci team
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Gestisci team</DialogTitle>
+            </DialogHeader>
+            {/* Montato solo a dialog aperto: annullare scarta le modifiche non salvate. */}
+            {open && (
+              <TeamMatrix projectId={projectId} members={members} people={people} onSaved={() => setOpen(false)} />
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+// Matrice persone × ruoli ASDP.
+function TeamMatrix({
+  projectId,
+  members: initialMembers,
+  people,
+  onSaved,
+}: {
+  projectId: string;
+  members: Member[];
+  people: Person[];
+  onSaved: () => void;
+}) {
   const [members, setMembers] = useState(initialMembers);
-  const [state, formAction, pending] = useActionState(saveTeam.bind(null, projectId), initialState);
+  const [state, formAction, pending] = useActionState(async (prev: FormState, formData: FormData) => {
+    const result = await saveTeam(projectId, prev, formData);
+    if (result.ok) onSaved();
+    return result;
+  }, initialState);
 
   const holders = (role: AsdpRole) => members.filter((m) => m.roles.includes(role));
   const warnings = [
@@ -119,7 +190,6 @@ export function TeamEditor({
                     className="mx-auto"
                     aria-label={`${m.name}: ${ROLE_LABELS[role]}`}
                     checked={m.roles.includes(role)}
-                    disabled={!canEdit}
                     onCheckedChange={(checked) => toggle(m.user_id, role, checked)}
                   />
                 </TableCell>
@@ -129,26 +199,24 @@ export function TeamEditor({
         </TableBody>
       </Table>
 
-      {canEdit && (
-        <div className="flex flex-wrap items-center gap-3">
-          <Select items={candidates} value={null} onValueChange={add}>
-            <SelectTrigger className="min-w-64">
-              <SelectValue placeholder="Aggiungi persona…" />
-            </SelectTrigger>
-            <SelectContent>
-              {candidates.map((c) => (
-                <SelectItem key={c.value} value={c.value}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button type="submit" disabled={pending}>
-            {pending ? "Salvataggio…" : "Salva team"}
-          </Button>
-          {state.error && <p className="text-sm text-destructive">{state.error}</p>}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <Select items={candidates} value={null} onValueChange={add}>
+          <SelectTrigger className="min-w-64">
+            <SelectValue placeholder="Aggiungi persona…" />
+          </SelectTrigger>
+          <SelectContent>
+            {candidates.map((c) => (
+              <SelectItem key={c.value} value={c.value}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Salvataggio…" : "Salva team"}
+        </Button>
+        {state.error && <p className="text-sm text-destructive">{state.error}</p>}
+      </div>
     </form>
   );
 }

@@ -25,6 +25,37 @@
 
 ## Storia
 
+## [0.9.0] 2026-11-26 — Pagina del progetto più chiara e modificabile
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **Intestazione del progetto**: sotto il nome cliente, natura, fase corrente (con nome) e
+  versione del framework; pulsante "Modifica" per admin e PM.
+- **Modifica progetto** (nuova): nome, cliente, natura, stato, fase corrente e versione del
+  framework si cambiano da un dialog (prima non si potevano cambiare dall'app). Repo documenti,
+  branch e cartella restano fissi.
+- **Passa alla fase successiva**: quando tutti i documenti della fase corrente sono Completo o
+  Approvato, admin e PM vedono "Passa alla Fase N+1" nell'intestazione.
+- **Team**: elenco delle persone con i ruoli per tutti; la matrice dei ruoli si apre da
+  "Gestisci team" (admin e PM). Avviso compatto se manca PM o TL.
+- **Repository**: una card con la repo documenti (percorso, branch, cartella) e le repo di
+  codice, con link a GitLab; "Collega repository" in un dialog. Al collegamento l'app controlla
+  su GitLab che repo e branch esistano e, se non li trova, avvisa senza bloccare.
+- Tolta la card "Dati del progetto": i dati sono ora nell'intestazione e nella card Repository.
+  Team e Repository affiancati sotto il Percorso ASDP, che resta invariato.
+
+### Migrazioni e configurazione
+- Nessuna (la RLS `projects_update` permetteva già la modifica ad admin e PM).
+
+### Test eseguiti
+- `tsc --noEmit`, `pnpm lint`, `pnpm build`: ok.
+- In locale (seed, utente PM su PFS): Modifica → Fase 3 → intestazione e prossimo passo
+  aggiornati, compare "Passa alla Fase 4"; clic → Fase 4; riportato a Fase 2. Collegata una repo
+  inesistente con GitLab non raggiungibile → salvata con avviso entro 5 s, poi scollegata.
+  "Gestisci team" → Salva senza modifiche → il dialog si chiude.
+- Non provati: utente senza ruolo PM (solo lettura) e link a GitLab (GitLab non raggiungibile).
+
 ## [0.8.1] 2026-11-26 — Prova nascosta del collegamento Microsoft
 
 **Autore**: Lorenzo Belli

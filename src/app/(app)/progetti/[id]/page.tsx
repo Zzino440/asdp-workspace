@@ -2,9 +2,11 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NATURE_LABELS, PROJECT_STATUS_LABELS, type AsdpRole } from "@/lib/labels";
+import { NATURE_LABELS, PHASES, PROJECT_STATUS_LABELS, type AsdpRole } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
-import { DocumentList } from "./document-list";
+import { AdvancePhaseButton } from "./advance-phase";
+import { DocumentList, loadProjectSteps } from "./document-list";
+import { ProjectEditDialog } from "./project-edit-dialog";
 import { Repositories } from "./repositories";
 import { TeamEditor } from "./team-editor";
 
@@ -42,22 +44,36 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
   ]);
   const canManage = Boolean(isAdmin || isPm);
 
-  const details: [string, string][] = [
-    ["Cliente", project.client],
-    ["Natura", NATURE_LABELS[project.nature]],
-    ["Fase corrente", `Fase ${project.current_phase}`],
-    ["Framework", `asdp ${project.framework_version}`],
-    ["Repo documenti", project.gitlab_project_path ?? "—"],
-    ["Branch", project.gitlab_branch],
-    ["Cartella documenti", project.docs_root],
-  ];
+  // Link a GitLab costruiti qui: GITLAB_URL resta sul server.
+  const gitlabRepo = (path: string) => (process.env.GITLAB_URL ? `${process.env.GITLAB_URL}/${path}` : null);
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">{project.name}</h1>
-        <span className="font-mono text-sm text-muted-foreground">{project.code}</span>
-        <Badge variant="secondary">{PROJECT_STATUS_LABELS[project.status]}</Badge>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold">{project.name}</h1>
+            <span className="font-mono text-sm text-muted-foreground">{project.code}</span>
+            <Badge variant="secondary">{PROJECT_STATUS_LABELS[project.status]}</Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <span>{project.client}</span>
+            <span aria-hidden>·</span>
+            <span>{NATURE_LABELS[project.nature]}</span>
+            <span aria-hidden>·</span>
+            <span>
+              Fase {project.current_phase} · {PHASES[project.current_phase]?.name}
+            </span>
+            <span aria-hidden>·</span>
+            <span>asdp {project.framework_version}</span>
+            {canManage && project.current_phase < 4 && (
+              <Suspense>
+                <AdvancePhase projectId={project.id} currentPhase={project.current_phase} />
+              </Suspense>
+            )}
+          </div>
+        </div>
+        {canManage && <ProjectEditDialog project={project} />}
       </div>
 
       <Card>
@@ -71,56 +87,60 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Dati del progetto</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-4 sm:grid-cols-3">
-            {details.map(([label, value]) => (
-              <div key={label} className="flex flex-col gap-1">
-                <dt className="text-xs text-muted-foreground">{label}</dt>
-                <dd className="text-sm">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Team</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* La key rimonta l'editor quando il server restituisce un team diverso (dopo il salvataggio). */}
+            <TeamEditor
+              key={JSON.stringify(members)}
+              projectId={project.id}
+              canEdit={canManage}
+              members={(members ?? []).map((m) => {
+                // Relazione molti-a-uno: PostgREST restituisce un oggetto, i tipi non generati un array.
+                const profile = m.profiles as unknown as { full_name: string; email: string } | null;
+                return {
+                  user_id: m.user_id,
+                  roles: m.roles as AsdpRole[],
+                  name: profile?.full_name || profile?.email || "",
+                  email: profile?.email ?? "",
+                };
+              })}
+              people={(people ?? []).map((p) => ({ id: p.id, name: p.full_name || p.email, email: p.email }))}
+            />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Team</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* La key rimonta l'editor quando il server restituisce un team diverso (dopo il salvataggio). */}
-          <TeamEditor
-            key={JSON.stringify(members)}
-            projectId={project.id}
-            canEdit={canManage}
-            members={(members ?? []).map((m) => {
-              // Relazione molti-a-uno: PostgREST restituisce un oggetto, i tipi non generati un array.
-              const profile = m.profiles as unknown as { full_name: string; email: string } | null;
-              return {
-                user_id: m.user_id,
-                roles: m.roles as AsdpRole[],
-                name: profile?.full_name || profile?.email || "",
-                email: profile?.email ?? "",
-              };
-            })}
-            people={(people ?? []).map((p) => ({ id: p.id, name: p.full_name || p.email, email: p.email }))}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Repository di codice</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Repositories projectId={project.id} canEdit={canManage} repositories={repositories ?? []} />
-        </CardContent>
-      </Card>
-
+        <Card>
+          <CardHeader>
+            <CardTitle>Repository</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Repositories
+              projectId={project.id}
+              canEdit={canManage}
+              docs={{
+                path: project.gitlab_project_path,
+                branch: project.gitlab_branch,
+                root: project.docs_root,
+                href: project.gitlab_project_path ? gitlabRepo(project.gitlab_project_path) : null,
+              }}
+              repositories={(repositories ?? []).map((r) => ({ ...r, href: gitlabRepo(r.gitlab_path) }))}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
+}
+
+// "Passa alla Fase N+1" quando la fase corrente ha documenti attesi e nessun passo aperto.
+async function AdvancePhase({ projectId, currentPhase }: { projectId: string; currentPhase: number }) {
+  const { mapTypes, open } = await loadProjectSteps(projectId);
+  const complete =
+    mapTypes.some((t) => t.phase === currentPhase) && !open.some((s) => s.phase === currentPhase);
+  if (!complete) return null;
+  return <AdvancePhaseButton projectId={projectId} nextPhase={currentPhase + 1} />;
 }

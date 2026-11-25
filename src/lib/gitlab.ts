@@ -140,3 +140,17 @@ export async function ensurePushWebhook(projectPath: string, url: string, token:
     body: JSON.stringify({ url, token, push_events: true, enable_ssl_verification: true }),
   });
 }
+
+// true se il branch esiste e il token dell'app lo vede; 404/403 → false. Timeout breve: è un
+// controllo di cortesia e non deve bloccare il salvataggio se GitLab non risponde.
+export async function branchExists(projectPath: string, branch: string) {
+  try {
+    await gitlab(`${project(projectPath)}/repository/branches/${encodeURIComponent(branch)}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    return true;
+  } catch (error) {
+    if (error instanceof GitLabError && (error.status === 404 || error.status === 403)) return false;
+    throw error;
+  }
+}

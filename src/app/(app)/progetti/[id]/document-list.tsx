@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { listDocuments } from "@/lib/documents";
 import { featureOf } from "@/lib/features";
 import { createClient } from "@/lib/supabase/server";
@@ -7,16 +8,10 @@ const DONE_STATES = ["Completo", "Approvato"];
 const isDone = (doc: MapDoc) => doc.state !== null && DONE_STATES.includes(doc.state);
 
 
-// Mappa del percorso ASDP: catalogo dei tipi con skill (document_types) incrociato con l'indice.
-export async function DocumentList({
-  projectId,
-  currentPhase,
-  canReindex,
-}: {
-  projectId: string;
-  currentPhase: number;
-  canReindex: boolean;
-}) {
+// Catalogo dei tipi con skill (document_types) incrociato con l'indice, e passi aperti.
+// Lo usano la mappa del percorso e il pulsante "Passa alla fase" dell'intestazione
+// (cache: una sola lettura per richiesta).
+export const loadProjectSteps = cache(async (projectId: string) => {
   const supabase = await createClient();
   const [documents, { data: types }] = await Promise.all([
     listDocuments(supabase, projectId),
@@ -66,6 +61,21 @@ export async function DocumentList({
         open.push({ code: type.code, name: type.name, phase: type.phase, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null });
     }
   }
+  return { mapTypes, otherFiles, features, open };
+});
+
+// Mappa del percorso ASDP.
+export async function DocumentList({
+  projectId,
+  currentPhase,
+  canReindex,
+}: {
+  projectId: string;
+  currentPhase: number;
+  canReindex: boolean;
+}) {
+  const { mapTypes, otherFiles, features, open } = await loadProjectSteps(projectId);
+
   // Prossimo passo: il primo aperto dalla fase attuale in poi (se non ce ne sono, il primo
   // arretrato). Gli aperti delle fasi precedenti sono segnalati a parte come arretrati.
   const next = open.find((s) => s.phase >= currentPhase) ?? open[0] ?? null;
