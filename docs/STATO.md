@@ -28,6 +28,8 @@
   2026-11-25: committata, non pushata. Sulla sandbox: T2.2 Approvato, T3.1 In corso (modifiche
   richieste). Provata in locale sulla sandbox (T2.2,
   utente TL); sulla sandbox il T2.2 è rimasto In corso.
+- `0.8.1` (prova nascosta del collegamento Microsoft, milestone 7) su `master`
+  (`929ed36`), 2026-11-26: pushata, tag `0.8.1` fatto.
 - `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
   `feature/vari-miglioramenti`: tag
   dopo il merge su `master`.
@@ -38,6 +40,7 @@
 |---|---|
 | 0, 1, 2a, 2b, 2c | Fatte |
 | 2d — server MCP | Quasi fatta: login OAuth, tool `list_projects`, `get_project`, `list_documents`, `read_document`, `list_versions`, `update_document`, `create_document` (2026-11-25). Plugin `asdp` 0.15.0 con `.mcp.json` e skill che salvano dall'MCP sul branch `feature/asdp-mcp` (committato, non pushato). Manca la verifica da Cowork e chat di Claude Desktop sul cloud |
+| 7 — file Teams/SharePoint | In sospeso: serve il consenso amministratore dell'IT. Prova nascosta in `0.8.1`. Come riprendere: sezione "File di progetto da Teams/SharePoint" |
 | 3 — gate e approvazioni | In corso: flusso manuale (0.6.0) e coda `/approvazioni` (0.7.0) fatti. Prossimi: approvazione assistita da AI/MCP, evidenza del cliente in Storage (vedi `TODO.md`) |
 
 ## In corso: deploy di prova su cloud
@@ -278,8 +281,37 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
   `fetch`); route `/api/microsoft/login` e `/callback`; pagina `/file-microsoft` (Team →
   cartelle dei canali → file in Office web, sola lettura), fuori dal menu. Senza
   `MICROSOFT_CLIENT_ID` pagina e route rispondono 404, quindi sul cloud non si vede. Aprire
-  l'app da `localhost`, non da `127.0.0.1`. Quando arriva il consenso: provare il login e i
-  file, poi registrare l'URI di produzione e le variabili su Vercel.
+  l'app da `localhost`, non da `127.0.0.1`.
+- Scelte tecniche: refresh token in tabella (non in cookie) perché i cookie non si scrivono nei
+  Server Components e perché MCP e skill (7c) non hanno il browser; nessun permesso
+  applicativo; niente MSAL, solo `fetch`. Il codice chiede oggi solo `offline_access User.Read
+  Team.ReadBasic.All Files.ReadWrite.All Sites.ReadWrite.All` (`SCOPES` in
+  `src/lib/microsoft.ts`): gli altri permessi dell'elenco si aggiungono a `SCOPES` quando
+  servono, senza nuovo consenso se l'IT li ha già approvati.
+
+### Come riprendere
+
+1. [ ] **Chiedere il consenso all'IT** (Lorenzo, non ancora fatto). Da dire: app `ASDP` in
+   Entra → Registrazioni app, cliccare "Concedi consenso amministratore per Dst" in
+   Autorizzazioni API; solo permessi delegati, ognuno vede solo i file a cui ha già accesso su
+   SharePoint; nessun permesso applicativo. Alternativa più restrittiva se la chiedono:
+   `Sites.Selected` delegato, concesso sito per sito (un'operazione dell'IT per ogni progetto).
+2. [ ] **Provare il collegamento** in locale: `pnpm dev -p 4100 -H 127.0.0.1` (riavviare se il
+   vecchio processo sulla 4100 resta su "Caricamento…"), aprire
+   `http://localhost:4100/file-microsoft`, "Collega account Microsoft" con l'account DST.
+   Atteso: "Collegato come…", elenco dei Team, file dei canali, apertura in Office web; una riga
+   in `microsoft_accounts`. Il segreto del client scade (6 mesi dalla creazione): se il login
+   dà errore sul segreto, crearne uno nuovo in Certificati e segreti.
+3. [ ] **7a, sfoglia nel progetto**: migrazione con la cartella collegata al progetto (drive e
+   item SharePoint, modificabile da PM/admin via RLS), scelta di Team e canale dalla pagina del
+   progetto (`Channel.ReadBasic.All` in `SCOPES`), scheda "File" nel progetto al posto della
+   pagina di prova; togliere `/file-microsoft`. Versione MINOR.
+4. [ ] **7b**: carica (upload session di Graph), nuova cartella, sposta, rinomina.
+5. [ ] **7c**: file SharePoint come input delle skill (MCP: tool che legge un file del progetto).
+6. [ ] **Cloud**: URI di produzione `https://<app>/api/microsoft/callback` nell'app registration
+   (oggi `REDIRECT_URI` è fisso su localhost in `src/lib/microsoft.ts`), variabili
+   `MICROSOFT_*` su Vercel, `supabase db push --remote` per la migrazione.
+7. [ ] Da decidere: clienti esterni (guest).
 
 ## Ambienti
 
