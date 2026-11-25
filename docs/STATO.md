@@ -126,6 +126,9 @@ nuovo arriva su Vercel con il merge su `master`.
   5 fasi cliccabili con nome (Guida §6–§10) e "x di y pronti", sotto una fase alla volta;
   prossimo passo in linguaggio semplice con "Apri documento"; niente percorsi e codici in vista;
   la ricerca mostra i risultati di tutte le fasi; "Altri file" chiuso in fondo.
+- [x] Prossimo passo dalla fase attuale del progetto (2026-11-25, decisione di Lorenzo): primo
+  passo aperto da `current_phase` in poi; i passi aperti delle fasi precedenti sono contati in un
+  avviso a parte. Documenti senza `stato` contano come non pronti.
 - [x] Documento in vista unica (2026-11-25, branch `feature/vari-miglioramenti`, commit
   `868481c` e `11961da`; le ultime correzioni non sono ancora committate). Lettura, modifica e
   versioni stanno sulla stessa pagina (`documenti/[...path]`);
