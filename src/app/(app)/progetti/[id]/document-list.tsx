@@ -65,7 +65,7 @@ export async function DocumentList({
     for (const feature of groups) {
       const docs = type.perFeature && feature !== null ? type.docs.filter((d) => (d.feature ?? "") === feature) : type.docs;
       if (docs.length === 0 || docs.some((d) => !isDone(d))) {
-        next = { code: type.code, name: type.name, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null };
+        next = { code: type.code, name: type.name, phase: type.phase, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null };
         break;
       }
     }

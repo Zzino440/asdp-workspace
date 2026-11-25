@@ -120,6 +120,11 @@ nuovo arriva su Vercel con il merge su `master`.
   catalogo dei tipi con skill × indice documenti, "Da creare" con la skill, tipi per-feature
   raggruppati per Feature (`F\d+` nel percorso), "Prossimo passo" (primo tipo per `sort_order`
   non Completo/Approvato), filtro lato client, "Reindicizza" nel menu `⋯`. Verificata in locale
+  con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Non mergiata.
+- [x] Seconda versione, più semplice (2026-11-25, feedback di Lorenzo: "poco chiara"): barra delle
+  5 fasi cliccabili con nome (Guida §6–§10) e "x di y pronti", sotto una fase alla volta;
+  prossimo passo in linguaggio semplice con "Apri documento"; niente percorsi e codici in vista;
+  la ricerca mostra i risultati di tutte le fasi; "Altri file" chiuso in fondo.
   con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Su `feature/vari-miglioramenti`
   (commit `4420644`).
 - [x] Documento in vista unica (2026-11-25, branch `feature/vari-miglioramenti`, non
