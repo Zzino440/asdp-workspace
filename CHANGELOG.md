@@ -41,6 +41,9 @@
   volta, in ordine. Un clic su una voce la evidenzia finché non si scorre di nuovo. Prima a fine
   pagina restava ferma su una sezione precedente, perché gli ultimi titoli non arrivavano mai
   nella fascia in alto.
+- **UI**: la barra laterale dell'app resta ferma mentre si scorre la pagina (prima scorreva via
+  con il contenuto). In Modifica testo la barra dei pulsanti resta ancorata sotto l'intestazione
+  del documento (prima la card con `overflow-hidden` la portava via).
 - **Guida**: Rispondere alle domande D[N] dice che la casella si spunta anche da Modifica testo.
   PATCH: toglie un limite dichiarato nella Guida, senza nuove API.
 
@@ -55,6 +58,8 @@
 - Indice sull'Architettura della sandbox: scorrendo dall'alto al fondo a passi di 10–30 px le
   sezioni si accendono tutte in ordine (1 → 9, ADR-001 compreso); il clic su "8. Rischi tecnici"
   la evidenzia anche a fine pagina, la rotella torna a seguire lo scorrimento.
+- A fine pagina la barra laterale dell'app resta visibile; in Modifica testo la barra dei
+  pulsanti resta a filo sotto l'intestazione mentre si scorre.
 
 ## [0.4.0] 2026-11-25 — Creazione dei documenti dal connettore
 

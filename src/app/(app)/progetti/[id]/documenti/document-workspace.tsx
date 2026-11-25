@@ -84,6 +84,7 @@ export function DocumentWorkspace(props: {
   const [pending, startTransition] = useTransition();
   const editor = useRef<{ baseline: string; read: () => string } | null>(null);
   const leaving = useRef(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   // Aprendo una versione dalla cronologia l'editor si chiude.
   const isEditing = editing && !props.versionView;
@@ -201,6 +202,17 @@ export function DocumentWorkspace(props: {
 
   const showHistory = historyOpen;
 
+  // Altezza dell'intestazione fissa in --doc-header-h: la barra dell'editor si ancora subito sotto.
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const observer = new ResizeObserver(() =>
+      header.parentElement!.style.setProperty("--doc-header-h", `${header.offsetHeight}px`),
+    );
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
       <nav aria-label="Documenti del progetto" className="hidden w-56 shrink-0 xl:block">
@@ -208,7 +220,7 @@ export function DocumentWorkspace(props: {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <header className="sticky top-0 z-20 -mx-2 flex flex-col gap-1 border-b bg-background px-2 pt-2 pb-3">
+        <header ref={headerRef} className="sticky top-0 z-20 -mx-2 flex flex-col gap-1 border-b bg-background px-2 pt-2 pb-3">
           {props.breadcrumb}
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold">{props.title}</h1>
@@ -358,7 +370,8 @@ export function DocumentWorkspace(props: {
           </Alert>
         )}
 
-        <Card>
+        {/* overflow-visible: con overflow-hidden la barra dell'editor non resterebbe ancorata */}
+        <Card className="overflow-visible">
           <CardContent>
             {props.versionView ??
               (isEditing && props.body !== null ? (

@@ -88,7 +88,7 @@ export function MilkdownEditor(props: {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="sticky top-0 z-10 flex flex-wrap gap-1 rounded-lg border bg-card p-1">
+      <div className="sticky top-(--doc-header-h) z-10 flex flex-wrap gap-1 rounded-lg border bg-card p-1">
         {tools.map(({ label, icon: Icon, run }) => (
           <Button
             key={label}
