@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Search } from "lucide-react";
+import { Check, ChevronRight, Search } from "lucide-react";
+import { cn } from "cn";
 import { DocumentStateBadge } from "@/components/document-state-badge";
-import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ReindexMenu } from "./reindex-button";
 
@@ -25,9 +26,26 @@ export type MapType = {
   perFeature: boolean;
   docs: MapDoc[];
 };
-export type NextStep = { code: string; name: string; skill: string; perFeature: boolean; feature: string | null; doc: MapDoc | null };
+export type NextStep = {
+  code: string;
+  name: string;
+  phase: number;
+  skill: string;
+  perFeature: boolean;
+  feature: string | null;
+  doc: MapDoc | null;
+};
 
-const PHASES = [0, 1, 2, 3, 4];
+// Nomi delle fasi dalla Guida ASDP (§6–§10).
+const PHASES = [
+  { n: 0, name: "Setup progetto" },
+  { n: 1, name: "Analisi" },
+  { n: 2, name: "Architettura" },
+  { n: 3, name: "Rischi" },
+  { n: 4, name: "Preparazione delivery" },
+];
+
+const isDone = (d: MapDoc) => d.state === "Completo" || d.state === "Approvato";
 
 export function ProjectMap({
   projectId,
@@ -46,46 +64,29 @@ export function ProjectMap({
   otherFiles: MapDoc[];
   next: NextStep | null;
 }) {
+  const [selected, setSelected] = useState(next?.phase ?? currentPhase);
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
-  const typeMatches = (t: MapType) => !q || `${t.code} ${t.name} ${t.skill}`.toLowerCase().includes(q);
-  const docMatches = (d: MapDoc) => !q || `${d.title} ${d.path}`.toLowerCase().includes(q);
-  // Con il filtro attivo un tipo resta visibile se combacia lui o uno dei suoi documenti.
-  const visible = (t: MapType, docs: MapDoc[]) => (typeMatches(t) ? docs : docs.filter(docMatches));
-  const show = (t: MapType, docs: MapDoc[]) => typeMatches(t) || docs.some(docMatches);
-  const visibleOther = otherFiles.filter(docMatches);
+
+  // Avanzamento di una fase: documenti attesi (un tipo, o un tipo per ogni Feature) e quelli pronti.
+  const progress = (phase: number) => {
+    let expected = 0;
+    let ready = 0;
+    let started = false;
+    for (const t of types.filter((t) => t.phase === phase)) {
+      const slots = t.perFeature ? features.map((f) => t.docs.filter((d) => (d.feature ?? "") === f)) : [t.docs];
+      for (const docs of slots) {
+        expected++;
+        if (docs.length > 0) started = true;
+        if (docs.length > 0 && docs.every(isDone)) ready++;
+      }
+    }
+    return { expected, ready, started };
+  };
 
   return (
-    <div className="flex flex-col gap-4">
-      {next && (
-        <div className="flex flex-col gap-2 rounded-lg border border-primary bg-primary/10 p-4">
-          <span className="text-xs font-medium text-muted-foreground">Prossimo passo</span>
-          <div className="flex flex-wrap items-center gap-2">
-            <ArrowRight className="size-4 text-primary" />
-            <span className="font-medium">
-              {next.code} {next.name}
-              {next.feature ? ` · Feature ${next.feature}` : ""}
-            </span>
-            {next.doc ? <DocumentStateBadge state={next.doc.state ?? "Da fare"} /> : <ToCreateBadge />}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {next.doc ? (
-              <>
-                Completa il documento{" "}
-                <Link href={next.doc.href} className="text-foreground hover:underline">
-                  {next.doc.title}
-                </Link>
-                , oppure aggiornalo con <SkillName skill={next.skill} />.
-              </>
-            ) : (
-              <>
-                Da creare con <SkillName skill={next.skill} />
-                {next.perFeature && !next.feature ? " per la prima Feature del backlog" : ""}.
-              </>
-            )}
-          </p>
-        </div>
-      )}
+    <div className="flex flex-col gap-6">
+      {next && <NextStepCard next={next} />}
 
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
@@ -93,130 +94,220 @@ export function ProjectMap({
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filtra documenti per nome, codice o percorso"
+            placeholder="Cerca un documento"
             className="pl-8"
           />
         </div>
         {canReindex && <ReindexMenu projectId={projectId} />}
       </div>
 
-      {PHASES.map((phase) => {
-        const phaseTypes = types.filter((t) => t.phase === phase);
-        const single = phaseTypes.filter((t) => !t.perFeature && show(t, t.docs));
-        const perFeature = phaseTypes.filter((t) => t.perFeature);
-        const featureGroups = features
-          .map((feature) => ({
-            feature,
-            rows: perFeature
-              .map((t) => ({ type: t, docs: t.docs.filter((d) => (d.feature ?? "") === feature) }))
-              .filter((r) => show(r.type, r.docs)),
-          }))
-          .filter((g) => g.rows.length > 0);
-        const perFeatureVisible = perFeature.filter((t) => typeMatches(t));
-        if (single.length === 0 && featureGroups.length === 0 && (features.length > 0 || perFeatureVisible.length === 0))
-          return null;
-
-        const done = phaseTypes.flatMap((t) => t.docs).filter((d) => d.state === "Completo" || d.state === "Approvato");
-        const total = phaseTypes.flatMap((t) => t.docs).length;
-        return (
-          <section key={phase} className="rounded-lg border border-border">
-            <header className="flex items-center gap-3 border-b border-border bg-sidebar px-4 py-2">
-              <h3 className="font-medium">Fase {phase}</h3>
-              {phase === currentPhase && <Badge variant="secondary">Fase corrente</Badge>}
-              <span className="ml-auto text-xs text-muted-foreground">
-                {total === 0 ? "Nessun documento" : `${done.length} di ${total} completati`}
-              </span>
-            </header>
-            <div className="divide-y divide-border">
-              {single.map((t) => (
-                <TypeRows key={t.code} type={t} docs={visible(t, t.docs)} />
-              ))}
-              {perFeature.length > 0 && features.length === 0 && perFeatureVisible.length > 0 && (
-                <div className="flex flex-col gap-1 px-4 py-3">
-                  <span className="text-sm">Per ogni Feature del backlog (nessuna ancora avviata):</span>
-                  {perFeatureVisible.map((t) => (
-                    <span key={t.code} className="text-sm text-muted-foreground">
-                      {t.code} {t.name} — <SkillName skill={t.skill} />
+      {q ? (
+        <SearchResults types={types} otherFiles={otherFiles} q={q} />
+      ) : (
+        <>
+          <ol className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {PHASES.map(({ n, name }) => {
+              const p = progress(n);
+              const complete = p.expected > 0 && p.ready === p.expected;
+              return (
+                <li key={n}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(n)}
+                    aria-current={selected === n ? "step" : undefined}
+                    className={cn(
+                      "flex h-full w-full flex-col gap-2 rounded-lg border p-3 text-left transition-colors hover:bg-accent",
+                      selected === n ? "border-primary bg-primary/10" : "border-border",
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium",
+                          complete
+                            ? "border-(--state-approved-border) bg-(--state-approved) text-(--state-approved-foreground)"
+                            : p.started
+                              ? "border-(--state-progress-border) bg-(--state-progress) text-(--state-progress-foreground)"
+                              : "border-border text-muted-foreground",
+                        )}
+                      >
+                        {complete ? <Check className="size-3.5" /> : n}
+                      </span>
+                      {n === currentPhase && <span className="text-xs text-primary">Fase attuale</span>}
                     </span>
-                  ))}
-                </div>
-              )}
-              {featureGroups.map((g) => (
-                <div key={g.feature}>
-                  <div className="bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground">
-                    {g.feature ? `Feature ${g.feature}` : "Senza Feature"}
-                  </div>
-                  {g.rows.map((r) => (
-                    <TypeRows key={r.type.code} type={r.type} docs={visible(r.type, r.docs)} />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      })}
+                    <span className="text-sm font-medium">{name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {p.expected === 0 ? "Nessun documento" : `${p.ready} di ${p.expected} pronti`}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
 
-      {visibleOther.length > 0 && (
-        <section className="rounded-lg border border-border">
-          <header className="border-b border-border bg-sidebar px-4 py-2">
-            <h3 className="font-medium">Altri file</h3>
-          </header>
-          <div className="divide-y divide-border">
-            {visibleOther.map((d) => (
-              <DocRow key={d.path} doc={d} label={d.typeCode ?? "—"} />
-            ))}
-          </div>
-        </section>
+          <PhasePanel
+            phase={PHASES[selected]}
+            types={types.filter((t) => t.phase === selected)}
+            features={features}
+          />
+
+          {otherFiles.length > 0 && (
+            <details className="rounded-lg border border-border">
+              <summary className="cursor-pointer px-4 py-3 text-sm text-muted-foreground">
+                Altri file nella cartella del progetto ({otherFiles.length})
+              </summary>
+              <ul className="divide-y divide-border border-t border-border">
+                {otherFiles.map((d) => (
+                  <li key={d.path}>
+                    <DocRow doc={d} name={d.title} />
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-function TypeRows({ type, docs }: { type: MapType; docs: MapDoc[] }) {
-  const label = `${type.code} ${type.name}`;
-  if (docs.length === 0) {
-    return (
-      <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[1fr_12rem_7rem_4rem]">
-        <div className="flex flex-col">
-          <span className="font-medium text-muted-foreground">{type.name}</span>
-          <span className="text-xs text-muted-foreground">
-            Si crea con <SkillName skill={type.skill} />
-          </span>
-        </div>
-        <span className="hidden text-sm text-muted-foreground sm:block">{label}</span>
-        <ToCreateBadge />
-        <span className="hidden sm:block" />
-      </div>
-    );
-  }
-  return docs.map((d) => <DocRow key={d.path} doc={d} label={label} />);
-}
-
-function DocRow({ doc, label }: { doc: MapDoc; label: string }) {
+function NextStepCard({ next }: { next: NextStep }) {
+  const where = `Fase ${next.phase} · ${PHASES[next.phase].name}${next.feature ? ` · Feature ${next.feature}` : ""}`;
   return (
-    <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[1fr_12rem_7rem_4rem]">
-      <div className="flex min-w-0 flex-col">
-        <Link href={doc.href} className="truncate font-medium hover:underline">
-          {doc.title}
-        </Link>
-        <span className="truncate font-mono text-xs text-muted-foreground">{doc.path}</span>
+    <div className="flex flex-col gap-3 rounded-lg border border-primary bg-primary/10 p-5 sm:flex-row sm:items-center">
+      <div className="flex flex-1 flex-col gap-1">
+        <span className="text-xs font-medium text-primary">Prossimo passo · {where}</span>
+        <span className="text-lg font-medium">
+          {next.doc ? `Completa ${next.name}` : `Crea ${next.name}`}
+          {next.perFeature && !next.feature ? " della prima Feature" : ""}
+        </span>
+        <span className="text-sm text-muted-foreground">
+          {next.doc ? (
+            <>
+              Il documento è <span className="text-foreground">{next.doc.state ?? "senza stato"}</span>: va portato a
+              Completo.
+            </>
+          ) : (
+            <>
+              Si genera con Claude usando la skill <Skill skill={next.skill} />.
+            </>
+          )}
+        </span>
       </div>
-      <span className="hidden text-sm sm:block">{label}</span>
-      <DocumentStateBadge state={doc.state} />
-      <span className="hidden text-sm text-muted-foreground sm:block">{doc.version ?? "—"}</span>
+      {next.doc && (
+        <Link href={next.doc.href} className={buttonVariants()}>
+          Apri documento
+        </Link>
+      )}
     </div>
   );
 }
 
-// "Da creare" non è uno stato del frontespizio: badge neutro tratteggiato, distinto da "Da fare".
-function ToCreateBadge() {
+function PhasePanel({
+  phase,
+  types,
+  features,
+}: {
+  phase: { n: number; name: string };
+  types: MapType[];
+  features: string[];
+}) {
+  const single = types.filter((t) => !t.perFeature);
+  const perFeature = types.filter((t) => t.perFeature);
   return (
-    <span className="inline-flex w-fit items-center rounded-full border border-dashed border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      Da creare
-    </span>
+    <section className="flex flex-col gap-3">
+      <h3 className="text-base font-medium">
+        Fase {phase.n} · {phase.name}
+      </h3>
+      {single.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {single.map((t) => (
+            <TypeItems key={t.code} type={t} docs={t.docs} />
+          ))}
+        </ul>
+      )}
+      {perFeature.length > 0 && features.length === 0 && (
+        <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+          Per ogni Feature del backlog si preparano: {perFeature.map((t) => t.name).join(", ")}. Nessuna Feature è
+          ancora avviata: si parte con <Skill skill={perFeature[0].skill} />.
+        </div>
+      )}
+      {perFeature.length > 0 &&
+        features.map((f) => (
+        <div key={f} className="flex flex-col gap-2">
+          <h4 className="text-sm font-medium text-muted-foreground">{f ? `Feature ${f}` : "Senza Feature"}</h4>
+          <ul className="flex flex-col gap-2">
+            {perFeature.map((t) => (
+              <TypeItems key={t.code} type={t} docs={t.docs.filter((d) => (d.feature ?? "") === f)} />
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
   );
 }
 
-function SkillName({ skill }: { skill: string }) {
+function TypeItems({ type, docs }: { type: MapType; docs: MapDoc[] }) {
+  if (docs.length === 0) {
+    return (
+      <li className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border px-4 py-3">
+        <div className="flex flex-1 flex-col">
+          <span className="font-medium text-muted-foreground">{type.name}</span>
+          <span className="text-xs text-muted-foreground">
+            Si crea con <Skill skill={type.skill} />
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground">Non ancora creato</span>
+      </li>
+    );
+  }
+  return docs.map((d) => (
+    <li key={d.path} className="rounded-lg border border-border bg-card">
+      <DocRow doc={d} name={type.name} />
+    </li>
+  ));
+}
+
+function DocRow({ doc, name }: { doc: MapDoc; name: string }) {
+  return (
+    <Link href={doc.href} title={doc.path} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate font-medium">{name}</span>
+        {doc.title !== name && <span className="truncate text-xs text-muted-foreground">{doc.title}</span>}
+      </div>
+      {doc.version && <span className="text-xs text-muted-foreground">{doc.version}</span>}
+      <DocumentStateBadge state={doc.state} />
+      <ChevronRight className="size-4 text-muted-foreground" />
+    </Link>
+  );
+}
+
+function SearchResults({ types, otherFiles, q }: { types: MapType[]; otherFiles: MapDoc[]; q: string }) {
+  const hits = [
+    ...types.flatMap((t) =>
+      t.docs
+        .filter((d) => `${t.name} ${t.code} ${d.title} ${d.path}`.toLowerCase().includes(q))
+        .map((d) => ({ doc: d, name: t.name, phase: t.phase as number | null })),
+    ),
+    ...otherFiles
+      .filter((d) => `${d.title} ${d.path}`.toLowerCase().includes(q))
+      .map((d) => ({ doc: d, name: d.title, phase: null })),
+  ];
+  if (hits.length === 0) return <p className="text-sm text-muted-foreground">Nessun documento trovato.</p>;
+  return (
+    <ul className="flex flex-col gap-2">
+      {hits.map((h) => (
+        <li key={h.doc.path} className="rounded-lg border border-border bg-card">
+          <div className="px-4 pt-2 text-xs text-muted-foreground">
+            {h.phase === null ? "Altri file" : `Fase ${h.phase} · ${PHASES[h.phase].name}`}
+          </div>
+          <DocRow doc={h.doc} name={h.name} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Skill({ skill }: { skill: string }) {
   return <code className="font-mono text-xs text-foreground">/{skill}</code>;
 }

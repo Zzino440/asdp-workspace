@@ -119,6 +119,10 @@ nuovo arriva su Vercel con il merge su `master`.
   raggruppati per Feature (`F\d+` nel percorso), "Prossimo passo" (primo tipo per `sort_order`
   non Completo/Approvato), filtro lato client, "Reindicizza" nel menu `⋯`. Verificata in locale
   con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Non mergiata.
+- [x] Seconda versione, più semplice (2026-11-25, feedback di Lorenzo: "poco chiara"): barra delle
+  5 fasi cliccabili con nome (Guida §6–§10) e "x di y pronti", sotto una fase alla volta;
+  prossimo passo in linguaggio semplice con "Apri documento"; niente percorsi e codici in vista;
+  la ricerca mostra i risultati di tutte le fasi; "Altri file" chiuso in fondo.
 - Da sistemare in `src/lib/documents/` (sessione del documento): `detectType` non riconosce i
   file `T4.3-F{nn}-US{nn}.md` (non iniziano con `T4.3-part`, cartella condivisa da 3 tipi) se
   il frontespizio non ha `template_origine: T4.3-part`: finiscono in "Altri file".
