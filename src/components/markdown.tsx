@@ -12,7 +12,10 @@ const components: Components = {
   blockquote: (props) => <blockquote className="my-3 border-l-2 pl-4 text-muted-foreground" {...props} />,
   a: (props) => <a className="text-primary underline-offset-4 hover:underline" {...props} />,
   code: (props) => <code className="rounded bg-muted px-1 font-mono text-sm" {...props} />,
-  hr: () => <hr className="my-6 border-border" />,
+  pre: (props) => (
+    <pre className="my-3 overflow-x-auto rounded-md bg-muted p-3 text-sm [&>code]:bg-transparent [&>code]:p-0" {...props} />
+  ),
+  hr: () =><hr className="my-6 border-border" />,
   table: (props) => (
     <div className="my-4 overflow-x-auto">
       <table className="w-full border-collapse text-sm" {...props} />

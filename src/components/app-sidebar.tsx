@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
   { href: "/progetti", label: "Progetti", icon: FolderKanban, adminOnly: false },
   { href: "/approvazioni", label: "Approvazioni", icon: CheckSquare, adminOnly: false },
-  { href: "/libreria", label: "Libreria framework", icon: BookOpen, adminOnly: false },
+  { href: "/guida", label: "Guida", icon: BookOpen, adminOnly: false },
   { href: "/amministrazione", label: "Amministrazione", icon: Settings, adminOnly: true },
 ];
 

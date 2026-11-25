@@ -7,6 +7,7 @@ import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { documentLevel, listDocuments, listVersions, readDocument, readVersion } from "@/lib/documents";
+import { guidaHrefForType } from "@/lib/guida";
 import { PHASES } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 
@@ -109,6 +110,11 @@ async function DocumentView({
               <span>
                 {type.code} {type.name}
               </span>
+              {guidaHrefForType(type.code) && (
+                <Link href={guidaHrefForType(type.code)!} className="ml-2 text-primary hover:underline">
+                  Cos&apos;è questo documento
+                </Link>
+              )}
             </>
           )}
         </nav>

@@ -25,6 +25,32 @@
 
 ## Storia
 
+## [0.3.0] 2026-11-26 — Guida al framework
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **Guida** (nuova voce della barra laterale, al posto di "Libreria framework"): 27 pagine in
+  stile documentazione, con indice a sinistra, "In questa pagina" a destra e
+  Precedente/Successivo. Sezioni: Inizia qui (cos'è ASDP, come si usa l'app, il percorso), le
+  5 fasi, una pagina per ogni documento (con riquadro Fase, Chi scrive, Chi approva, Input,
+  Skill, Output), Lavorare con Claude (collegare Claude, lanciare una skill, domande D[N],
+  aggiornare un documento), Riferimento (ruoli, stati e frontespizio, gate, glossario). Dove la
+  Guida del framework e le skill divergono, le pagine descrivono il funzionamento con le skill e
+  lo segnalano in una nota.
+- **Pagina progetto**: "Come si fa" accanto alla skill nel prossimo passo e nei documenti da
+  creare; "Cosa si fa in questa fase" sopra l'elenco della fase.
+- **Documento**: "Cos'è questo documento" nel percorso in alto.
+- Roadmap "usare il framework al meglio" in `docs/STATO.md` e `docs/ARCHITETTURA.md`.
+
+### Migrazioni e configurazione
+- Nessuna. I testi sono in `src/content/guida/`, il registro delle pagine in `src/lib/guida.ts`.
+
+### Test eseguiti
+- `tsc --noEmit`, `lint`, `build` ok; le 27 pagine della guida sono prerenderizzate.
+- Browser in locale: navigazione tra le pagine con l'indice "In questa pagina" aggiornato, link
+  "Come si fa" dalla mappa del progetto PFS, link interni dei testi tutti verso pagine esistenti.
+
 ## [0.2.0] 2026-11-25 — Mappa del progetto e documento in vista unica
 
 **Autore**: Lorenzo Belli

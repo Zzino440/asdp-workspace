@@ -1,0 +1,55 @@
+Un **gate** è un punto di controllo: il lavoro si ferma finché una persona non decide che si può andare avanti. In ASDP ce ne sono di due tipi. I **gate A e B** sono le pause di una skill durante la conversazione con Claude. I **gate del framework** sono le approvazioni: a fine fase e, nella Fase 4, i gate G1, G2 e G3.
+
+## I gate A e B delle skill
+
+| Gate | Quando | Cosa fai tu |
+|---|---|---|
+| **A, struttura** | Prima di scrivere. Claude propone in chat, sotto il titolo **AZIONE RICHIESTA**, tabelle brevi con le scelte principali, e si ferma | Approvi, correggi righe precise o chiedi di spostare un elemento |
+| **B, documento** | Dopo aver scritto. Claude controlla il documento intero e riporta l'esito con i conteggi | Leggi il riepilogo e, se serve, chiedi correzioni |
+
+Il gate A è il più importante: un errore nella struttura si propagherebbe a tutto il documento. Una risposta vaga come "più o meno va bene" non basta: Claude ti chiede quali righe.
+
+Con la modalità `diretto` la skill salta il gate A e fa tutto in un passaggio: le lacune diventano [domande D[N]](/guida/domande-aperte).
+
+### Dove si ferma ogni skill
+
+| Skill | Dove si ferma |
+|---|---|
+| Kickoff, Requisiti Consolidati | Non ha gate A e B: scrive il documento in un passaggio |
+| [Analisi Funzionale](/guida/t1-4) | Gate A sulla struttura e gate B |
+| [Architettura](/guida/t2-2) | Gate A su struttura e decisioni, poi gate B |
+| [Contesto Tecnico](/guida/t2-4) | Gate A solo se c'è da decidere su pattern e incoerenze, poi gate B |
+| [Risk Register](/guida/t3-1) | Gate A sui rischi e la loro valutazione, poi gate B |
+| [Backlog](/guida/t4-1) | Non si ferma: le anomalie finiscono nel documento |
+| [Analisi Tecnica](/guida/t4-2) | Tre sessioni, con una pausa dopo ogni gruppo di pilastri; la prima è la più importante |
+| [Piano di lavoro](/guida/t4-3-index), [Task + Scaffold](/guida/t4-3-part) | Solo se manca un input o c'è un problema bloccante |
+
+## I gate della Fase 4: G1, G2, G3
+
+| Gate | Cosa si approva | Chi approva | Quando è superato |
+|---|---|---|---|
+| **G1** · Backlog approvato | Il [Backlog](/guida/t4-1) | PM | Ogni caso d'uso è coperto da User Story, nessuna storia è orfana, le differenze con l'offerta sono spiegate, il piano degli sprint sta nella capacità del team |
+| **G2** · Feature pronta | [Analisi Tecnica](/guida/t4-2) e [Piano di lavoro](/guida/t4-3-index) di una Feature | TL | Componenti, API e dati sono precisi, tutto è coperto da task, i task non hanno dipendenze circolari, il checkpoint è definito, l'effort torna con il backlog |
+| **G3** · Scaffold validato | I [Task + Scaffold](/guida/t4-3-part) di una User Story | TL | Il codice compila, non ci sono segnaposto, la Definition of Done è legata ai criteri di accettazione, la sicurezza è a posto. È anche la Definition of Ready della storia |
+
+**G2 si fa in una sola seduta.** Il TL valida insieme Analisi Tecnica e Piano di lavoro: due pagine senza codice, dove correggere costa poco. Un errore che passa il G2 si moltiplica in tutti i file di codice generati dopo.
+
+Dopo il gate il documento diventa la base congelata: il backlog dopo il G1, il piano dopo il G2, i task dopo il G3. Per cambiarlo serve una nuova versione e il gate va rifatto (vedi [Aggiornare un documento](/guida/aggiornare-documento)).
+
+## I gate di fine fase
+
+| Fase | Gate | Chi approva | Cosa controllare |
+|---|---|---|---|
+| [0 · Setup](/guida/fase-0) | Kickoff approvato | PM | Kickoff fatto, verbale distribuito |
+| [1 · Analisi](/guida/fase-1) | Requisiti validati | PO del cliente | Nessuna domanda aperta bloccante, ogni requisito coperto, Analisi Funzionale approvata |
+| [2 · Architettura](/guida/fase-2) | Architettura approvata | TL | Requisiti non funzionali definiti, architettura con le decisioni (ADR), contesto tecnico pronto |
+| [3 · Rischi](/guida/fase-3) | Risk Register condiviso | PM | Rischi in tutte le categorie, mitigazioni e responsabili, registro condiviso con sponsor e PO |
+| [4 · Preparazione delivery](/guida/fase-4) | G1, G2, G3 | PM e TL | Vedi sopra |
+
+> **Nota:** nella Guida del framework le sigle G1–G6 indicano anche gli strumenti di governo del PM: registro di rischi e problemi, stato avanzamento, minuta, Gantt, staffing, kickoff pack. Non sono gate. In questa app G1, G2 e G3 indicano sempre i gate della Fase 4.
+
+## Le approvazioni nell'app
+
+Oggi l'approvazione si registra nel frontespizio del documento: stato Approvato, chi, quando, quale versione, quale gate e con quale evidenza (vedi [Stati e frontespizio](/guida/stati)). Può farlo solo chi ha il permesso Approva (vedi [Ruoli e approvazioni](/guida/ruoli)), per esempio chiedendo a Claude collegato di aggiornare il frontespizio. Dalla finestra **Tutti i dettagli** lo stato Approvato e i campi Approvato da, Approvato il, Versione approvata ed Evidenza approvazione non si modificano.
+
+> **Nota:** il flusso di approvazione nell'app è in arrivo: invio in approvazione con la checklist del gate, **Approva** o **Richiedi modifiche**, una coda delle approvazioni da fare e la registrazione dell'approvazione del cliente con la sua evidenza.

@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ReindexMenu } from "./reindex-button";
 import { PHASES } from "@/lib/labels";
+import { guidaHref, guidaHrefForType } from "@/lib/guida";
 
 export type MapDoc = {
   path: string;
@@ -192,7 +193,8 @@ function NextStepCard({ next }: { next: NextStep }) {
             <>
               Si genera con Claude usando la skill <Skill skill={next.skill} />.
             </>
-          )}
+          )}{" "}
+          <GuideLink code={next.code} />
         </span>
       </div>
       {next.doc && (
@@ -217,9 +219,14 @@ function PhasePanel({
   const perFeature = types.filter((t) => t.perFeature);
   return (
     <section className="flex flex-col gap-3">
-      <h3 className="text-base font-medium">
-        Fase {phase.n} · {phase.name}
-      </h3>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-base font-medium">
+          Fase {phase.n} · {phase.name}
+        </h3>
+        <Link href={guidaHref(`fase-${phase.n}`)} className="text-xs text-primary hover:underline">
+          Cosa si fa in questa fase
+        </Link>
+      </div>
       {single.length > 0 && (
         <ul className="flex flex-col gap-2">
           {single.map((t) => (
@@ -230,7 +237,7 @@ function PhasePanel({
       {perFeature.length > 0 && features.length === 0 && (
         <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
           Per ogni Feature del backlog si preparano: {perFeature.map((t) => t.name).join(", ")}. Nessuna Feature è
-          ancora avviata: si parte con <Skill skill={perFeature[0].skill} />.
+          ancora avviata: si parte con <Skill skill={perFeature[0].skill} />. <GuideLink code={perFeature[0].code} />
         </div>
       )}
       {perFeature.length > 0 &&
@@ -255,7 +262,7 @@ function TypeItems({ type, docs }: { type: MapType; docs: MapDoc[] }) {
         <div className="flex flex-1 flex-col">
           <span className="font-medium text-muted-foreground">{type.name}</span>
           <span className="text-xs text-muted-foreground">
-            Si crea con <Skill skill={type.skill} />
+            Si crea con <Skill skill={type.skill} /> · <GuideLink code={type.code} />
           </span>
         </div>
         <span className="text-xs text-muted-foreground">Non ancora creato</span>
@@ -306,6 +313,16 @@ function SearchResults({ types, otherFiles, q }: { types: MapType[]; otherFiles:
         </li>
       ))}
     </ul>
+  );
+}
+
+function GuideLink({ code }: { code: string }) {
+  const href = guidaHrefForType(code);
+  if (!href) return null;
+  return (
+    <Link href={href} className="text-primary hover:underline">
+      Come si fa
+    </Link>
   );
 }
 

@@ -6,13 +6,14 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-25 — Lorenzo Belli con Claude Code
+**Ultimo aggiornamento**: 2026-11-26 — Lorenzo Belli con Claude Code
 
 ## Versione
 
 - `0.1.0` (`package.json`, `CHANGELOG.md`), su `master` dal commit "Add app version and
   changelog". Tag git `0.1.0` su `master`: da fare dopo il merge.
-- `0.2.0` (mappa del progetto e documento in vista unica) su `feature/vari-miglioramenti`: tag
+- `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
+  `feature/vari-miglioramenti`: tag
   dopo il merge su `master`.
 
 ## Milestone
@@ -170,12 +171,35 @@ nuovo arriva su Vercel con il merge su `master`.
   file `T4.3-F{nn}-US{nn}.md` (non iniziano con `T4.3-part`, cartella condivisa da 3 tipi) se
   il frontespizio non ha `template_origine: T4.3-part`: finiscono in "Altri file".
 
-## Dopo
+## Dopo: roadmap "usare il framework al meglio"
 
-1. `create_document` (decidere da dove prendere i template: plugin `asdp` o repo
-   `dst-claude-skills`).
-2. Milestone 3: gate e approvazioni (`submit_for_approval` via MCP).
-3. Voci di `TODO.md`.
+Decisa con Lorenzo il 2026-11-25 dopo un'esplorazione di app, plugin `asdp` e Guida. Il problema:
+l'app mostra dove si trova il progetto ma non spiega il framework e non accompagna nel fare il
+passo (lanciare la skill, rispondere alle D[N], approvare). Le skill si lanciano con **Claude +
+connettore MCP**; le skill in cloud vengono dopo.
+
+1. **Guida al framework nell'app** (`/guida`) — fatta il 2026-11-26, versione `0.3.0`, non
+   committata. 27 pagine (testi in `src/content/guida/`, registro in `src/lib/guida.ts`), link
+   "Come si fa" dalla mappa e "Cos'è questo documento" dal documento. Verificata in locale
+   (build, navigazione, link). Da fare: rilettura dei testi da parte di Lorenzo/team; divergenze
+   Guida ↔ plugin in `TODO.md`.
+2. **Ponte passo → Claude**: scheda "Come fare questo passo" con "Copia prompt per Claude"
+   (codice progetto, skill, input da leggere via MCP); MCP `create_document` (decidere da dove
+   prendere i template: plugin `asdp` o repo `dst-claude-skills`), `skill_name`/`per_feature` in
+   `get_project`, tool `next_step`, prompt MCP per passo, istruzioni del server con la mappa
+   fasi → skill → documenti; pagina "Collega Claude".
+3. **Domande aperte D[N]**: estrazione nell'indexer, vista unica di progetto, risposta con un
+   clic (scrive la casella nel Markdown), prompt pronto per rilanciare la skill in aggiornamento.
+4. **Gate e approvazioni** (milestone 3): invio con checklist del gate, Approva / Richiedi
+   modifiche che scrive il blocco Approvazione, coda in "Approvazioni", `submit_for_approval` via
+   MCP; un Approvato modificato torna In corso.
+5. **Dashboard "Tocca a me"**: per persona, passi, D[N], approvazioni e scadenze che la riguardano.
+6. **Profilo progetto** (Nuovo / Evolutiva / BugFix, MATRIX TipoProgetto × Fasi) e fase
+   modificabile dal PM: la mappa marca i passi che il profilo salta.
+7. **Skill in cloud** (milestone 4) per chi non usa Claude.
+8. Fuori dall'app, da decidere col team: allineare Guida e plugin (RACI di T3.1/T4.1, chi
+   definisce gli NFR, doppio significato di G1/G2/G3, gerarchia degli ID).
+9. Voci di `TODO.md`.
 
 ## Ambienti
 

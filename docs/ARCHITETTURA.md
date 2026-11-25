@@ -185,9 +185,12 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 2b | **Fatto**: modifica e commit: editor visuale (Milkdown) nella stessa pagina della lettura, salvataggio a blocchi che lascia identico il Markdown non toccato (`src/lib/markdown-splice.ts`), frontespizio come form, concorrenza ottimistica con bozza locale |
 | 2c | **Fatto**: versioni (commit del file con autore e canale App/MCP/Git) e diff rispetto alla versione precedente |
 | 2d | **In corso**: server MCP con login OAuth e tool di lettura e scrittura (fatto); `create_document`, plugin `asdp`, Claude desktop (dopo il deploy di prova) |
+| 2e | **In corso**: Guida al framework nell'app (`/guida`): fasi, documenti, ruoli, stati, gate, lavoro con Claude; link dalla mappa e dal documento |
+| 2f | Ponte passo → Claude: prompt pronto per ogni passo, `create_document`, `next_step`, prompt MCP, pagina "Collega Claude" |
 | 3 | Gate e approvazioni |
+| 3b | Dashboard "Tocca a me"; profilo progetto (Nuovo/Evolutiva/BugFix) e fase modificabile |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
-| 5 | Modifica con AI, Domande aperte di progetto |
+| 5 | Modifica con AI, Domande aperte di progetto (anticipabili dopo 2f: risposta alle D[N] con un clic) |
 | 6 | Riservati, Pubblica su SharePoint (Microsoft Graph), login Microsoft Entra, deploy Vercel |
 
 ## 8. Punti aperti
@@ -201,3 +204,6 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
   lista di ritorni ammessi nella pagina di consenso).
 - Adattare le skill del plugin `asdp` a salvare via MCP invece che su file locali.
 - Teams esce dal giro dei documenti ASDP: diverge dalla Guida §18.4.3, va deciso con il team.
+- Guida del framework e plugin `asdp` divergono su alcuni punti (RACI di T3.1 e T4.1, chi definisce
+  gli NFR, G1/G2/G3 usati sia per i gate di Fase 4 sia per gli artefatti di governance): la Guida
+  nell'app descrive come funziona con le skill e segnala la differenza; da decidere col team.
