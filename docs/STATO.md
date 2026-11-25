@@ -178,8 +178,8 @@ l'app mostra dove si trova il progetto ma non spiega il framework e non accompag
 passo (lanciare la skill, rispondere alle D[N], approvare). Le skill si lanciano con **Claude +
 connettore MCP**; le skill in cloud vengono dopo.
 
-1. **Guida al framework nell'app** (`/guida`) — fatta il 2026-11-26, versione `0.3.0`, non
-   committata. 27 pagine (testi in `src/content/guida/`, registro in `src/lib/guida.ts`), link
+1. **Guida al framework nell'app** (`/guida`) — fatta il 2026-11-26, versione `0.3.0`, commit
+   `3ad2fe8`. 27 pagine (testi in `src/content/guida/`, registro in `src/lib/guida.ts`), link
    "Come si fa" dalla mappa e "Cos'è questo documento" dal documento. Verificata in locale
    (build, navigazione, link). Da fare: rilettura dei testi da parte di Lorenzo/team; divergenze
    Guida ↔ plugin in `TODO.md`.
