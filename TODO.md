@@ -53,3 +53,7 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   - T4.1 Backlog: per la Guida lo produce il BA/AF, nel seed hanno "edit" AF e TL;
   - T1.4 Analisi Funzionale: per la Guida la approva il PO cliente dopo la revisione del TL,
     nel seed la approva il PM.
+- [ ] **Modifica di un documento Approvato** (milestone 3). Oggi chi ha "edit" può cambiare il
+  corpo di un documento `Approvato` e lo stato resta `Approvato`. GUIDA-FRONT invece dice che
+  una modifica lo riporta a `In corso` e svuota i dati di approvazione. Con l'editor visuale
+  questo caso capita più spesso.

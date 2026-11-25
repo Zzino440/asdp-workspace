@@ -42,7 +42,9 @@
   - Elenco delle versioni con il diff sulla stessa pagina.
   - Elenco degli altri documenti del progetto.
 - **Modifiche non salvate**: indicatore e conferma prima di uscire dalla pagina. La bozza resta
-  nel browser e si può riprendere, anche dopo un conflitto con una versione più recente.
+  nel browser e si può riprendere. Se qualcuno ha salvato nel frattempo, si apre la versione
+  nuova e a fianco compaiono le parti cambiate nella bozza, da riportare: le modifiche degli altri
+  non vengono cancellate.
 - Il messaggio di commit diventa una "nota sulla modifica" facoltativa.
 
 ### Migrazioni e configurazione
@@ -60,9 +62,11 @@
   - modifica e salvataggio del T1.4: diff di una riga, tabella intatta;
   - conferma all'uscita con modifiche;
   - bozza ripresa dopo l'uscita e salvata, con la sandbox riportata al testo di partenza;
+  - conflitto con due schede: salvataggio rifiutato, bozza conservata, versione nuova con le
+    proprie modifiche a fianco, quelle dell'altra scheda intatte;
   - form del frontespizio del T3.1.
-- `tsc --noEmit`, `eslint src` e `pnpm build` ok.
-- Non provato: conflitto reale, cioè un commit su GitLab durante la modifica.
+- `tsc --noEmit`, `eslint . --ignore-pattern ".claude/**"` e `pnpm build` ok. `pnpm lint` da
+  solo fallisce perché analizza anche i worktree di Claude in `.claude/worktrees/`.
 
 ## [0.1.0] 2026-11-20 — Prima versione
 

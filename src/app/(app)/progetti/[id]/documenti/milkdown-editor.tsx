@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Editor, defaultValueCtx, rootCtx } from "@milkdown/kit/core";
+import { Editor, defaultValueCtx, remarkStringifyOptionsCtx, rootCtx } from "@milkdown/kit/core";
 import { history, redoCommand, undoCommand } from "@milkdown/kit/plugin/history";
 import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
 import {
@@ -39,6 +39,8 @@ export function MilkdownEditor(props: {
       .config((ctx) => {
         ctx.set(rootCtx, root.current);
         ctx.set(defaultValueCtx, callbacks.current.initial);
+        // Stile dei template ASDP: "-" per elenchi e separatori.
+        ctx.update(remarkStringifyOptionsCtx, (options) => ({ ...options, bullet: "-" as const, rule: "-" as const }));
         ctx.get(listenerCtx).markdownUpdated((_, markdown) => callbacks.current.onChange(markdown));
       })
       .use(commonmark)

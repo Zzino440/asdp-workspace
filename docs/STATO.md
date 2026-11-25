@@ -120,15 +120,15 @@ nuovo arriva su Vercel con il merge su `master`.
   catalogo dei tipi con skill × indice documenti, "Da creare" con la skill, tipi per-feature
   raggruppati per Feature (`F\d+` nel percorso), "Prossimo passo" (primo tipo per `sort_order`
   non Completo/Approvato), filtro lato client, "Reindicizza" nel menu `⋯`. Verificata in locale
-  con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Non mergiata.
+  con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Su
+  `feature/vari-miglioramenti` (commit `4420644`).
 - [x] Seconda versione, più semplice (2026-11-25, feedback di Lorenzo: "poco chiara"): barra delle
   5 fasi cliccabili con nome (Guida §6–§10) e "x di y pronti", sotto una fase alla volta;
   prossimo passo in linguaggio semplice con "Apri documento"; niente percorsi e codici in vista;
   la ricerca mostra i risultati di tutte le fasi; "Altri file" chiuso in fondo.
-  con `pm@asdp.test`. Aggiunto `src/components/ui/dropdown-menu.tsx` (shadcn). Su `feature/vari-miglioramenti`
-  (commit `4420644`).
-- [x] Documento in vista unica (2026-11-25, branch `feature/vari-miglioramenti`, non
-  committato). Lettura, modifica e versioni stanno sulla stessa pagina (`documenti/[...path]`);
+- [x] Documento in vista unica (2026-11-25, branch `feature/vari-miglioramenti`, commit
+  `868481c` e `11961da`; le ultime correzioni non sono ancora committate). Lettura, modifica e
+  versioni stanno sulla stessa pagina (`documenti/[...path]`);
   le route `modifica/` e `versioni/` sono state eliminate.
   - Editor visuale Milkdown (`documenti/milkdown-editor.tsx`).
   - Salvataggio a blocchi (`src/lib/markdown-splice.ts`): i blocchi non toccati restano identici
@@ -136,9 +136,16 @@ nuovo arriva su Vercel con il merge su `master`.
   - Frontespizio nel pannello laterale, con etichette in `FRONT_MATTER_LABELS`.
   - Bozza in `localStorage` per uscite e conflitti.
   - Versione `0.2.0` con voce in `CHANGELOG.md`.
-  - Verificato in locale con `pm@asdp.test`: sulla sandbox ci sono due commit di prova che si
-    annullano a vicenda (25/11, 20:56 e 20:57).
-  - Da provare: un conflitto reale (commit su GitLab mentre si modifica).
+  - Bozza superata (qualcuno ha salvato nel frattempo): si apre la versione nuova e a fianco si
+    mostrano solo i blocchi cambiati dall'utente (`changedBlocks`), da riportare a mano. Così
+    non si cancellano le modifiche degli altri.
+  - Serializzatore con `-` per elenchi e separatori (stile dei template ASDP). Un blocco
+    modificato viene comunque riscritto per intero: escape di `[`, tabelle allineate.
+  - Verificato in locale con `pm@asdp.test`, compreso il conflitto con due schede (25/11,
+    21:04–21:05). La sandbox è tornata al testo di partenza, salvo l'elenco di F01 nel T1.4, che
+    ora usa `*` invece di `-` (stesso significato).
+  - Non verificato: come appaiono nell'editor i commenti HTML del corpo (in lettura sono
+    nascosti, in modifica si vedono come testo).
 - Da decidere (Lorenzo): i campi "array" del frontespizio restano testo separato da virgole,
   senza chip (scelta per tenere il codice semplice).
 - Da sistemare in `src/lib/documents/` (sessione del documento): `detectType` non riconosce i

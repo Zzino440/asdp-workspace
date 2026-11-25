@@ -55,22 +55,22 @@ export async function DocumentList({
     ...new Set(mapTypes.filter((t) => t.perFeature).flatMap((t) => t.docs.map((d) => d.feature ?? ""))),
   ].sort();
 
-  // Prossimo passo: il primo tipo in ordine sort_order che manca o ha un documento non
-  // Completo/Approvato. I tipi per-feature si valutano Feature per Feature (le Feature sono
-  // quelle che hanno già almeno un documento per-feature); senza Feature, il primo tipo
-  // per-feature è il prossimo passo per la prima Feature.
-  let next: NextStep | null = null;
+  // Passi aperti in ordine sort_order: un tipo che manca o ha un documento non Completo/Approvato.
+  // I tipi per-feature si valutano Feature per Feature (le Feature sono quelle con almeno un
+  // documento per-feature); senza Feature, il tipo vale come passo per la prima Feature.
+  const open: NextStep[] = [];
   for (const type of mapTypes) {
     const groups = type.perFeature && features.length > 0 ? features : [null];
     for (const feature of groups) {
       const docs = type.perFeature && feature !== null ? type.docs.filter((d) => (d.feature ?? "") === feature) : type.docs;
-      if (docs.length === 0 || docs.some((d) => !isDone(d))) {
-        next = { code: type.code, name: type.name, phase: type.phase, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null };
-        break;
-      }
+      if (docs.length === 0 || docs.some((d) => !isDone(d)))
+        open.push({ code: type.code, name: type.name, phase: type.phase, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null });
     }
-    if (next) break;
   }
+  // Prossimo passo: il primo aperto dalla fase attuale in poi (se non ce ne sono, il primo
+  // arretrato). Gli aperti delle fasi precedenti sono segnalati a parte come arretrati.
+  const next = open.find((s) => s.phase >= currentPhase) ?? open[0] ?? null;
+  const behind = open.filter((s) => s.phase < currentPhase && s !== next).length;
 
   return (
     <ProjectMap
@@ -81,6 +81,7 @@ export async function DocumentList({
       features={features}
       otherFiles={otherFiles}
       next={next}
+      behind={behind}
     />
   );
 }

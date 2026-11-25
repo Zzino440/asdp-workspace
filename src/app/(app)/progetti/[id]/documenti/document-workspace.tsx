@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FRONT_MATTER_LABELS } from "@/lib/labels";
-import { spliceMarkdown } from "@/lib/markdown-splice";
+import { changedBlocks, spliceMarkdown } from "@/lib/markdown-splice";
+import { Markdown } from "@/components/markdown";
 
 // Campi gestiti dal flusso di approvazione (milestone 3) o dallo schema: solo lettura qui.
 const LOCKED = new Set(["versione_frontespizio", "approvato_da", "approvato_il", "versione_approvata", "evidenza_approvazione"]);
@@ -22,7 +23,8 @@ const STATES = ["Da fare", "In corso", "Completo"].map((s) => ({ value: s, label
 const DATE_FIELDS = new Set(["creato_il", "scadenza", "completato_il"]);
 
 type Value = string | number | boolean | null | Value[];
-type Draft = { baseCommit: string; body: string; fields: Record<string, string>; savedAt: string };
+// baseline: testo dell'editor da cui è partita la bozza, per ritrovare cosa ha cambiato l'utente.
+type Draft = { baseCommit: string; baseline: string; body: string; fields: Record<string, string>; savedAt: string };
 
 const label = (key: string) => FRONT_MATTER_LABELS[key] ?? key;
 const toText = (value: unknown) =>
@@ -71,6 +73,8 @@ export function DocumentWorkspace(props: {
   const [bodyDirty, setBodyDirty] = useState(false);
   const [resume, setResume] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  // Bozza partita da una versione precedente: le parti cambiate dall'utente, da riapplicare.
+  const [mine, setMine] = useState<{ blocks: string[]; fields: [string, string][] } | null>(null);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<{ error: string; conflict?: boolean } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -82,7 +86,9 @@ export function DocumentWorkspace(props: {
       !LOCKED.has(key) && !(key === "stato" && value === "Approvato") && (typeof value !== "object" || value === null || Array.isArray(value)),
   );
   const fieldsDirty = editable.some(([key]) => fields[key] !== initialFields[key]);
-  const dirty = editing && (bodyDirty || fieldsDirty);
+  // Aprendo una versione dal pannello l'editor si chiude.
+  const isEditing = editing && !props.versionView;
+  const dirty = isEditing && (bodyDirty || fieldsDirty);
 
   // Bozza rimasta in questo browser (salvataggio non riuscito, pagina chiusa, conflitto).
   useEffect(() => {
@@ -94,8 +100,11 @@ export function DocumentWorkspace(props: {
   }, [draftKey]);
 
   function storeDraft(body: string, nextFields: Record<string, string>) {
+    const baseline = editor.current?.baseline ?? originalBody;
+    const unchanged = body === baseline && editable.every(([key]) => nextFields[key] === initialFields[key]);
     try {
-      const value: Draft = { baseCommit: props.lastCommitId, body, fields: nextFields, savedAt: new Date().toISOString() };
+      if (unchanged) return localStorage.removeItem(draftKey);
+      const value: Draft = { baseCommit: props.lastCommitId, baseline, body, fields: nextFields, savedAt: new Date().toISOString() };
       localStorage.setItem(draftKey, JSON.stringify(value));
     } catch {}
   }
@@ -140,10 +149,21 @@ export function DocumentWorkspace(props: {
     setEditing(true);
   }
 
+  // Il documento è cambiato dopo la bozza: si modifica la versione nuova e si mostrano a fianco
+  // solo le parti cambiate dall'utente, così non si cancellano le modifiche degli altri.
+  function startFromStaleDraft(stale: Draft) {
+    setMine({
+      blocks: changedBlocks(stale.baseline, stale.body),
+      fields: Object.entries(stale.fields).filter(([key, value]) => key in initialFields && value !== initialFields[key]),
+    });
+    startEditing(null);
+  }
+
   function cancel() {
     if (dirty && !confirm("Annullare le modifiche non salvate?")) return;
     clearDraft();
     editor.current = null;
+    setMine(null);
     setEditing(false);
     setFields(initialFields);
   }
@@ -211,7 +231,7 @@ export function DocumentWorkspace(props: {
         <DocumentStateBadge state={front.stato ? String(front.stato) : null} />
         {dirty && <span className="text-xs text-muted-foreground">Modifiche non salvate</span>}
         <div className="ml-auto flex items-center gap-2">
-          {editing ? (
+          {isEditing ? (
             <>
               <Button variant="ghost" size="sm" onClick={cancel} disabled={pending}>
                 Annulla
@@ -240,7 +260,7 @@ export function DocumentWorkspace(props: {
               {result.conflict && (
                 <AlertDescription className="flex flex-col items-start gap-2">
                   Qualcuno ha salvato una nuova versione mentre lavoravi. Le tue modifiche sono conservate in questo
-                  browser: ricarica la pagina e scegli «Riprendi la bozza».
+                  browser: ricarica la pagina e scegli «Modifica con la mia bozza a fianco».
                   <Button
                     size="sm"
                     variant="outline"
@@ -256,23 +276,53 @@ export function DocumentWorkspace(props: {
             </Alert>
           )}
 
-          {draft && !editing && props.canEdit && !props.versionView && (
+          {draft && !isEditing && props.canEdit && !props.versionView && (
             <Alert>
               <AlertTitle>
                 Hai una bozza non salvata del{" "}
                 {new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(new Date(draft.savedAt))}
               </AlertTitle>
-              <AlertDescription className="flex flex-col items-start gap-2">
-                {draft.baseCommit !== props.lastCommitId &&
-                  "Nel frattempo il documento è stato aggiornato: riprendendo la bozza, le parti che avevi cambiato sostituiscono quelle nuove. Controlla l'ultima versione nel pannello Versioni."}
-                <div className="flex gap-2">
+              {draft.baseCommit === props.lastCommitId ? (
+                <AlertDescription className="flex gap-2">
                   <Button size="sm" onClick={() => startEditing(draft)}>
                     Riprendi la bozza
                   </Button>
                   <Button size="sm" variant="ghost" onClick={clearDraft}>
                     Scarta
                   </Button>
-                </div>
+                </AlertDescription>
+              ) : (
+                <AlertDescription className="flex flex-col items-start gap-2">
+                  Nel frattempo qualcuno ha salvato una versione nuova. Apri la versione nuova: accanto
+                  all&apos;editor trovi le parti che avevi cambiato, da riportare dove servono.
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => startFromStaleDraft(draft)}>
+                      Modifica con la mia bozza a fianco
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={clearDraft}>
+                      Scarta
+                    </Button>
+                  </div>
+                </AlertDescription>
+              )}
+            </Alert>
+          )}
+
+          {isEditing && mine && (
+            <Alert>
+              <AlertTitle>Le tue modifiche nella bozza</AlertTitle>
+              <AlertDescription className="flex w-full flex-col gap-2">
+                {mine.blocks.length === 0 && mine.fields.length === 0 && "Nessuna differenza da riportare."}
+                {mine.blocks.map((block, i) => (
+                  <div key={i} className="rounded-md border p-2 text-foreground">
+                    <Markdown>{block}</Markdown>
+                  </div>
+                ))}
+                {mine.fields.map(([key, value]) => (
+                  <span key={key}>
+                    {label(key)}: <span className="text-foreground">{value || "—"}</span>
+                  </span>
+                ))}
               </AlertDescription>
             </Alert>
           )}
@@ -280,7 +330,7 @@ export function DocumentWorkspace(props: {
           <Card>
             <CardContent>
               {props.versionView ??
-                (editing && props.body !== null ? (
+                (isEditing && props.body !== null ? (
                   <MilkdownEditor
                     initial={originalBody}
                     draft={resume}
@@ -301,7 +351,7 @@ export function DocumentWorkspace(props: {
             </CardContent>
           </Card>
 
-          {editing && (
+          {isEditing && (
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -320,7 +370,7 @@ export function DocumentWorkspace(props: {
                 <CardTitle>Frontespizio</CardTitle>
               </CardHeader>
               <CardContent>
-                {editing ? (
+                {isEditing ? (
                   <div className="flex flex-col gap-4">
                     {editable.map(([key, value]) => (
                       <div key={key} className="flex flex-col gap-2">

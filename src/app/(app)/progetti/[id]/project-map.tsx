@@ -55,6 +55,7 @@ export function ProjectMap({
   features,
   otherFiles,
   next,
+  behind,
 }: {
   projectId: string;
   currentPhase: number;
@@ -63,6 +64,7 @@ export function ProjectMap({
   features: string[];
   otherFiles: MapDoc[];
   next: NextStep | null;
+  behind: number;
 }) {
   const [selected, setSelected] = useState(next?.phase ?? currentPhase);
   const [query, setQuery] = useState("");
@@ -87,6 +89,13 @@ export function ProjectMap({
   return (
     <div className="flex flex-col gap-6">
       {next && <NextStepCard next={next} />}
+      {behind > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {behind === 1
+            ? "1 documento delle fasi precedenti non è ancora pronto: lo trovi nelle fasi qui sotto."
+            : `${behind} documenti delle fasi precedenti non sono ancora pronti: li trovi nelle fasi qui sotto.`}
+        </p>
+      )}
 
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
