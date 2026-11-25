@@ -142,6 +142,17 @@ salvavano su disco o in chat.
   Cowork. Verificare anche se la chat di Desktop carica il server del plugin (se no, la Guida già
   dice di aggiungere il connettore a mano). Poi rispegnere.
 
+## Desktop Extension di sviluppo (2026-11-25)
+
+- [x] `mcpb/`: pacchetto `.mcpb` come quello di Tarko, con dentro solo `mcp-remote` 0.16.7
+  (ponte stdio → `<url>/api/mcp`, login OAuth con ritorno su localhost). Chiede l'indirizzo
+  all'installazione (default locale `http://127.0.0.1:4100/api/mcp`). Serve a provare l'MCP in
+  locale da Claude Desktop, dove il collegamento diretto su `http://` non apre il login. Non
+  tocca app né plugin. `mcpb validate` ok, `pack` ok (`mcpb/asdp-workspace-dev.mcpb`, non
+  committato come `node_modules`). `mcpb` escluso da `tsconfig`. **Non committato**.
+- [ ] Prova di Lorenzo: installarlo in Claude Desktop, login con un utente del seed, tool
+  visibili (con il server del plugin disattivato).
+
 ## Blocco 1 (intuitività per PM/AF): mappa del percorso
 
 - [x] Pagina progetto come mappa per fasi 0–4 (2026-11-25, branch `claude/jolly-cerf-704e2e`):

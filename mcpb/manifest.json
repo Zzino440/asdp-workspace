@@ -1,0 +1,32 @@
+{
+  "manifest_version": "0.3",
+  "name": "asdp-workspace-dev",
+  "display_name": "ASDP Workspace (sviluppo)",
+  "version": "0.1.0",
+  "description": "Collega Claude Desktop al server MCP di ASDP Workspace (locale o cloud di test) tramite un ponte locale che gestisce il login. Solo per sviluppo e prove.",
+  "author": {
+    "name": "Lorenzo Belli"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "node_modules/mcp-remote/dist/proxy.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/node_modules/mcp-remote/dist/proxy.js", "${user_config.url}", "--allow-http"]
+    }
+  },
+  "user_config": {
+    "url": {
+      "type": "string",
+      "title": "Indirizzo del server MCP",
+      "description": "Locale: http://127.0.0.1:4100/api/mcp. Cloud di test: https://asdp-workspace.vercel.app/api/mcp.",
+      "default": "http://127.0.0.1:4100/api/mcp",
+      "required": true
+    }
+  },
+  "compatibility": {
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
+  }
+}

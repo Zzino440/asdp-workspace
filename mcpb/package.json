@@ -1,0 +1,9 @@
+{
+  "name": "asdp-workspace-mcpb",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop Extension di sviluppo: ponte stdio (mcp-remote) verso il server MCP di ASDP Workspace.",
+  "dependencies": {
+    "mcp-remote": "0.16.7"
+  }
+}
