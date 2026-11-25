@@ -63,7 +63,13 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   - il kickoff della skill controlla 5 output obbligatori su 9.
 - [ ] **Guida nell'app: cose che oggi non si possono fare** (le pagine lo dicono):
   - il guscio dell'app non è responsive (barra laterale fissa da 240 px).
-- [ ] **Modifica di un documento Approvato** (milestone 3). Oggi chi ha "edit" può cambiare il
-  corpo di un documento `Approvato` e lo stato resta `Approvato`. GUIDA-FRONT invece dice che
-  una modifica lo riporta a `In corso` e svuota i dati di approvazione. Con l'editor visuale
-  questo caso capita più spesso.
+- [ ] **Approvazione assistita da AI e MCP** (milestone 3, passo 2; il flusso manuale c'è da
+  0.6.0). Claude non approva mai: prepara, l'approvatore decide.
+  - tool MCP `check_gate`: restituisce gate, checklist (`src/lib/gates.ts`) e documento, perché
+    Claude prepari un esito voce per voce con le prove trovate nel testo;
+  - tool MCP per i passi del flusso (`changeApproval`: complete, request_changes, approve, revoke),
+    con `approve` solo per chi ha "approve" e dopo conferma esplicita dell'utente in chat;
+  - nella finestra Approva: esito di Claude accanto a ogni voce della checklist, da spuntare a mano;
+  - approvazione del cliente (T1.4) con upload dell'evidenza in Storage invece del testo libero.
+- [ ] **Coda delle approvazioni** (pagina `/approvazioni`, oggi segnaposto): documenti Completo
+  dove l'utente ha "approve", con link diretto al documento.

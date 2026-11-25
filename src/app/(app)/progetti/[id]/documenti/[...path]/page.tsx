@@ -7,6 +7,7 @@ import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { documentLevel, listDocuments, listVersions, readDocument, readVersion } from "@/lib/documents";
+import { gateFor } from "@/lib/gates";
 import { guidaHrefForType } from "@/lib/guida";
 import { PHASES } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
@@ -89,6 +90,7 @@ async function DocumentView({
       lastCommitId={document.lastCommitId}
       canEdit={document.body !== null && (level === "edit" || level === "approve")}
       canApprove={level === "approve"}
+      gate={gateFor(document.documentType)}
       readView={
         document.body === null ? (
           <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>

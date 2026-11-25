@@ -11,6 +11,9 @@ import {
   readFile,
   updateFile,
 } from "@/lib/gitlab";
+import { type FieldValue, setFrontMatterFields } from "@/lib/front-matter";
+import { gateFor } from "@/lib/gates";
+import { type AsdpRole, ROLE_LABELS } from "@/lib/labels";
 
 // Livello di servizio unico per i documenti: lo usano le server action della UI e i tool MCP.
 // Riceve sempre un client Supabase: quello dell'utente (RLS) oppure, solo nel webhook, quello
@@ -146,7 +149,16 @@ export async function documentLevel(supabase: SupabaseClient, projectId: string,
 
 export class DocumentError extends Error {
   constructor(
-    readonly code: "not_found" | "forbidden" | "conflict" | "approval_fields" | "exists" | "invalid_path" | "unknown_type",
+    readonly code:
+      | "not_found"
+      | "forbidden"
+      | "conflict"
+      | "approval_fields"
+      | "exists"
+      | "invalid_path"
+      | "unknown_type"
+      | "invalid_state"
+      | "incomplete",
   ) {
     super(code);
   }
@@ -161,6 +173,16 @@ function changesApproval(before: Record<string, unknown>, after: Record<string, 
   const approvedAfter = after.stato === "Approvato";
   return approvedBefore !== approvedAfter || !APPROVAL_FIELDS.every(same);
 }
+
+// Stato In corso e dati di approvazione svuotati, solo sulle chiavi già presenti nel frontespizio.
+function clearedApproval(front: Record<string, unknown>) {
+  const changes: Record<string, FieldValue> = { stato: "In corso" };
+  for (const key of [...APPROVAL_FIELDS, "gate"]) if (key in front) changes[key] = null;
+  return changes;
+}
+
+const withFrontMatter = (content: string, source: string, changes: Record<string, FieldValue>) =>
+  content.replace(source, () => setFrontMatterFields(source, changes));
 
 // Salva il testo completo di un documento con un commit a nome dell'utente.
 // lastCommitId è l'ultimo commit visto dall'utente: se il file è cambiato nel frattempo → conflict.
@@ -201,12 +223,24 @@ export async function saveDocument(
     if (error instanceof GitLabError && error.status === 404) throw new DocumentError("conflict");
     throw error;
   }
-  if (
-    input.path.endsWith(".md") &&
-    level !== "approve" &&
-    changesApproval(splitFrontMatter(previous).frontMatter, splitFrontMatter(input.content).frontMatter)
-  ) {
-    throw new DocumentError("approval_fields");
+  let content = input.content;
+  let note = "";
+  if (input.path.endsWith(".md")) {
+    const before = splitFrontMatter(previous);
+    const after = splitFrontMatter(input.content);
+    if (level !== "approve" && changesApproval(before.frontMatter, after.frontMatter)) {
+      throw new DocumentError("approval_fields");
+    }
+    // GUIDA-FRONT: cambiare il testo di un documento Approvato ne annulla l'approvazione.
+    if (
+      before.frontMatter.stato === "Approvato" &&
+      after.frontMatter.stato === "Approvato" &&
+      after.frontMatterSource !== null &&
+      before.body !== after.body
+    ) {
+      content = withFrontMatter(input.content, after.frontMatterSource, clearedApproval(after.frontMatter));
+      note = "\n\nApprovazione annullata: il testo è cambiato, il documento torna In corso.";
+    }
   }
 
   const fileName = input.path.split("/").pop();
@@ -215,9 +249,9 @@ export async function saveDocument(
     commitId = await updateFile(
       project.gitlab_project_path,
       project.gitlab_branch,
-      { path: input.path, content: input.content, lastCommitId: input.lastCommitId },
+      { path: input.path, content, lastCommitId: input.lastCommitId },
       {
-        message: `${input.message?.trim() || `Aggiorna ${fileName}`}\n\nVia: ${input.via}`,
+        message: `${input.message?.trim() || `Aggiorna ${fileName}`}${note}\n\nVia: ${input.via}`,
         authorName: profile.full_name || profile.email,
         authorEmail: profile.email,
       },
@@ -228,7 +262,7 @@ export async function saveDocument(
   }
 
   // Indice aggiornato subito (in locale il webhook non arriva); se fallisce lo ripara il webhook.
-  const { frontMatter } = input.path.endsWith(".md") ? splitFrontMatter(input.content) : { frontMatter: {} };
+  const { frontMatter } = input.path.endsWith(".md") ? splitFrontMatter(content) : { frontMatter: {} };
   const { error } = await supabase
     .from("documents")
     .update({ front_matter: frontMatter, last_commit_id: commitId, indexed_at: new Date().toISOString() })
@@ -237,6 +271,113 @@ export async function saveDocument(
   if (error) console.error("Indice non aggiornato dopo il salvataggio", error);
 
   return { lastCommitId: commitId };
+}
+
+// Passi del flusso di approvazione e stato da cui partono. Completo vale come «in approvazione».
+export type ApprovalStep = "complete" | "approve" | "request_changes" | "revoke";
+const STEP_FROM: Record<ApprovalStep, string[]> = {
+  complete: ["Da fare", "In corso"],
+  approve: ["Completo"],
+  request_changes: ["Completo"],
+  revoke: ["Approvato"],
+};
+
+// Esegue un passo del flusso di approvazione: cambia solo il frontespizio e salva con
+// saveDocument (stessi controlli di permesso e conflitto). complete serve "edit", gli altri "approve".
+export async function changeApproval(
+  supabase: SupabaseClient,
+  input: {
+    projectId: string;
+    path: string;
+    lastCommitId: string;
+    step: ApprovalStep;
+    checked?: string[];
+    evidence?: string;
+    reason?: string;
+    via: "app" | "mcp";
+    userId: string;
+  },
+) {
+  const { data: indexed } = await supabase
+    .from("documents")
+    .select("document_type")
+    .eq("project_id", input.projectId)
+    .eq("path", input.path)
+    .maybeSingle();
+  if (!indexed || !input.path.endsWith(".md")) throw new DocumentError("not_found");
+
+  const level = await documentLevel(supabase, input.projectId, indexed.document_type);
+  if (input.step !== "complete" && level !== "approve") throw new DocumentError("forbidden");
+
+  const [{ data: project }, { data: profile }, { data: member }] = await Promise.all([
+    loadProject(supabase, input.projectId),
+    supabase.from("profiles").select("full_name, email").eq("id", input.userId).single(),
+    supabase
+      .from("project_members")
+      .select("roles")
+      .eq("project_id", input.projectId)
+      .eq("user_id", input.userId)
+      .maybeSingle(),
+  ]);
+  if (!project?.gitlab_project_path || !profile) throw new DocumentError("not_found");
+
+  let previous: string;
+  try {
+    previous = (await readFile(project.gitlab_project_path, input.lastCommitId, input.path)).content;
+  } catch (error) {
+    if (error instanceof GitLabError && error.status === 404) throw new DocumentError("conflict");
+    throw error;
+  }
+  const { frontMatter, frontMatterSource } = splitFrontMatter(previous);
+  if (frontMatterSource === null || !STEP_FROM[input.step].includes(String(frontMatter.stato))) {
+    throw new DocumentError("invalid_state");
+  }
+
+  const gate = gateFor(indexed.document_type);
+  const reason = input.reason?.trim();
+  const evidence = input.evidence?.trim();
+  const today = new Date().toISOString().slice(0, 10);
+  const fileName = input.path.split("/").pop();
+  let changes: Record<string, FieldValue>;
+  let message: string;
+
+  if (input.step === "complete") {
+    changes = { stato: "Completo", ...("completato_il" in frontMatter && { completato_il: today }) };
+    message = `Segna come completo ${fileName}`;
+  } else if (input.step === "approve") {
+    const checked = input.checked ?? [];
+    if (!gate.checklist.every((item) => checked.includes(item)) || (gate.externalEvidence && !evidence)) {
+      throw new DocumentError("incomplete");
+    }
+    const roles = ((member?.roles ?? []) as AsdpRole[]).map((r) => ROLE_LABELS[r]).join("/");
+    changes = {
+      stato: "Approvato",
+      approvato_da: `${profile.full_name || profile.email}${roles ? ` (${roles})` : ""}`,
+      approvato_il: today,
+      versione_approvata: (frontMatter.versione as FieldValue) ?? null,
+      ...(gate.name && { gate: gate.name }),
+      evidenza_approvazione: evidence || `commit ${input.lastCommitId.slice(0, 8)}`,
+    };
+    message = [
+      `Approva ${fileName}${gate.name ? ` (${gate.name})` : ""}`,
+      ...(gate.checklist.length > 0 ? ["", ...gate.checklist.map((item) => `- [x] ${item}`)] : []),
+      ...(evidence ? ["", `Evidenza: ${evidence}`] : []),
+    ].join("\n");
+  } else {
+    if (!reason) throw new DocumentError("incomplete");
+    changes = input.step === "revoke" ? clearedApproval(frontMatter) : { stato: "In corso" };
+    message = `${input.step === "revoke" ? "Revoca l'approvazione di" : "Richiede modifiche a"} ${fileName}\n\n${reason}`;
+  }
+
+  return saveDocument(supabase, {
+    projectId: input.projectId,
+    path: input.path,
+    content: withFrontMatter(previous, frontMatterSource, changes),
+    lastCommitId: input.lastCommitId,
+    message,
+    via: input.via,
+    userId: input.userId,
+  });
 }
 
 // Crea un documento nuovo con un commit a nome dell'utente. Il tipo si ricava come nell'indice

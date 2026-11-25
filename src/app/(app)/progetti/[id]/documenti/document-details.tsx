@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "cn";
-import { parseDocument, stringify } from "yaml";
 import { saveDocumentAction } from "./actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { type FieldValue as Value, setFrontMatterFields } from "@/lib/front-matter";
 import { FRONT_MATTER_LABELS } from "@/lib/labels";
 
 // Campo gestito dallo schema: sempre solo lettura qui.
@@ -34,8 +34,6 @@ const GROUPS = [
   },
   { title: "Dati tecnici", keys: ["versione_frontespizio", "template_origine", "template_versione"] },
 ];
-
-type Value = string | number | boolean | null | Value[];
 
 export const label = (key: string) => FRONT_MATTER_LABELS[key] ?? key;
 export const toText = (value: unknown) =>
@@ -90,28 +88,11 @@ export function DocumentDetails(props: {
     props.onOpenChange(open);
   }
 
-  // Sostituisce nel YAML originale solo il testo dei valori cambiati: commenti, allineamenti e
-  // tutto il resto restano identici.
-  function frontMatterText() {
-    const source = props.frontMatterSource;
-    const doc = parseDocument(source);
-    const edits = changed
-      .map((key) => {
-        const next = fromText(fields[key], front[key]);
-        const range = (doc.get(key, true) as { range?: [number, number, number] } | undefined)?.range;
-        // Campo svuotato: null, come nei template GUIDA-FRONT.
-        const text = stringify(next, { collectionStyle: "flow", flowCollectionPadding: false }).trimEnd();
-        return { start: range![0], end: range![1], text };
-      })
-      .sort((a, b) => b.start - a.start);
-    let out = source;
-    for (const { start, end, text } of edits) {
-      // Valore vuoto ("gate:"): serve uno spazio dopo i due punti.
-      const prefix = start === end && out[start - 1] === ":" ? " " : "";
-      out = out.slice(0, start) + prefix + text + out.slice(end);
-    }
-    return out;
-  }
+  const frontMatterText = () =>
+    setFrontMatterFields(
+      props.frontMatterSource,
+      Object.fromEntries(changed.map((key) => [key, fromText(fields[key], front[key])])),
+    );
 
   function save() {
     const newline = props.body.includes("\r\n") || props.frontMatterSource.includes("\r\n") ? "\r\n" : "\n";

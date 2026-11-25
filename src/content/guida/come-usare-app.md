@@ -58,6 +58,10 @@ Le modifiche non salvate restano nel browser come bozza. Se nel frattempo qualcu
 
 **Tutti i dettagli** apre i dati del frontespizio, divisi per tema: stato e date, responsabilità, approvazione, identità. Da qui cambi lo stato tra **Da fare**, **In corso** e **Completo**; chi ha il permesso Approva sceglie anche **Approvato** e compila i dati di approvazione. Il salvataggio crea una versione nuova senza toccare il testo.
 
+### Approvazione
+
+Accanto a **Tutti i dettagli** trovi i pulsanti del flusso di approvazione: **Segna come completo** per chi scrive, **Approva** e **Richiedi modifiche** per chi approva un documento Completo, **Revoca approvazione** su un documento Approvato. Come funziona: [Gate](/guida/gate).
+
 ### Cronologia
 
 **Cronologia** elenca le versioni del documento con autore, data e canale (app, Claude o Git). Per ogni versione vedi cosa è cambiato rispetto alla precedente.
@@ -69,7 +73,7 @@ L'app conserva i documenti, le versioni e lo stato. **Le skill non partono dall'
 - Per collegare Claude: [Collegare Claude](/guida/collegare-claude).
 - Per usare una skill: [Lanciare una skill](/guida/lanciare-skill).
 
-> **Nota:** le **Approvazioni** e la **Dashboard** sono in arrivo. Per ora lo stato **Approvato** non si imposta dall'app.
+> **Nota:** la coda delle **Approvazioni** e la **Dashboard** sono in arrivo. Per ora si approva dalla pagina del documento.
 
 ## Permessi per ruolo
 

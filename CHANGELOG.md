@@ -25,6 +25,43 @@
 
 ## Storia
 
+## [0.6.0] 2026-11-25 — Flusso di approvazione manuale
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **UI**: nella pagina del documento, accanto a **Tutti i dettagli**, i pulsanti del flusso di
+  approvazione. Completo vale come "in approvazione".
+  - **Segna come completo** (chi ha Modifica, da Da fare o In corso; valorizza `completato_il`).
+  - **Approva** (chi ha Approva, da Completo): finestra con il gate del tipo di documento e la sua
+    checklist obbligatoria; scrive `stato`, `approvato_da` (nome e ruolo), `approvato_il`,
+    `versione_approvata`, `gate` ed `evidenza_approvazione` (di default `commit <id>`; per T1.4
+    obbligatoria e scritta, è l'approvazione del PO cliente). Il commit elenca le voci spuntate.
+  - **Richiedi modifiche** (da Completo) e **Revoca approvazione** (da Approvato): stato In corso,
+    motivo obbligatorio nel messaggio di commit; la revoca svuota i dati di approvazione.
+  - Sotto il titolo, per un documento Completo, "In attesa di" e l'approvatore.
+  - Nell'editor di un documento Approvato, avviso che salvando torna In corso.
+- **Documenti**: `saveDocument` applica la regola GUIDA-FRONT: se il testo di un documento
+  Approvato cambia, il salvataggio lo riporta In corso e svuota i dati di approvazione (app e MCP,
+  istruzioni MCP aggiornate). Nuovo `changeApproval` nel service layer; gate e checklist in
+  `src/lib/gates.ts`; scrittura del frontespizio che conserva i commenti in
+  `src/lib/front-matter.ts`, condivisa con «Tutti i dettagli».
+- **Fix**: compilando un campo vuoto con commento (es. `gate:   # ...`) il valore non resta più
+  attaccato al `#`.
+- **Guida**: Gate, Stati e frontespizio, Come usare l'app aggiornate. Componente Textarea di
+  shadcn aggiunto (non descritto in DESIGN.md).
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm build`: ok.
+- In locale sulla sandbox GitLab, come `tl@asdp.test` su T2.2: revoca → segna come completo →
+  approva (pulsante disabilitato finché la checklist non è completa) → modifica del testo
+  (torna In corso, dati di approvazione svuotati) → richiedi modifiche. Frontespizio e messaggi
+  di commit controllati su GitLab. Come `pm@asdp.test` (solo lettura su T2.2) nessun pulsante.
+- Non provati: MCP `update_document` su un Approvato, evidenza obbligatoria di T1.4.
+
 ## [0.5.0] 2026-11-25 — Approvazione da «Tutti i dettagli»
 
 **Autore**: Lorenzo Belli

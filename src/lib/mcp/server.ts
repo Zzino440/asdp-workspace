@@ -34,7 +34,7 @@ export const INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti 
 - I progetti si indicano con il codice (es. PFS): usa list_projects, poi get_project per team, repo di codice, tipi di documento e permessi dell'utente.
 - I documenti sono file Markdown con frontespizio YAML (GUIDA-FRONT) tra due righe "---", salvati su GitLab.
 - Prima di modificare un documento leggilo con read_document; poi cambia solo le parti necessarie di content e passalo intero a update_document con il last_commit_id letto. Lascia invariato tutto il resto, commenti del frontespizio compresi.
-- Stati del documento: Da fare, In corso, Completo, Approvato. Lo stato Approvato e i campi approvato_da, approvato_il, versione_approvata, evidenza_approvazione li cambia solo chi approva; non modificare versione_frontespizio.
+- Stati del documento: Da fare, In corso, Completo, Approvato. Lo stato Approvato e i campi approvato_da, approvato_il, versione_approvata, evidenza_approvazione li cambia solo chi approva; non modificare versione_frontespizio. Se cambi il testo di un documento Approvato, il server lo riporta In corso e svuota i dati di approvazione: va riapprovato.
 - Quando una skill ASDP legge o scrive un file asdp/..., di norma usa questo server: read_document per gli input, create_document per un file nuovo, update_document per uno esistente, con lo stesso percorso. Salva su file locale solo se l'utente lo chiede o se la cartella di lavoro è un clone della repo documenti (il push lo porta nell'app). Il server non cancella file.
 - Ogni salvataggio è un commit a nome dell'utente: scrivi messaggi di commit brevi e chiari in italiano.`;
 
@@ -266,4 +266,7 @@ const SAVE_ERRORS = {
   unknown_type:
     "Tipo di documento non riconosciuto. Usa il nome file e il frontespizio del template della skill " +
     "(template_origine), o la cartella del tipo indicata da get_project.",
+  // Solo del flusso di approvazione, che oggi non ha tool MCP.
+  invalid_state: "Lo stato del documento non permette questo passo.",
+  incomplete: "Checklist o campi obbligatori incompleti.",
 };

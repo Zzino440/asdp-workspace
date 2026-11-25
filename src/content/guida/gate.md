@@ -50,6 +50,17 @@ Dopo il gate il documento diventa la base congelata: il backlog dopo il G1, il p
 
 ## Le approvazioni nell'app
 
-Oggi l'approvazione si registra nel frontespizio del documento: stato Approvato, chi, quando, quale versione, quale gate e con quale evidenza (vedi [Stati e frontespizio](/guida/stati)). Può farlo solo chi ha il permesso Approva (vedi [Ruoli e approvazioni](/guida/ruoli)), dalla finestra **Tutti i dettagli** (stato Approvato e campi Approvato da, Approvato il, Versione approvata, Gate, Evidenza approvazione) o chiedendo a Claude collegato di aggiornare il frontespizio. Chi non ha il permesso Approva vede quei campi in sola lettura.
+L'approvazione si fa dalla pagina del documento, con i pulsanti accanto a **Tutti i dettagli**. **Completo** vuol dire "pronto da approvare": non serve un passaggio in più.
 
-> **Nota:** il flusso di approvazione nell'app è in arrivo: invio in approvazione con la checklist del gate, **Approva** o **Richiedi modifiche**, una coda delle approvazioni da fare e la registrazione dell'approvazione del cliente con la sua evidenza.
+| Passo | Chi | Cosa succede |
+|---|---|---|
+| **Segna come completo** | Chi ha il permesso Modifica | Lo stato passa a Completo; sotto il titolo compare "In attesa di" e l'approvatore |
+| **Approva** | Chi ha il permesso Approva | Si apre la checklist del gate del documento: Approva si abilita solo con tutte le voci spuntate. L'app scrive nel frontespizio stato Approvato, chi, quando, la versione, il gate e l'evidenza |
+| **Richiedi modifiche** | Chi ha il permesso Approva | Lo stato torna In corso. Il motivo è obbligatorio e resta nel commit, in **Cronologia** |
+| **Revoca approvazione** | Chi ha il permesso Approva | Lo stato torna In corso e i dati di approvazione si svuotano, con il motivo nel commit |
+
+L'evidenza, se la lasci vuota, è il riferimento alla versione approvata (`commit …`). Per l'[Analisi Funzionale](/guida/t1-4) l'approvazione è del PO del cliente: il PM la registra e l'evidenza va scritta (per esempio l'email o il verbale).
+
+Ogni passo è una versione nuova a nome di chi lo fa. Chi approva può anche correggere i dati di approvazione da **Tutti i dettagli**, o chiedere a Claude collegato di aggiornare il frontespizio.
+
+> **Nota:** sono in arrivo la coda delle approvazioni da fare (voce **Approvazioni** del menu), l'upload dell'evidenza del cliente e l'aiuto di Claude per controllare la checklist del gate.

@@ -11,7 +11,7 @@ Ogni documento ASDP ha uno **stato** che dice a che punto è, e un **frontespizi
 
 Claude non approva mai: al massimo propone Completo. L'approvatore giusto per ogni documento è in [Ruoli e approvazioni](/guida/ruoli).
 
-Nell'app lo stato si cambia da **Tutti i dettagli**, se hai il permesso Modifica. Lì trovi Da fare, In corso e Completo. Se hai il permesso Approva trovi anche Approvato e puoi compilare i dati di approvazione; per gli altri un documento Approvato resta in sola lettura su stato e dati di approvazione.
+Nell'app il documento si porta a Completo con **Segna come completo** e si approva con **Approva**, dalla pagina del documento (vedi [Gate](/guida/gate)). Lo stato si può cambiare anche da **Tutti i dettagli**, se hai il permesso Modifica: lì trovi Da fare, In corso e Completo, e Approvato solo se hai il permesso Approva.
 
 ## Il frontespizio
 
@@ -57,18 +57,14 @@ Resta vuoto finché il documento non è Approvato.
 
 ## Dove si vedono nell'app
 
-- **Sotto il titolo** del documento: Stato, Owner, Scadenza (in rosso se è passata) e Approvazione ("Da approvare" finché manca). Sotto, la versione e la data dell'ultimo aggiornamento.
+- **Sotto il titolo** del documento: Stato, Owner, Scadenza (in rosso se è passata) e Approvazione ("Da approvare" finché manca, "In attesa di" e l'approvatore quando il documento è Completo). Sotto, la versione e la data dell'ultimo aggiornamento.
 - **Tutti i dettagli**: il pulsante accanto apre il frontespizio completo, diviso per gruppi. Ha un salvataggio suo, che cambia solo i dati e lascia il testo identico.
 - **Nella mappa del progetto**: lo stato di ogni documento.
 
-Alcuni campi sono in sola lettura: Versione frontespizio, Approvato da, Approvato il, Versione approvata, Evidenza approvazione, e lo Stato quando è Approvato. Tutta la finestra è in sola lettura se non hai il permesso Modifica, o mentre stai modificando il testo.
+Versione frontespizio è sempre in sola lettura. Approvato da, Approvato il, Versione approvata, Evidenza approvazione, e lo Stato quando è Approvato, si modificano solo con il permesso Approva. Tutta la finestra è in sola lettura se non hai il permesso Modifica, o mentre stai modificando il testo.
 
 ## Modificare un documento approvato
 
 La regola del framework: **modificare un documento approvato invalida l'approvazione**. Lo stato torna a In corso, il blocco Approvazione si svuota e la versione sale. Poi il documento va riapprovato.
 
-Le skill lo fanno da sole quando le rilanci in [aggiornamento](/guida/aggiornare-documento).
-
-> **Attenzione:** oggi l'app non applica ancora questa regola in automatico. Se modifichi il testo di un documento Approvato, resta Approvato. Il salvataggio che toglie lo stato Approvato o cambia i dati di approvazione riesce solo a chi ha il permesso Approva su quel documento. Prima di modificare un documento approvato, parlane con chi lo approva.
-
-Il ritorno automatico a In corso arriverà con il flusso di approvazione nell'app.
+Le skill lo fanno da sole quando le rilanci in [aggiornamento](/guida/aggiornare-documento). L'app la applica a ogni salvataggio, dall'editor o da Claude: se il testo di un documento Approvato cambia, torna In corso e il blocco Approvazione si svuota. L'editor lo ricorda prima di salvare. La versione non sale da sola: aggiornala tu.

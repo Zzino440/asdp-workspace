@@ -6,6 +6,7 @@ import { History, Pencil, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "cn";
 import { parse } from "yaml";
 import { saveDocumentAction } from "./actions";
+import { ApprovalActions } from "./approval-actions";
 import { DocumentDetails, toText } from "./document-details";
 import { DocumentOutline } from "./document-outline";
 import { MilkdownEditor } from "./milkdown-editor";
@@ -14,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type { Gate } from "@/lib/gates";
 import { changedBlocks, spliceMarkdown } from "@/lib/markdown-splice";
 import { Markdown } from "@/components/markdown";
 
@@ -53,6 +55,7 @@ export function DocumentWorkspace(props: {
   lastCommitId: string;
   canEdit: boolean;
   canApprove: boolean;
+  gate: Gate;
   readView: ReactNode;
   versionView: ReactNode | null;
   // Il primo titolo del testo coincide con il titolo della pagina: in lettura non si ripete.
@@ -274,13 +277,30 @@ export function DocumentWorkspace(props: {
                   )}
                 </Property>
                 <Property label="Approvazione">
-                  {approval ?? <span className="text-muted-foreground">Da approvare</span>}
+                  {approval ?? (
+                    <span className="text-muted-foreground">
+                      {state === "Completo" ? `In attesa di ${props.gate.approver}` : "Da approvare"}
+                    </span>
+                  )}
                 </Property>
               </dl>
-              <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)}>
-                <SlidersHorizontal />
-                Tutti i dettagli
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)}>
+                  <SlidersHorizontal />
+                  Tutti i dettagli
+                </Button>
+                {!isEditing && !props.versionView && props.body !== null && (
+                  <ApprovalActions
+                    projectId={props.projectId}
+                    path={props.path}
+                    lastCommitId={props.lastCommitId}
+                    state={state}
+                    canEdit={props.canEdit}
+                    canApprove={props.canApprove}
+                    gate={props.gate}
+                  />
+                )}
+              </div>
             </div>
           )}
           {meta.length > 0 && <p className="pt-1 text-xs text-muted-foreground">{meta.join(" · ")}</p>}
@@ -305,6 +325,15 @@ export function DocumentWorkspace(props: {
                   : null
             }
           />
+        )}
+
+        {isEditing && state === "Approvato" && (
+          <Alert>
+            <AlertTitle>Il documento è Approvato</AlertTitle>
+            <AlertDescription>
+              Salvando una modifica al testo il documento torna In corso e va approvato di nuovo.
+            </AlertDescription>
+          </Alert>
         )}
 
         {result && (
