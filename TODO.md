@@ -62,7 +62,6 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   - G1–G6 indicano sia i gate di Fase 4 sia gli artefatti di governance;
   - il kickoff della skill controlla 5 output obbligatori su 9.
 - [ ] **Guida nell'app: cose che oggi non si possono fare** (le pagine lo dicono):
-  - le caselle delle D[N] non si spuntano dall'editor visuale (Milkdown le mostra senza casella);
   - "Tutti i dettagli" blocca stato Approvato e campi `approvato_*` anche per chi approva;
   - il guscio dell'app non è responsive (barra laterale fissa da 240 px).
 - [ ] **Modifica di un documento Approvato** (milestone 3). Oggi chi ha "edit" può cambiare il

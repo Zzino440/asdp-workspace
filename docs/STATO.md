@@ -13,6 +13,7 @@
 - `0.1.0` (`package.json`, `CHANGELOG.md`), su `master` dal commit "Add app version and
   changelog". Tag git `0.1.0` su `master`: da fare dopo il merge.
 - `0.4.0` (`create_document` e Guida "Desktop + plugin") su `master`, committata il 2026-11-25 (non pushata).
+- `0.4.1` (caselle delle D[N] spuntabili in Modifica testo) su `master`, 2026-11-25: non committata.
 - `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
   `feature/vari-miglioramenti`: tag
   dopo il merge su `master`.

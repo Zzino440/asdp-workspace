@@ -25,6 +25,28 @@
 
 ## Storia
 
+## [0.4.1] 2026-11-25 — Caselle spuntabili nell'editor visuale
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **UI**: in **Modifica testo** le voci `- [ ]` / `- [x]` (le opzioni delle domande D[N])
+  mostrano una casella che si spunta con un clic, come in Notion o Typora. Invio su una voce con
+  casella ne crea un'altra; Annulla annulla anche la spunta. Gli altri elenchi non cambiano.
+  La casella ha lo stesso aspetto del Checkbox dell'app (bordo, sfondo e spunta con i token).
+- **UI**: al salvataggio la riga `Altro: ___________` non diventa più `Altro: \_\_\_…`.
+- **Guida**: Rispondere alle domande D[N] dice che la casella si spunta anche da Modifica testo.
+  PATCH: toglie un limite dichiarato nella Guida, senza nuove API.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- `tsc`, lint, build.
+- In locale sulla T1.4 della sandbox (senza salvare): caselle visibili, spunta e Annulla, nella
+  bozza solo la riga spuntata passa a `- [x]` e la lunghezza del testo resta uguale, `___` non
+  viene più scappato, Invio crea una nuova casella, gli elenchi puntati restano uguali.
+
 ## [0.4.0] 2026-11-25 — Creazione dei documenti dal connettore
 
 **Autore**: Lorenzo Belli
