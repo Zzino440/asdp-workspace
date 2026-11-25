@@ -24,7 +24,7 @@
 ## In corso: deploy di prova su cloud
 
 Ambiente **solo di test**: va spento (pausa) dopo le prove per non consumare risorse, e riacceso
-quando serve.
+quando serve. **Oggi è spento**: istruzioni in "Come riaccendere il cloud di test" più sotto.
 
 - [x] Progetto Vercel `asdp-workspace` (team `ds-tech4`), deploy automatico da GitHub
   `Zzino440/asdp-workspace` branch `master`. URL: https://asdp-workspace.vercel.app (la protezione
@@ -53,18 +53,64 @@ quando serve.
   pagina. Committato su `bugfix/various`. Da fare: merge su `master` (nuovo deploy, che include
   anche `GITLAB_TOKEN`), nuovo invito di prova.
 - [x] Progetto di prova nell'app (repo documenti `l.belli/sandbox-test`), Reindicizza.
-- [ ] **Webhook GitLab automatico** ← punto in cui siamo. Lo crea l'app alla creazione del
+- [x] **Webhook GitLab automatico**, provato il 2026-11-20: chiamata con secret giusto → 200
+  `{"indexed":1}`, sbagliato → 401; commit diretto sulla sandbox (`2a20c422`) indicizzato dal
+  webhook in circa un secondo. Sulla sandbox restano due commit di prova (`ce286c53`,
+  `2a20c422`) che si annullano a vicenda. Lo crea l'app alla creazione del
   progetto e a ogni "Reindicizza" (`ensureProjectWebhook` in `src/lib/documents/`), verso
   `https://$VERCEL_PROJECT_PRODUCTION_URL/api/gitlab/webhook` con `GITLAB_WEBHOOK_SECRET`.
-  Il token della sandbox è un project access token Maintainer (ok). Fatto in codice, non
-  committato. Da fare: deploy, "Reindicizza" sul progetto di prova, controllare il webhook su
-  GitLab (Settings → Webhooks → Test → Push events = 200), poi un commit diretto e verificare che
-  l'indice si aggiorni.
-- [ ] Prova completa: login, progetto, documenti, modifica, versioni; MCP da Claude Code
-  (`claude mcp add --transport http asdp https://asdp-workspace.vercel.app/api/mcp`), da Claude
-  Desktop e da claude.ai (connettore personalizzato).
-- [ ] `.mcp.json` con l'URL pubblico nel plugin `asdp` (repo `dst-claude-skills`).
-- [ ] Spegnere dopo i test: pausa del progetto Supabase e del progetto Vercel.
+  Il token della sandbox è un project access token Maintainer (ok). Deployato; con "Reindicizza"
+  l'app ha creato il webhook sulla sandbox (verificato su GitLab, 2026-11-20).
+- [ ] **Prova completa** ← punto in cui siamo. Fatti (2026-11-20): login, progetto, documenti,
+  webhook; MCP dal cloud configurato e funzionante da Claude Code da terminale e da Claude
+  Desktop (tab Code), registrato come `asdp-cloud` (scope user:
+  `claude mcp add --scope user --transport http asdp-cloud https://asdp-workspace.vercel.app/api/mcp`).
+  Provato anche il connettore personalizzato su claude.ai.
+- [ ] `.mcp.json` nel plugin `asdp` (repo `dst-claude-skills`): preparato sul branch
+  `feature/asdp-mcp`, commit `8c2c3b6` (non pushato). Server `asdp-workspace` verso l'URL di prova, `asdp`
+  0.14.0, README e CHANGELOG del plugin, `claude plugin validate` ok. **Non portarlo su `main`**
+  finché l'URL è quello del server di prova (verrà spento): aggiornare l'URL quando ci sarà la
+  produzione vera. Per provarlo prima: installare il plugin dal branch (o caricarlo in locale) e
+  togliere `asdp-cloud` per non avere i tool doppi.
+- [x] Spento dopo i test (2026-11-20): progetto Supabase e progetto Vercel in pausa. Per
+  riaccenderlo vedi "Come riaccendere il cloud di test" qui sotto.
+
+### Come riaccendere il cloud di test
+
+Stato attuale: **spento** (in pausa dal 2026-11-20). L'URL risponde `503` e il DB non accetta
+connessioni. Dati, configurazione Auth, variabili Vercel e webhook GitLab restano dove sono.
+
+**Ordine**: prima Supabase (l'app senza DB non funziona), poi Vercel.
+
+1. **Supabase** (`asdp workspace`, ref `uirrkpvkrhuvbobthrna`, organizzazione
+   `iecnfhegsjtzgtffniyk`):
+   - dashboard: https://supabase.com/dashboard/project/uirrkpvkrhuvbobthrna → **Restore
+     project**;
+   - oppure da un agente con l'MCP di Supabase: `restore_project` con `project_id`
+     `uirrkpvkrhuvbobthrna`, poi `get_project` finché lo `status` è `ACTIVE_HEALTHY` (qualche
+     minuto).
+   - Piano free: un progetto in pausa si ripristina entro 90 giorni; dopo si possono solo
+     scaricare i dati.
+2. **Vercel** (team `ds-tech4`, progetto `asdp-workspace`, id `prj_EXSnu1hQSKrCZYYjcPpOLDo6GYZr`):
+   - dashboard: https://vercel.com/ds-tech4/asdp-workspace → Settings → in fondo alla pagina
+     generale, **Resume project** (o il banner "Project paused");
+   - oppure da un agente con l'MCP di Vercel: `unpause_project` con `projectId`
+     `prj_EXSnu1hQSKrCZYYjcPpOLDo6GYZr` e `teamId` `team_JrZrmmOJdQsgGH4Lg2vCfimm`.
+   - Non serve un nuovo deploy: torna attivo l'ultimo deploy di produzione.
+3. **Verifica**:
+   - https://asdp-workspace.vercel.app/login si apre (non più `503`);
+   - login con `l.belli@dstech.it` e apertura del progetto di prova `1234`;
+   - MCP: in Claude Code `/mcp` → `asdp-cloud` connesso (se il token è scaduto, Authenticate di
+     nuovo).
+4. Finiti i test, **rispegnere**: `pause_project` su entrambi (Supabase: `project_id`
+   `uirrkpvkrhuvbobthrna`; Vercel: stessi id del punto 2), o dalle dashboard (Supabase →
+   Settings → General → Pause project; Vercel → Settings → Pause project). Aggiornare lo stato
+   qui sopra.
+
+Se nel frattempo ci sono migrazioni nuove: dopo il restore lanciare
+`pnpm exec supabase db push --remote` (il CLI è già collegato al progetto) e, se è cambiato il
+blocco `[remotes.test]` di `supabase/config.toml`, `pnpm exec supabase config push`. Il codice
+nuovo arriva su Vercel con il merge su `master`.
 
 ## Dopo
 
@@ -78,7 +124,7 @@ quando serve.
 | Ambiente | Dettagli |
 |---|---|
 | Locale | `pnpm dev -p 4100 -H 127.0.0.1`; Supabase locale con Docker (`pnpm exec supabase start`), Mailpit su 54324; utenti di test del seed (`admin@`, `pm@`, `tl@`, `af@`, `nessuno@asdp.test`, password in `supabase/seed.sql`). MCP locale: `asdp` registrato in Claude Code solo per questa cartella (scope local) |
-| Cloud di test | Vercel `ds-tech4/asdp-workspace`, Supabase `uirrkpvkrhuvbobthrna` (vedi sopra) |
+| Cloud di test | Vercel `ds-tech4/asdp-workspace`, Supabase `uirrkpvkrhuvbobthrna`. **In pausa dal 2026-11-20**: per riaccenderlo vedi "Come riaccendere il cloud di test" |
 | GitLab | Istanza https://git.dstech.info, repo di prova `l.belli/sandbox-test` (id 946, branch `main`), documenti sotto `asdp/`. Token del service account in `GITLAB_TOKEN` (`.env.local`, mai in chat) |
 
 ## Note e problemi aperti
@@ -91,8 +137,8 @@ quando serve.
   fa avanti e indietro sull'Atlantico. Valutare la regione `fra1`.
 
 - Claude Desktop (pannello Server MCP del tab Code) in locale ottiene l'URL di login ma non apre
-  il browser, probabilmente perché il server OAuth è su `http://`: da riprovare sul cloud
-  (`https`). Claude Code da terminale funziona.
+  il browser (server OAuth su `http://`). Sul cloud (`https`) funziona: per provare Desktop usare
+  il cloud.
 - Sulla sandbox il commit `3b4ecf38` (prova MCP prima della correzione di `read_document`) ha tolto
   i commenti GUIDA-FRONT dal frontespizio di `asdp/risks/T3.1-RISK_REGISTER.md`: da ripristinare
   se serve.
