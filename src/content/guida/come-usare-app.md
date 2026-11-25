@@ -56,7 +56,7 @@ Le modifiche non salvate restano nel browser come bozza. Se nel frattempo qualcu
 
 ### Tutti i dettagli
 
-**Tutti i dettagli** apre i dati del frontespizio, divisi per tema: stato e date, responsabilità, approvazione, identità. Da qui cambi lo stato tra **Da fare**, **In corso** e **Completo**. Il salvataggio crea una versione nuova senza toccare il testo.
+**Tutti i dettagli** apre i dati del frontespizio, divisi per tema: stato e date, responsabilità, approvazione, identità. Da qui cambi lo stato tra **Da fare**, **In corso** e **Completo**; chi ha il permesso Approva sceglie anche **Approvato** e compila i dati di approvazione. Il salvataggio crea una versione nuova senza toccare il testo.
 
 ### Cronologia
 

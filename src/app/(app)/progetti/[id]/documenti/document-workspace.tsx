@@ -52,6 +52,7 @@ export function DocumentWorkspace(props: {
   body: string | null;
   lastCommitId: string;
   canEdit: boolean;
+  canApprove: boolean;
   readView: ReactNode;
   versionView: ReactNode | null;
   // Il primo titolo del testo coincide con il titolo della pagina: in lettura non si ripete.
@@ -295,6 +296,7 @@ export function DocumentWorkspace(props: {
             frontMatterSource={props.frontMatterSource!}
             body={props.body}
             front={front}
+            canApprove={props.canApprove}
             readOnlyReason={
               !props.canEdit
                 ? "Non hai i permessi per modificare questo documento."

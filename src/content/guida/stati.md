@@ -11,7 +11,7 @@ Ogni documento ASDP ha uno **stato** che dice a che punto è, e un **frontespizi
 
 Claude non approva mai: al massimo propone Completo. L'approvatore giusto per ogni documento è in [Ruoli e approvazioni](/guida/ruoli).
 
-Nell'app lo stato si cambia da **Tutti i dettagli**, se hai il permesso Modifica. Lì trovi Da fare, In corso e Completo. Approvato non si sceglie da quella finestra: arriverà con il flusso di approvazione.
+Nell'app lo stato si cambia da **Tutti i dettagli**, se hai il permesso Modifica. Lì trovi Da fare, In corso e Completo. Se hai il permesso Approva trovi anche Approvato e puoi compilare i dati di approvazione; per gli altri un documento Approvato resta in sola lettura su stato e dati di approvazione.
 
 ## Il frontespizio
 

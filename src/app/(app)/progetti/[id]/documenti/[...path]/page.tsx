@@ -88,6 +88,7 @@ async function DocumentView({
       body={document.body}
       lastCommitId={document.lastCommitId}
       canEdit={document.body !== null && (level === "edit" || level === "approve")}
+      canApprove={level === "approve"}
       readView={
         document.body === null ? (
           <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>

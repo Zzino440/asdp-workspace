@@ -50,6 +50,6 @@ Dopo il gate il documento diventa la base congelata: il backlog dopo il G1, il p
 
 ## Le approvazioni nell'app
 
-Oggi l'approvazione si registra nel frontespizio del documento: stato Approvato, chi, quando, quale versione, quale gate e con quale evidenza (vedi [Stati e frontespizio](/guida/stati)). Può farlo solo chi ha il permesso Approva (vedi [Ruoli e approvazioni](/guida/ruoli)), per esempio chiedendo a Claude collegato di aggiornare il frontespizio. Dalla finestra **Tutti i dettagli** lo stato Approvato e i campi Approvato da, Approvato il, Versione approvata ed Evidenza approvazione non si modificano.
+Oggi l'approvazione si registra nel frontespizio del documento: stato Approvato, chi, quando, quale versione, quale gate e con quale evidenza (vedi [Stati e frontespizio](/guida/stati)). Può farlo solo chi ha il permesso Approva (vedi [Ruoli e approvazioni](/guida/ruoli)), dalla finestra **Tutti i dettagli** (stato Approvato e campi Approvato da, Approvato il, Versione approvata, Gate, Evidenza approvazione) o chiedendo a Claude collegato di aggiornare il frontespizio. Chi non ha il permesso Approva vede quei campi in sola lettura.
 
 > **Nota:** il flusso di approvazione nell'app è in arrivo: invio in approvazione con la checklist del gate, **Approva** o **Richiedi modifiche**, una coda delle approvazioni da fare e la registrazione dell'approvazione del cliente con la sua evidenza.

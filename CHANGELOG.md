@@ -25,6 +25,25 @@
 
 ## Storia
 
+## [0.5.0] 2026-11-25 — Approvazione da «Tutti i dettagli»
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **UI**: in **Tutti i dettagli** chi ha il permesso Approva sul tipo di documento può scegliere
+  lo stato **Approvato** e compilare Approvato da, Approvato il (con selettore data), Versione
+  approvata ed Evidenza approvazione; può anche cambiare lo stato di un documento già Approvato.
+  Per chi ha solo Modifica non cambia nulla: quei campi restano in sola lettura. Il controllo
+  lato server (`saveDocument`) c'era già.
+- **Guida**: pagine Stati e frontespizio, Gate e Come usare l'app allineate.
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm build`: ok.
+- Prova nel browser con utenti approvatore e non approvatore: non fatta.
+
 ## [0.4.1] 2026-11-25 — Caselle spuntabili nell'editor visuale
 
 **Autore**: Lorenzo Belli

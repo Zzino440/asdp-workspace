@@ -13,10 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FRONT_MATTER_LABELS } from "@/lib/labels";
 
-// Campi gestiti dal flusso di approvazione (milestone 3) o dallo schema: solo lettura qui.
-const LOCKED = new Set(["versione_frontespizio", "approvato_da", "approvato_il", "versione_approvata", "evidenza_approvazione"]);
+// Campo gestito dallo schema: sempre solo lettura qui.
+const LOCKED = new Set(["versione_frontespizio"]);
+// Campi di approvazione: li cambia solo chi ha il permesso Approva.
+const APPROVAL = new Set(["approvato_da", "approvato_il", "versione_approvata", "evidenza_approvazione"]);
 const STATES = ["Da fare", "In corso", "Completo"].map((s) => ({ value: s, label: s }));
-const DATE_FIELDS = new Set(["creato_il", "scadenza", "completato_il"]);
+const APPROVER_STATES = [...STATES, { value: "Approvato", label: "Approvato" }];
+const DATE_FIELDS = new Set(["creato_il", "scadenza", "completato_il", "approvato_il"]);
 // Campi del frontespizio GUIDA-FRONT raggruppati per tema; quelli sconosciuti vanno in "Altri campi".
 const GROUPS = [
   { title: "Stato e date", keys: ["stato", "scadenza", "creato_il", "completato_il"] },
@@ -59,6 +62,7 @@ export function DocumentDetails(props: {
   frontMatterSource: string;
   body: string;
   front: Record<string, unknown>;
+  canApprove: boolean;
   // null: modificabile; altrimenti il motivo per cui è in sola lettura.
   readOnlyReason: string | null;
 }) {
@@ -73,7 +77,7 @@ export function DocumentDetails(props: {
   const isEditable = (key: string) =>
     props.readOnlyReason === null &&
     !LOCKED.has(key) &&
-    !(key === "stato" && front.stato === "Approvato") &&
+    (props.canApprove || (!APPROVAL.has(key) && !(key === "stato" && front.stato === "Approvato"))) &&
     (typeof front[key] !== "object" || front[key] === null || Array.isArray(front[key]));
   const changed = Object.keys(front).filter((key) => isEditable(key) && fields[key] !== initial[key]);
 
@@ -129,6 +133,8 @@ export function DocumentDetails(props: {
     });
   }
 
+  const states = props.canApprove ? APPROVER_STATES : STATES;
+
   function field(key: string) {
     if (!isEditable(key))
       return (
@@ -141,12 +147,12 @@ export function DocumentDetails(props: {
       <div key={key} className="flex flex-col gap-1.5">
         <Label htmlFor={`fm-${key}`}>{label(key)}</Label>
         {key === "stato" ? (
-          <Select items={STATES} value={fields.stato} onValueChange={(v) => setFields({ ...fields, stato: String(v) })}>
+          <Select items={states} value={fields.stato} onValueChange={(v) => setFields({ ...fields, stato: String(v) })}>
             <SelectTrigger id={`fm-${key}`} className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {STATES.map((s) => (
+              {states.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}
                 </SelectItem>
@@ -211,7 +217,7 @@ export function DocumentDetails(props: {
                 <AlertTitle>{error}</AlertTitle>
               </Alert>
             )}
-            {current.title === "Stato e date" && front.stato === "Approvato" && props.readOnlyReason === null && (
+            {current.title === "Stato e date" && front.stato === "Approvato" && props.readOnlyReason === null && !props.canApprove && (
               <Alert>
                 <AlertDescription>Il documento è Approvato: lo stato si cambia dal flusso di approvazione.</AlertDescription>
               </Alert>
