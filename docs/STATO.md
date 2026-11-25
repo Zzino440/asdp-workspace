@@ -6,12 +6,13 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-26 — Lorenzo Belli con Claude Code
+**Ultimo aggiornamento**: 2026-11-25 sera — Lorenzo Belli con Claude Code
 
 ## Versione
 
 - `0.1.0` (`package.json`, `CHANGELOG.md`), su `master` dal commit "Add app version and
   changelog". Tag git `0.1.0` su `master`: da fare dopo il merge.
+- `0.4.0` (`create_document` e Guida "Desktop + plugin") su `master`, committata il 2026-11-25 (non pushata).
 - `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
   `feature/vari-miglioramenti`: tag
   dopo il merge su `master`.
@@ -21,7 +22,7 @@
 | # | Stato |
 |---|---|
 | 0, 1, 2a, 2b, 2c | Fatte |
-| 2d — server MCP | Quasi fatta: login OAuth, tool `list_projects`, `get_project`, `list_documents`, `read_document`, `list_versions`, `update_document`. Mancano `create_document`, `.mcp.json` nel plugin `asdp`, verifica da Claude Desktop e claude.ai (dopo il deploy di prova) |
+| 2d — server MCP | Quasi fatta: login OAuth, tool `list_projects`, `get_project`, `list_documents`, `read_document`, `list_versions`, `update_document`, `create_document` (2026-11-25). Plugin `asdp` 0.15.0 con `.mcp.json` e skill che salvano dall'MCP sul branch `feature/asdp-mcp` (committato, non pushato). Manca la verifica da Cowork e chat di Claude Desktop sul cloud |
 | 3 — gate e approvazioni | Da iniziare |
 
 ## In corso: deploy di prova su cloud
@@ -115,6 +116,32 @@ Se nel frattempo ci sono migrazioni nuove: dopo il restore lanciare
 blocco `[remotes.test]` di `supabase/config.toml`, `pnpm exec supabase config push`. Il codice
 nuovo arriva su Vercel con il merge su `master`.
 
+## Skill + connettore (2026-11-25)
+
+**Decisione di Lorenzo**: claude.ai senza plugin non si usa. PM e AF lavorano in Claude Desktop
+(Cowork o chat) con il plugin `asdp` installato dall'amministratore: skill, template e connettore
+arrivano insieme dal plugin. Il problema vero era che le skill non sapevano del connettore e
+salvavano su disco o in chat.
+
+- [x] `create_document` (app `0.4.0`): `createFile` in `src/lib/gitlab.ts`, `createDocument` in
+  `src/lib/documents/`, tool MCP, istruzioni del server; migrazione
+  `20261125211201_document_create.sql` (insert dell'indice per chi ha "edit") e test pgTAP.
+  Provato in locale via MCP HTTP sulla sandbox (vedi CHANGELOG); file di prova rimossi
+  (commit "Rimuove file di prova di create_document" sulla sandbox). Committato su `master`.
+  Migrazione da applicare sul cloud (`supabase db push --remote`) alla prossima riaccensione.
+- [x] Plugin `asdp` 0.15.0 (repo `dst-claude-skills`, branch `feature/asdp-mcp`, committato,
+  non pushato): sezione "Where to read and save" in tutte le 10 skill (con l'MCP di norma si legge e
+  si salva dal server; su file se l'utente lo chiede o se la cartella è un clone della repo
+  documenti, poi push e reindicizzazione; niente modalità che cancellano il file), README,
+  CHANGELOG. `claude plugin validate --strict` ok.
+- [x] Guida: Collegare Claude (Desktop + plugin, Code per TL), Lanciare una skill §5, Aggiornare
+  un documento. Committato su `master`.
+- [ ] **Da fare in futuro**: prova sul cloud riacceso (OAuth di Desktop vuole https). Plugin dal
+  branch, togliere `asdp-cloud`; in Cowork e nella chat di Desktop un T4.1 nuovo (CSV + md) e un
+  aggiornamento di T1.4; controllare commit a nome dell'utente, mappa, nessun file locale in
+  Cowork. Verificare anche se la chat di Desktop carica il server del plugin (se no, la Guida già
+  dice di aggiungere il connettore a mano). Poi rispegnere.
+
 ## Blocco 1 (intuitività per PM/AF): mappa del percorso
 
 - [x] Pagina progetto come mappa per fasi 0–4 (2026-11-25, branch `claude/jolly-cerf-704e2e`):
@@ -176,7 +203,8 @@ nuovo arriva su Vercel con il merge su `master`.
 Decisa con Lorenzo il 2026-11-25 dopo un'esplorazione di app, plugin `asdp` e Guida. Il problema:
 l'app mostra dove si trova il progetto ma non spiega il framework e non accompagna nel fare il
 passo (lanciare la skill, rispondere alle D[N], approvare). Le skill si lanciano con **Claude +
-connettore MCP**; le skill in cloud vengono dopo.
+connettore MCP** dentro Claude Desktop o Claude Code con il plugin `asdp`; le skill in cloud
+vengono dopo.
 
 1. **Guida al framework nell'app** (`/guida`) — fatta il 2026-11-26, versione `0.3.0`, commit
    `3ad2fe8`. 27 pagine (testi in `src/content/guida/`, registro in `src/lib/guida.ts`), link
@@ -184,8 +212,8 @@ connettore MCP**; le skill in cloud vengono dopo.
    (build, navigazione, link). Da fare: rilettura dei testi da parte di Lorenzo/team; divergenze
    Guida ↔ plugin in `TODO.md`.
 2. **Ponte passo → Claude**: scheda "Come fare questo passo" con "Copia prompt per Claude"
-   (codice progetto, skill, input da leggere via MCP); MCP `create_document` (decidere da dove
-   prendere i template: plugin `asdp` o repo `dst-claude-skills`), `skill_name`/`per_feature` in
+   (codice progetto, skill, input da leggere via MCP); `create_document` fatto (i template li
+   porta la skill del plugin, l'app non ne ha copie), `skill_name`/`per_feature` in
    `get_project`, tool `next_step`, prompt MCP per passo, istruzioni del server con la mappa
    fasi → skill → documenti; pagina "Collega Claude".
 3. **Domande aperte D[N]**: estrazione nell'indexer, vista unica di progetto, risposta con un

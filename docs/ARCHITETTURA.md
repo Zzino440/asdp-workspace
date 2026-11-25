@@ -69,7 +69,7 @@ meno.
 | Chi | Canale | Cosa fa |
 |---|---|---|
 | PM, AF, chiunque | Browser | Legge, modifica, gate, approvazioni |
-| Chiunque | MCP da Claude desktop / claude.ai | Interroga lo stato del progetto, legge e salva documenti |
+| PM, AF, chiunque | Claude Desktop (Cowork o chat) con il plugin `asdp`, che porta skill e MCP dell'app | Lancia le skill, legge gli input e salva gli output via MCP; interroga lo stato del progetto |
 | TL, sviluppatori | Claude Code nella cartella del codice + MCP dell'app (+ plugin `asdp`) | Analizza il codice in locale, legge gli input e salva gli output via MCP |
 | Chi preferisce git | Clone della repo documenti + push | Resta supportato: il webhook reindicizza |
 
@@ -106,9 +106,10 @@ permessi, stessi commit.
    output da `/mnt/session/outputs` e li committa su GitLab (flusso 1). Il montaggio di repository
    e la scoperta di `.claude/skills` dei Managed Agents funzionano solo con GitHub: input e skill
    si passano in modo esplicito.
-4. **Skill in locale.** Claude Code aperto sulla cartella del codice, con il plugin `asdp` e
-   l'MCP dell'app: legge gli input (`read_document`) e salva gli output (`create_document` /
-   `update_document` → flusso 1). In alternativa, senza MCP: clone di `adsp` → push → flusso 2.
+4. **Skill in locale.** Claude Desktop (Cowork o chat) o Claude Code sulla cartella del codice,
+   con il plugin `asdp` e l'MCP dell'app; con l'MCP collegato le skill di norma leggono gli input
+   (`read_document`) e salvano gli output (`create_document` / `update_document` → flusso 1).
+   Su richiesta dell'utente, in un clone della repo documenti o senza MCP: file → push → flusso 2.
 5. **Gate.** Invio → checklist → decisione. L'approvazione è un commit che aggiorna nel
    frontespizio `stato`, `approvato_da`, `approvato_il`, `versione_approvata`, `gate`; l'hash del
    commit è l'evidenza. L'approvazione del PO cliente si registra come esterna, con upload
@@ -118,8 +119,8 @@ permessi, stessi commit.
 7. **MCP.** Il server MCP dell'app (`/api/mcp`, Streamable HTTP) agisce come l'utente: token
    OAuth → JWT Supabase → RLS e `document_level()`. Tool: `list_projects`, `get_project` (team,
    repo, e per ogni tipo di documento livello dell'utente e documenti presenti), `list_documents`,
-   `read_document` (testo esatto in `content`), `list_versions`, `update_document`; poi
-   `create_document` e, con le milestone successive, domande aperte, invio in approvazione, avvio
+   `read_document` (testo esatto in `content`), `list_versions`, `update_document`,
+   `create_document` (tipo ricavato come nell'indice, serve "edit"); con le milestone successive domande aperte, invio in approvazione, avvio
    skill. Le regole minime (leggere prima di salvare, modifiche minime, stati, campi di
    approvazione) arrivano al client come istruzioni del server; le regole dettagliate e i template
    restano nel plugin `asdp`, senza copie nell'app. Ogni scrittura è un commit
@@ -184,9 +185,9 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 2a | **Fatto**: lettura e indice: repo collegate, indexer (webhook + Reindicizza), elenco e vista documenti |
 | 2b | **Fatto**: modifica e commit: editor visuale (Milkdown) nella stessa pagina della lettura, salvataggio a blocchi che lascia identico il Markdown non toccato (`src/lib/markdown-splice.ts`), frontespizio come form, concorrenza ottimistica con bozza locale |
 | 2c | **Fatto**: versioni (commit del file con autore e canale App/MCP/Git) e diff rispetto alla versione precedente |
-| 2d | **In corso**: server MCP con login OAuth e tool di lettura e scrittura (fatto); `create_document`, plugin `asdp`, Claude desktop (dopo il deploy di prova) |
+| 2d | **In corso**: server MCP con login OAuth, tool di lettura e scrittura e `create_document` (fatto); skill del plugin `asdp` che salvano dall'MCP (sul branch); verifica da Cowork e chat di Claude Desktop (sul cloud di prova) |
 | 2e | **In corso**: Guida al framework nell'app (`/guida`): fasi, documenti, ruoli, stati, gate, lavoro con Claude; link dalla mappa e dal documento |
-| 2f | Ponte passo → Claude: prompt pronto per ogni passo, `create_document`, `next_step`, prompt MCP, pagina "Collega Claude" |
+| 2f | Ponte passo → Claude: prompt pronto per ogni passo, `next_step`, prompt MCP, pagina "Collega Claude" |
 | 3 | Gate e approvazioni |
 | 3b | Dashboard "Tocca a me"; profilo progetto (Nuovo/Evolutiva/BugFix) e fase modificabile |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |

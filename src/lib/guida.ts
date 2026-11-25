@@ -295,7 +295,7 @@ export const GUIDA: GuidaPagina[] = [
     file: "collegare-claude",
     sezione: "Lavorare con Claude",
     titolo: "Collegare Claude",
-    sottotitolo: "Il connettore ASDP in claude.ai o nell'app desktop, oppure Claude Code con il plugin.",
+    sottotitolo: "Claude Desktop con il plugin asdp, che porta skill e connettore; Claude Code per TL e sviluppatori.",
   },
   {
     slug: "lanciare-skill",

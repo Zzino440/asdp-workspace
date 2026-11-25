@@ -32,7 +32,8 @@ export async function saveDocumentAction(input: z.input<typeof saveSchema>): Pro
     const { lastCommitId } = await saveDocument(supabase, { ...parsed.data, via: "app", userId: claims.claims.sub });
     return { error: null, lastCommitId };
   } catch (e) {
-    if (e instanceof DocumentError) return { error: MESSAGES[e.code], conflict: e.code === "conflict" };
+    // saveDocument lancia solo i codici di MESSAGES; gli altri sono della creazione.
+    if (e instanceof DocumentError) return { error: MESSAGES[e.code as keyof typeof MESSAGES], conflict: e.code === "conflict" };
     console.error(e);
     return { error: "Salvataggio non riuscito." };
   }

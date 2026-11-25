@@ -29,6 +29,11 @@ export class GitLabError extends Error {
   get isConflict() {
     return this.status === 400 && this.body.includes("has changed since you started editing");
   }
+
+  // GitLab rifiuta la creazione se il file esiste già.
+  get isExisting() {
+    return this.status === 400 && this.body.includes("already exists");
+  }
 }
 
 const project = (projectPath: string) => `/projects/${encodeURIComponent(projectPath)}`;
@@ -84,7 +89,29 @@ export async function updateFile(
   return created.id;
 }
 
-type CommitResponse = { id: string; message: string; author_name: string; authored_date: string };
+// Commit di un file nuovo con l'utente come autore; GitLab rifiuta se il file esiste già.
+export async function createFile(
+  projectPath: string,
+  branch: string,
+  file: { path: string; content: string },
+  commit: { message: string; authorName: string; authorEmail: string },
+) {
+  const response = await gitlab(`${project(projectPath)}/repository/commits`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      branch,
+      commit_message: commit.message,
+      author_name: commit.authorName,
+      author_email: commit.authorEmail,
+      actions: [{ action: "create", file_path: file.path, content: file.content }],
+    }),
+  });
+  const created = (await response.json()) as { id: string };
+  return created.id;
+}
+
+type CommitResponse ={ id: string; message: string; author_name: string; authored_date: string };
 
 // Commit che hanno toccato un file, dal più recente (fino a 100).
 export async function listFileCommits(projectPath: string, ref: string, filePath: string) {

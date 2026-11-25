@@ -1,29 +1,22 @@
-Claude lavora sui progetti ASDP attraverso un **connettore** dell'app: un server MCP che gli permette di leggere i progetti e di leggere e salvare i documenti, con i tuoi permessi. Per lanciare le skill serve anche il plugin `asdp`. Questa pagina spiega i due modi per collegarti.
+Claude lavora sui progetti ASDP con due cose che arrivano insieme nel plugin `asdp`: le **skill**, che producono i documenti del framework, e il **connettore** dell'app, un server MCP che gli permette di leggere i progetti e di leggere, creare e salvare i documenti con i tuoi permessi. Questa pagina spiega come collegarti.
 
 ## Quale percorso scegliere
 
 | Percorso | Per chi | Cosa serve |
 |---|---|---|
-| **A. claude.ai o Claude Desktop** | PM, AF, designer, chiunque | Solo il browser o l'app desktop, niente installazioni |
-| **B. Claude Code** | TL, sviluppatori | Claude Code, il plugin `asdp` e il server MCP |
+| **A. Claude Desktop** (Cowork o chat) | PM, AF, designer, chiunque | Claude Desktop con il plugin `asdp` |
+| **B. Claude Code** | TL, sviluppatori | Claude Code con il plugin `asdp` |
 
-In entrambi i casi ti servono un account dell'app ASDP Workspace e l'indirizzo dell'app (chiedilo all'amministratore). L'indirizzo del server MCP è sempre:
+In entrambi i casi ti serve un account dell'app ASDP Workspace (chiedilo all'amministratore).
 
-```text
-<indirizzo dell'app>/api/mcp
-```
+## Percorso A: Claude Desktop
 
-## Percorso A: claude.ai o Claude Desktop
+1. Il plugin `asdp` lo pubblica per tutti l'amministratore Claude dell'organizzazione: in Claude Desktop controlla che sia installato e attivo. Non installarlo da copie passate a mano, altrimenti non ricevi gli aggiornamenti.
+2. Il plugin porta con sé il connettore, che compare come `asdp-workspace`. Al primo uso Claude ti chiede di collegarlo: si apre la pagina di accesso dell'app, entra con il tuo account.
+3. Nella pagina di consenso controlla che sia la tua app e scegli **Consenti**.
+4. Torna in Claude: il connettore risulta collegato. In una nuova chat o attività di Cowork controlla che sia attivo.
 
-1. In claude.ai o in Claude Desktop apri le impostazioni dei **connettori** e scegli di aggiungere un **connettore personalizzato**.
-2. Dagli un nome riconoscibile, per esempio "ASDP Workspace", e incolla l'indirizzo del server MCP.
-3. Avvia la connessione. Si apre la pagina di accesso dell'app: entra con il tuo account.
-4. Nella pagina di consenso controlla che sia la tua app e scegli **Consenti**.
-5. Torna in Claude: il connettore risulta collegato. In una nuova chat controlla che sia attivo.
-
-> **Nota:** se non trovi l'opzione per aggiungere un connettore personalizzato, il tuo piano Claude o le impostazioni dell'organizzazione potrebbero non consentirlo. Chiedi all'amministratore Claude.
-
-Con il solo connettore puoi interrogare lo stato dei progetti e leggere e aggiornare i documenti. Per **lanciare le skill** serve anche il plugin `asdp`: in Claude Desktop lo pubblica per tutti l'amministratore Claude dell'organizzazione. Non installarlo da copie passate a mano, altrimenti non ricevi gli aggiornamenti.
+> **Nota:** se nella chat il connettore `asdp-workspace` non compare, aggiungilo a mano dalle impostazioni dei **connettori** come **connettore personalizzato**, con l'indirizzo `<indirizzo dell'app>/api/mcp`. Se l'opzione manca, chiedi all'amministratore Claude.
 
 ## Percorso B: Claude Code
 
@@ -68,11 +61,11 @@ Se vedi l'elenco, sei collegato.
 
 - Elencare i tuoi progetti e mostrare team, ruoli, documenti e il tuo livello di permesso su ogni tipo di documento.
 - Leggere un documento e il suo storico delle versioni.
-- Salvare le modifiche a un documento esistente.
+- Creare un documento nuovo e salvare le modifiche a uno esistente.
 
 Claude agisce **sempre come te**: vede e modifica solo quello che puoi vedere e modificare nell'app. Ogni salvataggio è un commit a tuo nome, visibile nella **Cronologia** del documento con il canale "MCP".
 
-> **Nota:** la creazione di documenti nuovi dal connettore è in arrivo. Oggi una skill che produce un documento nuovo lo salva come file (Claude Code) o te lo restituisce in chat. Va poi aggiunto alla repo documenti del progetto da chi ha accesso a GitLab: l'app lo indicizza da sola.
+Quando il connettore è collegato, di norma le skill salvano lì e il documento finisce nell'app. Se vuoi lavorare sui file, chiedi di salvare in locale. Se la cartella è un clone della repo documenti, la skill salva in locale da sola. Dopo il push l'app indicizza il file. Dal connettore non si cancellano file.
 
 ## Problemi comuni
 

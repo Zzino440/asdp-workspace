@@ -2,7 +2,15 @@ import "server-only";
 import type { McpServer } from "@modelcontextprotocol/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { documentLevel, DocumentError, listDocuments, listVersions, readDocument, saveDocument } from "@/lib/documents";
+import {
+  createDocument,
+  documentLevel,
+  DocumentError,
+  listDocuments,
+  listVersions,
+  readDocument,
+  saveDocument,
+} from "@/lib/documents";
 
 // Tool MCP dell'app: adattatori sottili sopra src/lib/documents/, sempre col client dell'utente.
 // Progetti identificati dal codice (es. "PFS"), documenti dal percorso nella repo.
@@ -27,6 +35,7 @@ export const INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti 
 - I documenti sono file Markdown con frontespizio YAML (GUIDA-FRONT) tra due righe "---", salvati su GitLab.
 - Prima di modificare un documento leggilo con read_document; poi cambia solo le parti necessarie di content e passalo intero a update_document con il last_commit_id letto. Lascia invariato tutto il resto, commenti del frontespizio compresi.
 - Stati del documento: Da fare, In corso, Completo, Approvato. Lo stato Approvato e i campi approvato_da, approvato_il, versione_approvata, evidenza_approvazione li cambia solo chi approva; non modificare versione_frontespizio.
+- Quando una skill ASDP legge o scrive un file asdp/..., di norma usa questo server: read_document per gli input, create_document per un file nuovo, update_document per uno esistente, con lo stesso percorso. Salva su file locale solo se l'utente lo chiede o se la cartella di lavoro è un clone della repo documenti (il push lo porta nell'app). Il server non cancella file.
 - Ogni salvataggio è un commit a nome dell'utente: scrivi messaggi di commit brevi e chiari in italiano.`;
 
 export function registerTools(server: McpServer, clientFor: ClientFor) {
@@ -209,6 +218,36 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       }
     },
   );
+
+  server.registerTool(
+    "create_document",
+    {
+      title: "Crea documento",
+      description:
+        "Crea un documento ASDP nuovo (Markdown con frontespizio GUIDA-FRONT, o il CSV del backlog) con un commit a " +
+        "nome dell'utente. Il percorso è quello indicato dalla skill (es. asdp/backlog/T4.1-BACKLOG.md), sotto la " +
+        "cartella documenti del progetto. Il contenuto parte dal template della skill. Se il file esiste già usa " +
+        "read_document e update_document.",
+      inputSchema: z.object({
+        project: z.string().describe("Codice del progetto, es. PFS"),
+        path: z.string().describe("Percorso nella repo documenti, es. asdp/backlog/T4.1-BACKLOG.md"),
+        content: z.string().describe("Testo completo del file, frontespizio compreso"),
+        message: z.string().max(200).optional().describe("Messaggio di commit (facoltativo)"),
+      }),
+    },
+    async ({ project, path, content, message }, ctx) => {
+      const { supabase, userId } = clientFor(ctx);
+      const id = await projectId(supabase, project);
+      if (!id) return failure(NOT_FOUND);
+      try {
+        const created = await createDocument(supabase, { projectId: id, path, content, message, via: "mcp", userId });
+        return text({ created: true, path, type: created.documentType, last_commit_id: created.lastCommitId });
+      } catch (e) {
+        if (!(e instanceof DocumentError)) throw e;
+        return failure(SAVE_ERRORS[e.code]);
+      }
+    },
+  );
 }
 
 const SAVE_ERRORS = {
@@ -220,4 +259,11 @@ const SAVE_ERRORS = {
   approval_fields:
     "Solo un approvatore può cambiare lo stato Approvato o i campi approvato_da, approvato_il, " +
     "versione_approvata, evidenza_approvazione. Lascia quei campi come sono.",
+  exists: "Il file esiste già. Leggilo con read_document e salvalo con update_document.",
+  invalid_path:
+    "Percorso non valido: deve stare nella cartella documenti del progetto (docs_root in get_project) e finire " +
+    "in .md o .csv.",
+  unknown_type:
+    "Tipo di documento non riconosciuto. Usa il nome file e il frontespizio del template della skill " +
+    "(template_origine), o la cartella del tipo indicata da get_project.",
 };

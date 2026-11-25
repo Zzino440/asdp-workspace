@@ -24,7 +24,7 @@ Se hai il plugin `asdp-project`, puoi chiedere direttamente "cosa faccio adesso?
 ## 2. Prepara gli input
 
 - **Documenti già nell'app** (per esempio il consolidato per la T1.4): non serve allegarli. Indica a Claude il codice del progetto e il documento: li legge dal connettore.
-- **Materiale esterno** (trascrizioni, offerta, note dei workshop): allegalo in chat, oppure mettilo nella cartella aperta in Claude Code.
+- **Materiale esterno** (trascrizioni, offerta, note dei workshop): allegalo in chat, oppure mettilo nella cartella aperta in Cowork o in Claude Code.
 - **Il tipo di progetto**, greenfield o evolutiva, se la skill lo chiede.
 
 > **Attenzione:** niente dati personali reali o dati di produzione nei documenti e nelle conversazioni.
@@ -54,13 +54,18 @@ Le domande che la skill non può risolvere da sola restano nel documento come [d
 
 ## 5. Dove finisce il risultato
 
+Con il connettore collegato, di norma la skill salva **nell'app**: ogni salvataggio è un commit a tuo nome, visibile in **Cronologia**. Un documento nuovo compare subito nella mappa, uno esistente passa alla nuova versione.
+
+Se preferisci lavorare sui file, chiedi a Claude di salvare in locale. Lo fa da solo se la cartella aperta è un clone della repo documenti. Dopo il commit e il push su GitLab l'app indicizza il file da sola; se non lo vedi, usa **Reindicizza** dal menu `⋯` del progetto.
+
 | Caso | Dove finisce |
 |---|---|
-| Documento che esiste già nell'app | Claude può salvarlo dal connettore: è un nuovo commit a tuo nome, visibile in **Cronologia** |
-| Documento nuovo, in Claude Code | Un file nella cartella di lavoro |
-| Documento nuovo, in claude.ai o Desktop | Il testo in chat, da scaricare |
+| Connettore collegato | Nell'app (documenti nuovi ed esistenti) |
+| Connettore collegato, salvataggio in locale chiesto da te o clone della repo documenti | Un file nella cartella; nell'app dopo il push |
+| Connettore non collegato, Cowork o Claude Code | Un file nella cartella di lavoro |
+| Connettore non collegato, chat | Il testo in chat, da scaricare |
 
-> **Nota:** il salvataggio dei documenti nuovi direttamente nell'app è in arrivo. Oggi il file va aggiunto alla repo documenti del progetto da chi ha accesso a GitLab; l'app lo indicizza da sola e il documento compare nella mappa.
+> **Nota:** se il documento non arriva nell'app, controlla che il connettore sia collegato (vedi [Collegare Claude](/guida/collegare-claude)). Un file rimasto in locale va aggiunto alla repo documenti da chi ha accesso a GitLab: l'app lo indicizza da sola.
 
 ## 6. Poi, nell'app
 

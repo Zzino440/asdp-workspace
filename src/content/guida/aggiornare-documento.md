@@ -38,7 +38,7 @@ Prima di salvare la skill ti chiede come. Le opzioni nascono per i file sul tuo 
 | Sovrascrivi e incrementa | Requisiti Consolidati e Analisi Funzionale: scrive un file con la versione successiva nel nome e cancella il vecchio. Negli altri documenti: sostituisce il file e aumenta la versione | Tutte |
 | Stesso file, stessa versione | Sostituisce il file senza cambiare versione; nella Fase 4 solo prima del gate | Tutte |
 
-**Con l'app chiedi a Claude di salvare l'aggiornamento sullo stesso documento.** La versione sale nel frontespizio, il nome del file resta quello, e le versioni precedenti restano in **Cronologia**, dove puoi aprirle e confrontarle. Dal connettore non si possono ancora creare file nuovi né cancellarli: le opzioni che cambiano il nome del file valgono solo per chi lavora sui file in Claude Code.
+**Con l'app chiedi a Claude di salvare l'aggiornamento sullo stesso documento.** La versione sale nel frontespizio, il nome del file resta quello, e le versioni precedenti restano in **Cronologia**, dove puoi aprirle e confrontarle. Dal connettore si possono creare file nuovi ma non cancellarli: **Nuovo file** e **Archivia la precedente** funzionano, mentre in Requisiti Consolidati e Analisi Funzionale **Sovrascrivi e incrementa** (che cancella il file vecchio) non viene proposta.
 
 ## Attenzione alle modifiche manuali
 

@@ -25,6 +25,40 @@
 
 ## Storia
 
+## [0.4.0] 2026-11-25 — Creazione dei documenti dal connettore
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **MCP**: nuovo tool `create_document` (progetto, percorso, testo, messaggio facoltativo). Crea
+  il file nella repo documenti con un commit a nome dell'utente (`Via: mcp`) e lo aggiunge
+  subito all'indice. Il tipo si ricava come nell'indice (nome file, `template_origine`,
+  cartella); serve il permesso di modifica su quel tipo. Rifiuta percorsi fuori da `docs_root` o
+  non `.md`/`.csv`, tipi non riconosciuti, file già esistenti (rimanda a `update_document`) e,
+  per chi non approva, documenti già Approvati o con i campi di approvazione pieni. I template
+  restano nel plugin `asdp`.
+- **MCP**: le istruzioni del server dicono di leggere e salvare di norma dal server quando una
+  skill ASDP scrive un file `asdp/...`; su file locale solo se lo chiede l'utente o se la
+  cartella è un clone della repo documenti (poi il push e l'indicizzazione).
+- **Guida**: Collegare Claude descrive Claude Desktop (Cowork o chat) con il plugin `asdp`, che
+  porta skill e connettore; Lanciare una skill e Aggiornare un documento dicono che con il
+  connettore il documento, nuovo o esistente, di norma finisce nell'app, e che resta possibile
+  lavorare sui file con il push e la reindicizzazione.
+
+### Migrazioni e configurazione
+- `20261125211201_document_create.sql`: chi ha il permesso di modifica su un tipo può inserire la
+  riga d'indice di quel tipo (prima solo PM e admin). Da applicare sul cloud con
+  `pnpm exec supabase db push --remote`.
+- Va insieme al plugin `asdp` 0.15.0 (skill che salvano dal connettore).
+
+### Test eseguiti
+- `tsc`, lint, build; `supabase test db` (37 test, nuovo `document_create.test.sql`).
+- In locale via MCP HTTP sulla sandbox: creazione da PM (commit "Crea …", in indice e in
+  Cronologia), rifiuto per chi ha solo la lettura, per un non membro, per un percorso fuori,
+  un tipo ignoto, un file esistente e, da TL con solo modifica su T0.1a, per un documento
+  Approvato. File di prova poi rimossi dalla sandbox.
+- Non provato: Cowork e chat di Claude Desktop con il plugin (serve il cloud di test).
+
 ## [0.3.0] 2026-11-26 — Guida al framework
 
 **Autore**: Lorenzo Belli

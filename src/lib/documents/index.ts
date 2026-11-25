@@ -1,7 +1,16 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "yaml";
-import { compareFile, ensurePushWebhook, GitLabError, listFileCommits, listFiles, readFile, updateFile } from "@/lib/gitlab";
+import {
+  compareFile,
+  createFile,
+  ensurePushWebhook,
+  GitLabError,
+  listFileCommits,
+  listFiles,
+  readFile,
+  updateFile,
+} from "@/lib/gitlab";
 
 // Livello di servizio unico per i documenti: lo usano le server action della UI e i tool MCP.
 // Riceve sempre un client Supabase: quello dell'utente (RLS) oppure, solo nel webhook, quello
@@ -136,7 +145,9 @@ export async function documentLevel(supabase: SupabaseClient, projectId: string,
 }
 
 export class DocumentError extends Error {
-  constructor(readonly code: "not_found" | "forbidden" | "conflict" | "approval_fields") {
+  constructor(
+    readonly code: "not_found" | "forbidden" | "conflict" | "approval_fields" | "exists" | "invalid_path" | "unknown_type",
+  ) {
     super(code);
   }
 }
@@ -226,6 +237,72 @@ export async function saveDocument(
   if (error) console.error("Indice non aggiornato dopo il salvataggio", error);
 
   return { lastCommitId: commitId };
+}
+
+// Crea un documento nuovo con un commit a nome dell'utente. Il tipo si ricava come nell'indice
+// (nome file, template_origine, cartella); serve "edit" su quel tipo.
+export async function createDocument(
+  supabase: SupabaseClient,
+  input: { projectId: string; path: string; content: string; message?: string; via: "app" | "mcp"; userId: string },
+) {
+  const [{ data: project }, { data: profile }, { data: types }] = await Promise.all([
+    loadProject(supabase, input.projectId),
+    supabase.from("profiles").select("full_name, email").eq("id", input.userId).single(),
+    supabase.from("document_types").select("code, folder"),
+  ]);
+  if (!project?.gitlab_project_path || !profile) throw new DocumentError("not_found");
+
+  const docsRoot = project.docs_root.replace(/\/?$/, "/");
+  if (!input.path.startsWith(docsRoot) || !/\.(md|csv)$/.test(input.path) || input.path.includes("..")) {
+    throw new DocumentError("invalid_path");
+  }
+
+  const frontMatter = input.path.endsWith(".md") ? splitFrontMatter(input.content).frontMatter : {};
+  const documentType = detectType(input.path, docsRoot, frontMatter, types ?? []);
+  if (!documentType) throw new DocumentError("unknown_type");
+
+  const level = await documentLevel(supabase, input.projectId, documentType);
+  if (level !== "edit" && level !== "approve") throw new DocumentError("forbidden");
+  if (level !== "approve" && changesApproval({}, frontMatter)) throw new DocumentError("approval_fields");
+
+  const { data: indexed } = await supabase
+    .from("documents")
+    .select("path")
+    .eq("project_id", input.projectId)
+    .eq("path", input.path)
+    .maybeSingle();
+  if (indexed) throw new DocumentError("exists");
+
+  const fileName = input.path.split("/").pop();
+  let commitId: string;
+  try {
+    commitId = await createFile(
+      project.gitlab_project_path,
+      project.gitlab_branch,
+      { path: input.path, content: input.content },
+      {
+        message: `${input.message?.trim() || `Crea ${fileName}`}\n\nVia: ${input.via}`,
+        authorName: profile.full_name || profile.email,
+        authorEmail: profile.email,
+      },
+    );
+  } catch (error) {
+    if (error instanceof GitLabError && error.isExisting) throw new DocumentError("exists");
+    throw error;
+  }
+
+  // Indice aggiornato subito (in locale il webhook non arriva); se fallisce lo ripara il webhook.
+  const { error } = await supabase.from("documents").insert({
+    project_id: input.projectId,
+    path: input.path,
+    document_type: documentType,
+    front_matter: frontMatter,
+    last_commit_id: commitId,
+    indexed_at: new Date().toISOString(),
+  });
+  if (error) console.error("Indice non aggiornato dopo la creazione", error);
+
+  return { documentType, lastCommitId: commitId };
 }
 
 // Progetto del documento, solo se la RLS rende visibile la riga d'indice all'utente.
