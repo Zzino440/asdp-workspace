@@ -142,7 +142,7 @@ nuovo arriva su Vercel con il merge su `master`.
     (`document-outline.tsx`), che lascia il posto ai pannelli «Dettagli» (campi chiave + «Dati
     tecnici») e «Cronologia». `PHASES` è stato spostato in `src/lib/labels.ts`. Verificato a 1440 e
     1100 px (commit `c88a440`).
-  - Frontespizio rivisto il 2026-11-25, scelte di Lorenzo (non committato). Sotto il titolo, sempre
+  - Frontespizio rivisto il 2026-11-25, scelte di Lorenzo (commit `34b5978`). Sotto il titolo, sempre
     visibili: Stato, Owner, Scadenza (in rosso se scaduta) e Approvazione. Il pannello «Dettagli»
     non c'è più: «Tutti i dettagli» apre una finestra larga (`document-details.tsx`) con i temi a
     schede a sinistra (in riga sul telefono), i campi del tema su 3 colonne, un pallino sui temi
