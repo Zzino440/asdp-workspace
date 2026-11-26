@@ -10,41 +10,15 @@
 
 ## Versione
 
-- `0.1.0` (`package.json`, `CHANGELOG.md`), su `master` dal commit "Add app version and
-  changelog". Tag git `0.1.0` su `master`: da fare dopo il merge.
-- `0.4.0` (`create_document` e Guida "Desktop + plugin") su `master`, committata il 2026-11-25 (non pushata).
-- `0.4.1` (caselle delle D[N] spuntabili in Modifica testo, evidenziazione di "In questa pagina", barra laterale e barra dell'editor ancorate) su `master`, 2026-11-25: committata (4f156ac, 8c8002c e "Ancora la barra dell'editor…"), non pushata; tag dopo il push.
-- `0.5.0` («Tutti i dettagli» permette a chi ha `approve` di scegliere `Approvato` e modificare
-  i campi `approvato_*`, prop `canApprove` da `documentLevel`) su `master` (3c98eaf), già su
-  `origin/master`; tag `0.5.0` da fare.
-- `0.6.0` (flusso di approvazione manuale: Segna come completo, Approva con checklist del gate,
-  Richiedi modifiche, Revoca; testo cambiato su un Approvato → In corso) sul branch
-  `feature/flusso-approvazione-m3`, 2026-11-25: committata, non pushata; tag dopo il merge su
-  `master`.
-- `0.7.0` (coda delle approvazioni in `/approvazioni`) sullo stesso branch, 2026-11-25:
-  committata, non pushata.
-- `0.8.0` (Approvazioni: schede Da approvare / Approvati, gruppi per progetto, filtri,
-  ordinamento, G2 su una riga, badge sul menu, prossimo da approvare) sullo stesso branch,
-  2026-11-25: committata, non pushata. Sulla sandbox: T2.2 Approvato, T3.1 In corso (modifiche
-  richieste). Provata in locale sulla sandbox (T2.2,
-  utente TL); sulla sandbox il T2.2 è rimasto In corso.
-- `0.8.1` (prova nascosta del collegamento Microsoft, milestone 7) su `master`
-  (`929ed36`), 2026-11-26: pushata, tag `0.8.1` fatto.
-- `0.9.0` (pagina del progetto: intestazione con fase, Modifica progetto, Passa alla fase
-  successiva, Team in elenco + Gestisci, card Repository con link e verifica GitLab) sul branch
-  `bugfix/dettaglio-progetto`, 2026-11-26: non committata. Da provare con un utente senza
-  ruolo PM e i link quando GitLab torna raggiungibile.
-- `0.10.0` (card "File di progetto" con le cartelle Teams collegate, pagina Collega una cartella
-  di Teams, milestone 7a) sul branch `feature/file-progetto` (da `bugfix/dettaglio-progetto`),
-  2026-11-26: committata (`096b48a`), branch pushato, tag `0.10.0` su quel commit (non ancora su
-  `master`: il merge in fast-forward lo porta lì; contiene anche i commit di 0.9.0).
-- `0.10.1` (via la pagina `/file-microsoft` e la voce WIP; riga "Microsoft: nome · Scollega"
-  nella card) sullo stesso branch, 2026-11-26: committata (`32f810c`), non pushata.
-- `0.11.0` (7b: carica, nuova cartella, rinomina, sposta, elimina nella card) sullo stesso
-  branch, 2026-11-26: non committata.
-- `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
-  `feature/vari-miglioramenti`: tag
-  dopo il merge su `master`.
+- Fino a `0.11.0` tutto su `master` e su `origin/master` (2026-11-26), tag `0.1.0`–`0.11.0`
+  pushati (`0.9.0` su `61b3cee`, `0.10.1` su `32f810c`, `0.11.0` su `4a06c52`). Nessun altro
+  branch aperto; worktree `claude/jolly-cerf-704e2e` eliminato.
+- Restano da provare: `0.9.0` con un utente senza ruolo PM e i link GitLab; le scritture di
+  `0.11.0` (7b) su una cartella Teams di test.
+- `0.11.1` (migrazione `20261126161428_security_definer_execute.sql`: `EXECUTE` tolto ad `anon`
+  sugli helper della RLS e a tutti i ruoli API sui trigger) su `master`, 2026-11-26: applicata
+  in locale, test verdi; da committare, taggare e applicare sul cloud.
+- Sandbox: T2.2 rimasto In corso, T3.1 In corso (modifiche richieste) dopo le prove di 0.8.0.
 
 ## Milestone
 
@@ -82,10 +56,11 @@ quando serve. **Oggi è spento**: istruzioni in "Come riaccendere il cloud di te
   (inserito a mano da Lorenzo).
 - [ ] **Invito utenti sul cloud** ← punto in cui siamo. Il link dell'email standard di Supabase
   rimandava al login con la sessione nel frammento `#access_token` (il server non lo vede) →
-  "credenziali non valide". Corretto (non committato): pagina pubblica `/auth/invito` che apre la
+  "credenziali non valide". Corretto: pagina pubblica `/auth/invito` che apre la
   sessione dal frammento e porta a `/imposta-password`; l'invito usa `redirectTo` verso quella
-  pagina. Committato su `bugfix/various`. Da fare: merge su `master` (nuovo deploy, che include
-  anche `GITLAB_TOKEN`), nuovo invito di prova.
+  pagina. Su `master` (2026-11-26). Vercel era in pausa durante il push: dopo la riaccensione
+  controllare che l'ultimo deploy sia `master` attuale, se no Redeploy. Da fare: nuovo invito di
+  prova.
 - [x] Progetto di prova nell'app (repo documenti `l.belli/sandbox-test`), Reindicizza.
 - [x] **Webhook GitLab automatico**, provato il 2026-11-20: chiamata con secret giusto → 200
   `{"indexed":1}`, sbagliato → 401; commit diretto sulla sandbox (`2a20c422`) indicizzato dal
@@ -399,9 +374,7 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
   Corretto con la pagina `/auth/invito` (legge il frammento, apre la sessione, manda a imposta
   password) e `redirectTo` nell'invito. Aggiunti in Amministratore → Utenti "Reinvia invito"
   (utente non confermato) / "Reimposta password" (confermato) ed "Elimina". Provati in locale
-  (2026-11-20). Da pubblicare; poi sbloccare `belluzzino@gmail.com` (confermato senza accesso)
-  con "Reimposta password", o eliminarlo e reinvitarlo.
-- Correzione invito e gestione utenti committate su `bugfix/various` (`7d8dbce`, `f793b45`): da
-  portare su `master` per il deploy.
+  (2026-11-20). Su `master`; sul cloud riacceso sbloccare `belluzzino@gmail.com` (confermato
+  senza accesso) con "Reimposta password", o eliminarlo e reinvitarlo.
 - Sulla porta 4100 è rimasto un `node.exe` appeso (vecchio dev server): chiuderlo prima di
   riavviare `pnpm dev`.

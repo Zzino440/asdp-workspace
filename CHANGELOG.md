@@ -25,6 +25,26 @@
 
 ## Storia
 
+## [0.11.1] 2026-11-26 — Permessi delle funzioni security definer
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **Database**: le funzioni helper della RLS (`is_admin`, `is_project_member`, `has_project_role`,
+  `shares_project_with`, `is_any_project_pm`, `document_level`) si possono eseguire solo da
+  utenti autenticati, non più da `anon`; le funzioni di trigger (`handle_new_user`,
+  `handle_user_invited`, `handle_user_sign_in`, `sync_user_ban`) da nessun ruolo dell'API.
+  Risolve gli avvisi dell'advisor di sicurezza di Supabase.
+
+### Migrazioni e configurazione
+- `20261126161428_security_definer_execute.sql`: da applicare sul cloud
+  (`supabase db push --remote`).
+
+### Test eseguiti
+- `supabase test db`: 7 file, 52 test, tutti verdi (nuovo `security_definer_execute.test.sql`).
+- Trigger su `auth.users` come `supabase_auth_admin`: il profilo viene creato.
+- Typecheck, lint, build.
+
 ## [0.11.0] 2026-11-26 — Gestione dei file di progetto (7b)
 
 **Autore**: Lorenzo Belli

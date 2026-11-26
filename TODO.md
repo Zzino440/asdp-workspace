@@ -31,19 +31,6 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   `dstech.it`), "Reindicizza" crea il nuovo webhook ma non toglie quello vecchio: va rimosso a
   mano da GitLab.
 
-## Sicurezza
-
-- [ ] **Permessi di esecuzione delle funzioni `SECURITY DEFINER`** (segnalato dall'advisor di
-  sicurezza di Supabase sul progetto cloud, 2026-11-20). Nuova migrazione che:
-  - toglie `EXECUTE` a `public` e `anon` sulle funzioni helper della RLS (`is_admin`,
-    `is_project_member`, `has_project_role`, `shares_project_with`, `is_any_project_pm`,
-    `document_level`), lasciandolo ad `authenticated` perché le policy le usano;
-  - toglie `EXECUTE` a `public`, `anon` e `authenticated` sulle funzioni di trigger
-    (`handle_new_user`, `handle_user_invited`, `handle_user_sign_in`, `sync_user_ban`);
-  - non tocca `rls_auto_enable`, che è di Supabase.
-
-  Verifica: `pnpm exec supabase test db` verde, advisor senza i due avvisi per le nostre funzioni.
-
 ## Framework e permessi
 
 - [ ] **RACI del seed diverso dalla Guida ASDP** (`delivery-tech/DST-ASDP-Guida-Framework.md`
