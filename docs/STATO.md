@@ -36,7 +36,9 @@
   `TODO.md`, "Token GitLab per i progetti veri").
 - Branch `feature/mcp-miglioramenti-teams`, 2026-11-26 (non committato): "Reindicizza da GitLab"
   tolto dal menu ⋯ e reso pulsante sempre visibile nell'intestazione del progetto
-  (`progetti/[id]/reindex-button.tsx`), guide aggiornate. Typecheck, lint, build ok.
+  (`progetti/[id]/reindex-button.tsx`), guide aggiornate. Scheda File: ricerca mentre si digita
+  (`progetti/[id]/file-search.tsx`, debounce 300 ms, minimo 2 caratteri, Invio subito, Esc
+  svuota). Typecheck, lint, build ok; non provato nel browser.
 
 ## Milestone
 

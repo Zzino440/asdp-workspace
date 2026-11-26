@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Form from "next/form";
 import {
   ChevronRight,
   Download,
@@ -10,12 +9,10 @@ import {
   FileText,
   Folder,
   Presentation,
-  Search,
 } from "lucide-react";
 import { cn } from "cn";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   type DriveItem,
@@ -28,6 +25,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { disconnectMicrosoft } from "../file-actions";
 import { CopyLinkButton } from "./copy-link-button";
+import { FileSearch } from "./file-search";
 import { FolderToolbar, ItemActions } from "./file-manager";
 
 export type FilesParams = { file?: string; cartella?: string; cerca?: string; errore?: string };
@@ -198,13 +196,7 @@ export async function ProjectFiles({
             </span>
           )}
         </nav>
-        <Form action={base} scroll={false} className="flex items-center gap-1">
-          <input type="hidden" name="file" value={location.id} />
-          <Input name="cerca" defaultValue={query} placeholder="Cerca in questa cartella" className="h-8 w-56" />
-          <Button type="submit" variant="outline" size="icon" aria-label="Cerca">
-            <Search />
-          </Button>
-        </Form>
+        <FileSearch base={base} locationId={location.id} query={query} />
         <a href={openUrl} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
           <ExternalLink /> Apri in SharePoint
         </a>
