@@ -25,6 +25,39 @@
 
 ## Storia
 
+## [0.13.0] 2026-11-26 — Nuovo progetto a passi, portafoglio progetti e file in blocco
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Nuovo progetto a passi**: Progetto → Repository → Persone e Teams → Riepilogo, con riepilogo
+  dal vivo a destra (da `lg`). Alla creazione si scelgono anche descrizione e date, repo FE/BE
+  (nessuna, nuova o esistente), PM/TL e il Team per il canale. Descrizione e date si modificano in
+  Impostazioni › Generale.
+- **Pagina Progetti come portafoglio**: colonne Progetto (cliente · natura), Stato, Fase con barra
+  "pronti/attesi", Attenzione (scaduti, in approvazione, manca PM/TL, Setup per admin/PM),
+  Persone, Fine (rossa se passata). Ricerca, filtro stato (default Attivi), "Solo i miei",
+  ordinamento, riga cliccabile, filtri nell'URL; titolo e filtri sticky, tabella con intestazione
+  fissa. Calcolo dell'avanzamento in `src/lib/phase-progress.ts`, condiviso con la mappa.
+- **Pagina del progetto**: intestazione e schede sticky; la colonna destra (da `xl`) si ancora
+  sotto.
+- **Scheda File**: tabella con altezza limitata e intestazione fissa; selezione multipla con
+  checkbox (seleziona tutto, Maiuscolo+clic per un intervallo) e barra di gruppo con Sposta ed
+  Elimina su più elementi (max 100, errori parziali riportati). Ricerca mentre si digita
+  (debounce 300 ms, minimo 2 caratteri) e solo sui nomi dei file (Graph `search` è full-text).
+
+### Migrazioni e configurazione
+- `20261126211145_project_details.sql`: colonne `description`, `start_date`, `end_date` su
+  `projects` (con controllo fine ≥ inizio). Applicata in locale, da applicare sul cloud.
+
+### Test eseguiti
+- `tsc --noEmit`, `lint`, `build` ok.
+- Nuovo progetto a passi provato in locale con admin (evolutiva con BE esistente e PM/TL).
+  Pagina Progetti provata nel browser con admin (filtri, ordinamento, ritorno indietro).
+- Non provati: "Crea su GitLab" dal wizard, canale Teams (serve un Team di test), azioni di gruppo
+  sui file e ricerca con un account Microsoft reale, viste con `pm@`/`tl@`. pgTAP non rilanciato:
+  7 test falliscono per i dati locali in più rispetto al seed (serve un `db reset`).
+
 ## [0.12.0] 2026-11-26 — Creazione guidata del progetto e preparazione dell'area di lavoro
 
 **Autore**: Lorenzo Belli con Claude Code

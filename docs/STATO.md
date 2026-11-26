@@ -13,6 +13,11 @@
 - Fino a `0.11.0` tutto su `master` e su `origin/master` (2026-11-26), tag `0.1.0`–`0.11.0`
   pushati (`0.9.0` su `61b3cee`, `0.10.1` su `32f810c`, `0.11.0` su `4a06c52`). Nessun altro
   branch aperto; worktree `claude/jolly-cerf-704e2e` eliminato.
+- `0.13.0` (branch `feature/miglioramenti-ui-ux`: nuovo progetto a passi, pagina Progetti come
+  portafoglio, intestazione sticky, file in blocco e ricerca per nome, vedi CHANGELOG) unita in
+  `master` con fast-forward, tag `0.13.0`, 2026-11-26. Non ancora pushati master e tag. `0.12.0`
+  era già su `master` (`69b53d3`) senza tag. Migrazione `20261126211145_project_details.sql`
+  da applicare sul cloud.
 - Restano da provare: `0.9.0` con un utente senza ruolo PM e i link GitLab; le scritture di
   `0.11.0` (7b) su una cartella Teams di test.
 - `0.11.1` (migrazione `20261126161428_security_definer_execute.sql`: `EXECUTE` tolto ad `anon`
