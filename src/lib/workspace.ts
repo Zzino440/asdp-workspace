@@ -192,7 +192,7 @@ export async function createProjectChannel(supabase: SupabaseClient, graph: Grap
   if (linked) return linked.id as string;
   const { data, error } = await supabase
     .from("project_file_locations")
-    .insert({ project_id: projectId, label: "Teams", drive_id: driveId, item_id: folder.id, web_url: folder.webUrl })
+    .insert({ project_id: projectId, label: name, drive_id: driveId, item_id: folder.id, web_url: folder.webUrl })
     .select("id")
     .single();
   if (error) throw new Error("Canale creato ma non collegato al progetto.");
