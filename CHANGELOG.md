@@ -25,6 +25,34 @@
 
 ## Storia
 
+## [0.10.0] 2026-11-26 — File di progetto da Teams nella pagina del progetto
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **UI, progetto**: card **File di progetto** (milestone 7a, sola lettura). Mostra le cartelle
+  Teams/SharePoint collegate al progetto come schede: percorso navigabile, ricerca nella cartella
+  e nelle sottocartelle, colonne Nome / Modificato da / Modificato / Dimensione, icone per tipo,
+  apertura in Office per il web, **Scarica**, **Copia link**, **Apri in SharePoint**. Senza
+  account Microsoft collegato propone "Collega account Microsoft"; un errore di Microsoft resta
+  nella card e non blocca la pagina.
+- **UI, collegamento**: pagina **Collega una cartella di Teams** (PM e admin): Team → canale
+  (anche privati e condivisi) → sottocartella, con un nome nel progetto. **Scollega** toglie la
+  cartella dal progetto senza toccare Teams.
+- **Microsoft Graph**: i token chiedono `.default`, cioè i permessi approvati dall'IT; la ricerca
+  tiene solo i file dentro la cartella collegata (SharePoint cerca in tutta la raccolta); il login
+  torna alla pagina di partenza (`next`, solo percorsi interni).
+- Tutto resta visibile solo dove c'è `MICROSOFT_CLIENT_ID` (oggi solo in locale).
+
+### Migrazioni e configurazione
+- Migrazione `20261126153839_project_file_locations.sql`: cartelle collegate al progetto (le
+  vedono i membri, le cambiano PM e admin, via RLS).
+
+### Test eseguiti
+- Typecheck, lint, build; test RLS pgTAP (`project_file_locations.test.sql` compreso).
+- In locale con un account DST reale: collegamento Team → canale → cartella, card con le
+  cartelle, sottocartella e percorso, ricerca con colonna Cartella, download (redirect al file).
+
 ## [0.9.0] 2026-11-26 — Pagina del progetto più chiara e modificabile
 
 **Autore**: Lorenzo Belli

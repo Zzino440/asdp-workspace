@@ -88,6 +88,7 @@ permessi, stessi commit.
 | File riservati, evidenze di approvazione | Supabase Storage | Fuori da Git; i riservati non vanno mai all'AI. Restano qui e non su SharePoint: lì li leggerebbero Copilot e i connettori M365 |
 | File di progetto non ASDP (Word, Excel, PDF, verbali…) | SharePoint, cartella del canale Teams del progetto | L'app li sfoglia, carica e sposta via Microsoft Graph con l'account Microsoft dell'utente; si aprono in Office per il web (co-editing e versioni di SharePoint). Mai copiati su GitLab |
 | Account Microsoft collegato | Supabase, `microsoft_accounts` | Refresh token dell'utente per Graph; RLS: solo la propria riga |
+| Cartelle Teams collegate al progetto | Supabase, `project_file_locations` | Etichetta, drive e cartella SharePoint; le vedono i membri, le cambiano PM e admin. I file restano su SharePoint |
 | Framework (skill `asdp`) | repo `dst-claude-skills` | Versione fissata per progetto, pubblicata sulla Skills API |
 
 ## 4. Flussi
@@ -202,7 +203,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
 | 5 | Modifica con AI, Domande aperte di progetto (anticipabili dopo 2f: risposta alle D[N] con un clic) |
 | 6 | Riservati, Pubblica su SharePoint (Microsoft Graph), login Microsoft Entra, deploy Vercel |
-| 7 | **In sospeso** (consenso dell'IT): file di progetto da Teams/SharePoint (Graph, account Microsoft dell'utente): 7a sfoglia e apri in Office per il web; 7b carica, cartelle, sposta, rinomina; 7c file come input delle skill; la pubblicazione degli approvati (6) scrive nella stessa cartella. Fatta la prova nascosta `/file-microsoft` (0.8.1) |
+| 7 | **In corso**, solo in locale per Lorenzo finché l'IT non vede l'analisi GDPR. 7a fatta (0.10.0): card "File di progetto" e pagina di collegamento. File di progetto da Teams/SharePoint (Graph, account Microsoft dell'utente): 7a sfoglia e apri in Office per il web; 7b carica, cartelle, sposta, rinomina; 7c file come input delle skill; la pubblicazione degli approvati (6) scrive nella stessa cartella. Fatta la prova nascosta `/file-microsoft` (0.8.1) |
 
 ## 8. Punti aperti
 

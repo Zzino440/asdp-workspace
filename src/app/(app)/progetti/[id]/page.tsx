@@ -3,23 +3,31 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NATURE_LABELS, PHASES, PROJECT_STATUS_LABELS, type AsdpRole } from "@/lib/labels";
+import { microsoftEnabled } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
 import { AdvancePhaseButton } from "./advance-phase";
 import { DocumentList, loadProjectSteps } from "./document-list";
 import { ProjectEditDialog } from "./project-edit-dialog";
+import { type FilesParams, ProjectFiles } from "./project-files";
 import { Repositories } from "./repositories";
 import { TeamEditor } from "./team-editor";
 
-export default function ProgettoPage({ params }: PageProps<"/progetti/[id]">) {
+export default function ProgettoPage({ params, searchParams }: PageProps<"/progetti/[id]">) {
   return (
     <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
-      <ProjectDetail params={params} />
+      <ProjectDetail params={params} searchParams={searchParams as Promise<FilesParams>} />
     </Suspense>
   );
 }
 
-async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+async function ProjectDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<FilesParams>;
+}) {
+  const [{ id }, filesParams] = await Promise.all([params, searchParams]);
   const supabase = await createClient();
 
   const { data: project } = await supabase
@@ -86,6 +94,20 @@ async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
           </Suspense>
         </CardContent>
       </Card>
+
+      {microsoftEnabled() && (
+        <Card id="file">
+          <CardHeader>
+            <CardTitle>File di progetto</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Suspense propria: Graph è lento e un suo errore non deve bloccare il resto. */}
+            <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento dei file…</p>}>
+              <ProjectFiles projectId={project.id} canManage={canManage} params={filesParams} />
+            </Suspense>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>

@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 import { connectAccount, microsoftEnabled } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
 
-// Ritorno dal login Microsoft: verifica lo state, salva il token, torna alla pagina dei file.
+// Ritorno dal login Microsoft: verifica lo state, salva il token, torna alla pagina di partenza.
 // Gli errori (es. consenso negato o approvazione dell'amministratore richiesta) si mostrano lì.
 export async function GET(request: NextRequest) {
   if (!microsoftEnabled()) notFound();
@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const saved = cookieStore.get("ms_oauth")?.value;
   cookieStore.delete({ name: "ms_oauth", path: "/api/microsoft" });
+  const { state, verifier, next = "/file-microsoft" } = saved ? JSON.parse(saved) : {};
 
   let error = params.get("error_description") ?? params.get("error");
   if (!error) {
-    const { state, verifier } = saved ? JSON.parse(saved) : {};
     if (!state || state !== params.get("state")) error = "Richiesta scaduta o non valida: riprova.";
     else {
       try {
@@ -25,5 +25,7 @@ export async function GET(request: NextRequest) {
       }
     }
   }
-  redirect(error ? `/file-microsoft?errore=${encodeURIComponent(error)}` : "/file-microsoft");
+  const target = new URL(next, request.nextUrl.origin);
+  if (error) target.searchParams.set("errore", error);
+  redirect(target.pathname + target.search);
 }

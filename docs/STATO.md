@@ -36,6 +36,9 @@
   successiva, Team in elenco + Gestisci, card Repository con link e verifica GitLab) sul branch
   `bugfix/dettaglio-progetto`, 2026-11-26: non committata. Da provare con un utente senza
   ruolo PM e i link quando GitLab torna raggiungibile.
+- `0.10.0` (card "File di progetto" con le cartelle Teams collegate, pagina Collega una cartella
+  di Teams, milestone 7a) sul branch `feature/file-progetto` (da `bugfix/dettaglio-progetto`),
+  2026-11-26: non committata.
 - `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
   `feature/vari-miglioramenti`: tag
   dopo il merge su `master`.
@@ -46,7 +49,7 @@
 |---|---|
 | 0, 1, 2a, 2b, 2c | Fatte |
 | 2d — server MCP | Quasi fatta: login OAuth, tool `list_projects`, `get_project`, `list_documents`, `read_document`, `list_versions`, `update_document`, `create_document` (2026-11-25). Plugin `asdp` 0.15.0 con `.mcp.json` e skill che salvano dall'MCP sul branch `feature/asdp-mcp` (committato, non pushato). Manca la verifica da Cowork e chat di Claude Desktop sul cloud |
-| 7 — file Teams/SharePoint | In sospeso: serve il consenso amministratore dell'IT. Prova nascosta in `0.8.1`. Come riprendere: sezione "File di progetto da Teams/SharePoint" |
+| 7 — file Teams/SharePoint | Sbloccata solo per Lorenzo in locale (consenso IT del 2026-11-26); per altri utenti o cloud serve prima l'analisi GDPR. 7a fatta in `0.10.0`. Come riprendere: sezione "File di progetto da Teams/SharePoint" |
 | 3 — gate e approvazioni | In corso: flusso manuale (0.6.0) e coda `/approvazioni` (0.7.0) fatti. Prossimi: approvazione assistita da AI/MCP, evidenza del cliente in Storage (vedi `TODO.md`) |
 
 ## In corso: deploy di prova su cloud
@@ -278,9 +281,11 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
 - App registration `ASDP` su Entra (solo organizzazione DST) fatta da Lorenzo, con redirect
   `http://localhost:4100/api/microsoft/callback`, segreto e permessi; variabili `MICROSOFT_*`
   solo in `.env.local`.
-- **Bloccata**: al login con l'account DST compare "L'approvazione è necessaria". Il tenant non
-  permette il consenso degli utenti: serve che l'IT clicchi "Concedi consenso amministratore per
-  Dst" (ASDP → Autorizzazioni API). Elenco dei permessi in ARCHITETTURA, punti aperti.
+- **Consenso**: il tenant non permette il consenso degli utenti. L'IT (richiesta a
+  helpdesk@dstech.it con il responsabile in copia) ha dato il consenso amministratore il
+  2026-11-26 e il collegamento funziona. **Condizione dell'IT**: va bene finché la usa solo
+  Lorenzo in locale. Prima di aprirla ad altri utenti o al cloud l'IT vuole un'analisi di
+  gestione e rischi GDPR (vedi "Come riprendere").
 - Prova nascosta in `0.8.1` (branch `feature/microsoft-integration`): migrazione
   `20261125231607_microsoft_accounts.sql` (refresh token per utente, RLS solo la propria riga;
   applicata in locale) e test pgTAP; `src/lib/microsoft.ts` (OAuth con state e PKCE, Graph con
@@ -299,22 +304,37 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
 
 ### Come riprendere
 
-1. [ ] **Chiedere il consenso all'IT** (Lorenzo, non ancora fatto). Da dire: app `ASDP` in
+1. [x] **Chiedere il consenso all'IT** (fatto il 2026-11-26). Da dire: app `ASDP` in
    Entra → Registrazioni app, cliccare "Concedi consenso amministratore per Dst" in
    Autorizzazioni API; solo permessi delegati, ognuno vede solo i file a cui ha già accesso su
    SharePoint; nessun permesso applicativo. Alternativa più restrittiva se la chiedono:
    `Sites.Selected` delegato, concesso sito per sito (un'operazione dell'IT per ogni progetto).
-2. [ ] **Provare il collegamento** in locale: `pnpm dev -p 4100 -H 127.0.0.1` (riavviare se il
+2. [x] **Provare il collegamento** (funziona, 2026-11-26) in locale: `pnpm dev -p 4100 -H 127.0.0.1` (riavviare se il
    vecchio processo sulla 4100 resta su "Caricamento…"), aprire
    `http://localhost:4100/file-microsoft`, "Collega account Microsoft" con l'account DST.
    Atteso: "Collegato come…", elenco dei Team, file dei canali, apertura in Office web; una riga
    in `microsoft_accounts`. Il segreto del client scade (6 mesi dalla creazione): se il login
    dà errore sul segreto, crearne uno nuovo in Certificati e segreti.
-3. [ ] **7a, sfoglia nel progetto**: migrazione con la cartella collegata al progetto (drive e
-   item SharePoint, modificabile da PM/admin via RLS), scelta di Team e canale dalla pagina del
-   progetto (`Channel.ReadBasic.All` in `SCOPES`), scheda "File" nel progetto al posto della
-   pagina di prova; togliere `/file-microsoft`. Versione MINOR.
-4. [ ] **7b**: carica (upload session di Graph), nuova cartella, sposta, rinomina.
+2b. [ ] **Analisi GDPR per l'IT** (condizione per altri utenti e cloud). Flussi: metadati dei
+   file e token passano dall'app, il contenuto va da SharePoint a Office web; con 7c il
+   contenuto va ad Anthropic (USA). Rischi: trasferimenti extra UE (Vercel in `iad1` → spostare
+   in `fra1`; Anthropic: DPA, SCC/DPF, conservazione), contratti dei clienti (sub-responsabili e
+   AI, specie PA), refresh token che dà accesso a tutti i file dell'utente (cifrarlo a riposo,
+   revoca alla rimozione), minimizzazione (solo cartelle dei progetti collegati, nessuna copia),
+   registro dei trattamenti, informativa, DPIA per 7c. Proposta: approvare ora 7a/7b senza AI,
+   7c dopo la DPIA e la verifica dei contratti.
+3. [x] **7a, sfoglia nel progetto** (`0.10.0`, 2026-11-26): tabella `project_file_locations`
+   (più cartelle per progetto, con etichetta); card "File di progetto" in
+   `progetti/[id]/project-files.tsx` (schede per cartella, percorso, ricerca, Scarica, Copia
+   link, Apri in SharePoint); pagina `progetti/[id]/file/collega` (Team → canale → cartella,
+   solo PM/admin); azioni in `progetti/file-actions.ts`; Graph in `src/lib/microsoft.ts`. Token
+   con scope `.default` (l'IT ha approvato tutto l'elenco, compresi `Channel.ReadBasic.All`,
+   `Channel.Create`, `TeamMember.Read.All`). La ricerca di SharePoint cerca in tutta la raccolta
+   e non dà il percorso: `searchFolder` rilegge i primi 25 risultati e tiene solo quelli nella
+   cartella. Verificata in locale con l'account DST (seed `admin@asdp.test`, progetto PFS).
+   Da decidere: la pagina di prova `/file-microsoft` e la voce WIP del menu servono ancora?
+4. [ ] **7b, in cantiere** (richiesta di Lorenzo): carica (upload session di Graph), nuova
+   cartella, rinomina, sposta, elimina (nel cestino di SharePoint), dalla card del progetto.
 5. [ ] **7c**: file SharePoint come input delle skill (MCP: tool che legge un file del progetto).
 6. [ ] **Cloud**: URI di produzione `https://<app>/api/microsoft/callback` nell'app registration
    (oggi `REDIRECT_URI` è fisso su localhost in `src/lib/microsoft.ts`), variabili
