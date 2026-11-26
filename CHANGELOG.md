@@ -56,6 +56,14 @@
 - **Modifica progetto**: admin e PM possono cambiare la repo documenti. L'app la verifica su
   GitLab (repo, branch, non già di un altro progetto), ricrea il webhook e reindicizza; il
   webhook sulla repo vecchia va tolto a mano.
+- **Pagina del progetto a schede**: intestazione compatta con le schede Percorso, File e
+  Impostazioni (URL `/progetti/[id]`, `/file`, `/impostazioni`). In Percorso la mappa sta al centro
+  e una colonna destra (da 1280 px; sotto, una riga da tre) mostra area di lavoro (solo passi aperti),
+  team e collegamenti. Le modifiche (dati del progetto, che prima erano nel dialog Modifica, team,
+  repository, cartelle Teams) sono tutte in Impostazioni. File mostra solo i file.
+- **Suggerimenti delle repo**: nei campi del percorso GitLab (Nuovo progetto, Impostazioni ›
+  Generale, aggiunta di una repo di codice) mentre scrivi compaiono le repo che l'app vede
+  (ricerca di GitLab). Resta possibile scrivere il percorso a mano.
 - **Indice**: una repo documenti senza la cartella `asdp/` vale come vuota (prima Reindicizza dava
   errore); repo o branch inesistenti restano un errore.
 - **Guida**: sezione "Creare e preparare un progetto" in "Come si usa questa app".
@@ -71,6 +79,9 @@
 - Repo per numero: Reindicizza su PFS (sandbox spostata in `asdp-sandbox/sandbox-test`) → numero
   946 salvato, 4 documenti; su PSW → 952 per adsp, 953 e 954 per fe e be. Nel dialog un percorso
   inesistente viene rifiutato con "Repo non trovata su GitLab o non accessibile all'app".
+- Schede: provate con build di produzione su `localhost:4102` (admin) a 1440 e 1100 px su PSW
+  (Fase 0, area di lavoro 3/5) e PFS (Fase 2, senza area di lavoro): scheda attiva, File,
+  Impostazioni; la pagina documento resta senza schede. Non provate con `pm@` e `tl@`.
 - In locale con `admin@asdp.test` e gruppo padre di test `asdp-sandbox`: creato il progetto PSW
   con fe e be. Su GitLab ci sono `asdp-sandbox/psw/{adsp,fe,be}` privati su `main`, il README con
   autore l'utente e le repo collegate nell'app. Scheda con i passi 1–2 fatti; Reindicizza su repo

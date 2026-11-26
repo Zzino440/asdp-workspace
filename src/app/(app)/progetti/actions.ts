@@ -6,7 +6,7 @@ import { z } from "zod";
 import { checkRepository, ensureProjectWebhook, indexProject } from "@/lib/documents";
 import { ASDP_ROLES } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
-import { gitlabCreationEnabled, provisionGitLab, relinkDocsRepository, syncCodeRepositories } from "@/lib/workspace";
+import { gitlabCreationEnabled, provisionGitLab, suggestRepositories, relinkDocsRepository, syncCodeRepositories } from "@/lib/workspace";
 
 // ok distingue il salvataggio riuscito dallo stato iniziale (serve ai dialog per chiudersi).
 export type FormState = { error: string | null; ok?: boolean; warning?: string | null };
@@ -216,4 +216,9 @@ export async function removeRepository(id: string): Promise<FormState> {
   if (!data?.length) return { error: "Non hai i permessi per modificare le repo del progetto." };
   refresh();
   return { error: null };
+}
+
+// Suggerimenti di repo GitLab mentre si scrive il percorso.
+export async function searchRepositories(text: string) {
+  return suggestRepositories(await createClient(), text);
 }

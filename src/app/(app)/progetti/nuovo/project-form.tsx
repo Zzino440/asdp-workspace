@@ -1,5 +1,6 @@
 "use client";
 
+import { RepoPathInput } from "../repo-path-input";
 import { useActionState, useState } from "react";
 import { createProject, type FormState } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -139,7 +140,7 @@ export function ProjectForm({ parentGroup }: { parentGroup: string | null }) {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-2 sm:col-span-2">
                 <Label htmlFor="gitlab_project_path">Repo documenti (GitLab)</Label>
-                <Input id="gitlab_project_path" name="gitlab_project_path" placeholder="dst/cliente/adsp" />
+                <RepoPathInput id="gitlab_project_path" name="gitlab_project_path" placeholder="dst/cliente/adsp" />
                 <p className="text-xs text-muted-foreground">
                   Le repo di codice si aggiungono dalla pagina del progetto.
                 </p>

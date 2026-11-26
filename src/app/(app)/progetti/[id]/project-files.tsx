@@ -26,7 +26,7 @@ import {
   searchFolder,
 } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
-import { disconnectMicrosoft, unlinkFolder } from "../file-actions";
+import { disconnectMicrosoft } from "../file-actions";
 import { CopyLinkButton } from "./copy-link-button";
 import { FolderToolbar, ItemActions } from "./file-manager";
 
@@ -53,7 +53,7 @@ const formatSize = (bytes = 0) =>
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-// Card "File di progetto": le cartelle Teams/SharePoint collegate al progetto, lette con l'account
+// Scheda "File": le cartelle Teams/SharePoint collegate al progetto, lette con l'account
 // Microsoft dell'utente. Mostra solo quelle cartelle (non tutto Teams). Un errore di Microsoft
 // resta nella card e non blocca la pagina del progetto.
 export async function ProjectFiles({
@@ -72,12 +72,12 @@ export async function ProjectFiles({
     .eq("project_id", projectId)
     .order("created_at");
 
-  const base = `/progetti/${projectId}`;
+  const base = `/progetti/${projectId}/file`;
   const href = (query: Record<string, string | undefined>) => {
     const search = new URLSearchParams(Object.entries(query).filter((e): e is [string, string] => Boolean(e[1])));
     return `${base}?${search}`;
   };
-  const linkHref = `${base}/file/collega`;
+  const linkHref = `${base}/collega`;
   const connect = (label: string) => (
     // <a> e non <Link>: la route imposta un cookie e reindirizza, non va precaricata.
     <a href={`/api/microsoft/login?next=${encodeURIComponent(base)}`} className={buttonVariants({ className: "w-fit" })}>
@@ -171,18 +171,6 @@ export async function ProjectFiles({
             {l.label}
           </Link>
         ))}
-        {canManage && (
-          <div className="ml-auto flex gap-1">
-            <Link href={linkHref} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-              Collega cartella
-            </Link>
-            <form action={unlinkFolder.bind(null, projectId, location.id)}>
-              <Button type="submit" variant="ghost" size="sm" title="Scollega dal progetto (su Teams non cambia niente)">
-                Scollega «{location.label}»
-              </Button>
-            </form>
-          </div>
-        )}
       </div>
 
       {/* Percorso, ricerca, apertura in SharePoint */}

@@ -18,9 +18,9 @@ import {
   microsoftEnabled,
 } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
-import { createTeamsChannel, linkFolder } from "../../../file-actions";
+import { createTeamsChannel, linkFolder } from "../../../../file-actions";
 import { TEAMS_FOLDERS } from "@/lib/workspace";
-import { FileIcon } from "../../project-files";
+import { FileIcon } from "../../../project-files";
 import { CreateChannelButton } from "./create-channel-button";
 
 // Collega una cartella di Teams al progetto (PM o admin): Team → canale → cartella, poi un nome.
@@ -28,7 +28,7 @@ import { CreateChannelButton } from "./create-channel-button";
 export default function CollegaCartellaPage({ params, searchParams }: PageProps<"/progetti/[id]/file/collega">) {
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Collega una cartella di Teams</h1>
+      <h2 className="text-lg font-semibold">Collega una cartella di Teams</h2>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
         <Content params={params} searchParams={searchParams} />
       </Suspense>

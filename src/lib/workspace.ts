@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ensureProjectWebhook, indexProject } from "@/lib/documents";
-import { branchExists, commitFiles, createGroup, createProject, getGroup, getProject, GitLabError } from "@/lib/gitlab";
+import { branchExists, commitFiles, searchProjects, createGroup, createProject, getGroup, getProject, GitLabError } from "@/lib/gitlab";
 import {
   channelFolder,
   createChannel,
@@ -202,7 +202,10 @@ export async function createProjectChannel(supabase: SupabaseClient, graph: Grap
 // Membri del Team che hanno un account nell'app (per email), da proporre nel team del progetto;
 // gli altri si invitano da Amministratore → Utenti.
 export async function teamMemberSuggestions(supabase: SupabaseClient, graph: Graph, teamId: string) {
-  const members = await listTeamMembers(graph, teamId);
+  const [members, team] = await Promise.all([
+    listTeamMembers(graph, teamId),
+    graph<{ displayName: string }>(`/teams/${teamId}?$select=displayName`),
+  ]);
   const emails = members.map((m) => m.email?.toLowerCase()).filter((e): e is string => Boolean(e));
   const { data: people } = await supabase
     .from("profiles")
@@ -211,6 +214,7 @@ export async function teamMemberSuggestions(supabase: SupabaseClient, graph: Gra
     .in("email", emails);
   const known = new Set((people ?? []).map((p) => p.email.toLowerCase()));
   return {
+    team: team.displayName,
     people: (people ?? []).map((p) => ({ id: p.id as string, name: (p.full_name || p.email) as string, email: p.email as string })),
     missing: members.filter((m) => m.email && !known.has(m.email.toLowerCase())).map((m) => m.displayName),
   };
@@ -299,4 +303,17 @@ export async function relinkDocsRepository(supabase: SupabaseClient, projectId: 
   if (webhook) warnings.push(webhook);
   await indexProject(supabase, projectId);
   return { warnings };
+}
+
+// Suggerimenti per i campi "repo GitLab" (admin o PM di almeno un progetto). Un errore di GitLab
+// non blocca: niente suggerimenti, il percorso si scrive a mano.
+export async function suggestRepositories(supabase: SupabaseClient, text: string) {
+  if (text.trim().length < 2) return [];
+  const [{ data: isAdmin }, { data: isPm }] = await Promise.all([supabase.rpc("is_admin"), supabase.rpc("is_any_project_pm")]);
+  if (!isAdmin && !isPm) return [];
+  try {
+    return await searchProjects(text.trim());
+  } catch {
+    return [];
+  }
 }

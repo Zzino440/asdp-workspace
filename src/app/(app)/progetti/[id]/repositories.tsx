@@ -1,5 +1,6 @@
 "use client";
 
+import { RepoPathInput } from "../repo-path-input";
 import { useActionState, useState, useTransition } from "react";
 import { ExternalLink, Plus, X } from "lucide-react";
 import { addRepository, removeRepository, type FormState } from "../actions";
@@ -134,7 +135,7 @@ function AddRepositoryDialog({ projectId, onAdded }: { projectId: string; onAdde
         <form action={formAction} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="gitlab_path">Percorso GitLab</Label>
-            <Input id="gitlab_path" name="gitlab_path" placeholder="dst/progetto/backend" required />
+            <RepoPathInput id="gitlab_path" name="gitlab_path" placeholder="dst/progetto/backend" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">

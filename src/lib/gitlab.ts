@@ -181,6 +181,13 @@ export const getGroup = (groupPath: string) => findOrNull<Group>(`/groups/${enco
 
 export const getProject = (projectPath: string) => findOrNull<GitLabProject>(project(projectPath));
 
+// Repo che il token dell'app vede e che contengono il testo nel nome o nel percorso (max 10).
+export async function searchProjects(text: string) {
+  const query = new URLSearchParams({ search: text, membership: "true", search_namespaces: "true", simple: "true", per_page: "10" });
+  const response = await gitlab(`/projects?${query}`, { signal: AbortSignal.timeout(5000) });
+  return ((await response.json()) as GitLabProject[]).map((p) => p.path_with_namespace);
+}
+
 // Sottogruppo privato sotto parentId.
 export async function createGroup(parentId: number, path: string, name: string) {
   const response = await gitlab("/groups", json("POST", { parent_id: parentId, path, name, visibility: "private" }));

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { saveTeam, type FormState } from "../actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,7 +24,7 @@ import { ASDP_ROLES, ROLE_LABELS, type AsdpRole } from "@/lib/labels";
 type Member = { user_id: string; name: string; email: string; roles: AsdpRole[]; isNew?: boolean };
 type Person = { id: string; name: string; email: string };
 // Proposte dal Team Microsoft del progetto: persone già nell'app e nomi di chi non c'è.
-type Suggested = { people: Person[]; missing: string[] } | null;
+type Suggested = { team: string; people: Person[]; missing: string[] } | null;
 
 const initialState: FormState = { error: null };
 
@@ -35,21 +36,24 @@ export function TeamEditor({
   members,
   people,
   suggested,
+  autoOpen = false,
+  isAdmin = false,
 }: {
   projectId: string;
   canEdit: boolean;
   members: Member[];
   people: Person[];
   suggested: Suggested;
+  autoOpen?: boolean; // subito dopo aver creato il canale Teams
+  isAdmin?: boolean;
 }) {
-  const proposals = (suggested?.people ?? []).filter((p) => !members.some((m) => m.user_id === p.id));
-  const [open, setOpen] = useState(canEdit && (proposals.length > 0 || Boolean(suggested?.missing.length)));
+  const [open, setOpen] = useState(canEdit && autoOpen && Boolean(suggested));
   const router = useRouter();
   const pathname = usePathname();
   // Dopo il salvataggio le proposte non servono più: si tolgono dall'indirizzo.
   const saved = () => {
     setOpen(false);
-    if (suggested) router.replace(pathname);
+    if (autoOpen) router.replace(pathname);
   };
   const missing = (["pm", "tl"] as const).filter((role) => !members.some((m) => m.roles.includes(role)));
 
@@ -92,23 +96,15 @@ export function TeamEditor({
               <DialogTitle>Gestisci team</DialogTitle>
             </DialogHeader>
             {/* Montato solo a dialog aperto: annullare scarta le modifiche non salvate. */}
-            {proposals.length > 0 && (
-              <p className="text-sm text-muted-foreground">
-                Aggiunte le persone del Team Microsoft che usano l&apos;app: spunta i loro ruoli e salva.
-              </p>
-            )}
-            {Boolean(suggested?.missing.length) && (
-              <p className="text-sm text-muted-foreground">
-                Nel Team ma non nell&apos;app: {suggested!.missing.join(", ")}. Le invita l&apos;amministratore da
-                Amministratore → Utenti.
-              </p>
-            )}
             {open && (
               <TeamMatrix
                 projectId={projectId}
-                members={[...members, ...proposals.map((p) => ({ user_id: p.id, name: p.name, email: p.email, roles: [], isNew: true }))]}
+                members={members}
                 people={people}
                 onSaved={saved}
+                suggested={suggested}
+                suggestedOpen={autoOpen}
+                isAdmin={isAdmin}
               />
             )}
           </DialogContent>
@@ -124,11 +120,17 @@ function TeamMatrix({
   members: initialMembers,
   people,
   onSaved,
+  suggested,
+  suggestedOpen,
+  isAdmin,
 }: {
   projectId: string;
   members: Member[];
   people: Person[];
   onSaved: () => void;
+  suggested: Suggested;
+  suggestedOpen: boolean;
+  isAdmin: boolean;
 }) {
   const [members, setMembers] = useState(initialMembers);
   const [state, formAction, pending] = useActionState(async (prev: FormState, formData: FormData) => {
@@ -138,10 +140,9 @@ function TeamMatrix({
   }, initialState);
 
   const holders = (role: AsdpRole) => members.filter((m) => m.roles.includes(role));
-  const warnings = [
-    holders("pm").length === 0 && "Manca un Project Manager.",
-    holders("tl").length === 0 && "Manca un Tech Lead.",
-  ].filter(Boolean) as string[];
+  const missingRoles = [holders("pm").length === 0 && "un PM", holders("tl").length === 0 && "un TL"].filter(Boolean);
+  // Persone del Team Microsoft già nell'app e non ancora nella tabella.
+  const fromTeam = (suggested?.people ?? []).filter((p) => !members.some((m) => m.user_id === p.id));
   const merged = members.some((m) => m.roles.includes("pm") && m.roles.includes("tl"));
 
   const candidates = people
@@ -177,11 +178,6 @@ function TeamMatrix({
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="team" value={JSON.stringify(payload)} />
 
-      {warnings.map((w) => (
-        <Alert key={w} variant="destructive">
-          <AlertDescription>{w}</AlertDescription>
-        </Alert>
-      ))}
       {merged && (
         <Alert>
           <AlertDescription>PM e TL sulla stessa persona: registrato come accorpamento.</AlertDescription>
@@ -246,6 +242,49 @@ function TeamMatrix({
         </Button>
         {state.error && <p className="text-sm text-destructive">{state.error}</p>}
       </div>
+      {missingRoles.length > 0 && <p className="text-xs text-destructive">Manca {missingRoles.join(" e ")}.</p>}
+
+      {suggested && (
+        <details open={suggestedOpen} className="rounded-md border px-3 py-2 text-sm">
+          <summary className="cursor-pointer text-muted-foreground">
+            Dal Team «{suggested.team}» · {suggested.people.length + suggested.missing.length} persone
+          </summary>
+          <div className="mt-3 flex flex-col gap-3">
+            {fromTeam.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <h3 className="text-xs text-muted-foreground">Nell&apos;app</h3>
+                <ul className="flex flex-col">
+                  {fromTeam.map((p) => (
+                    <li key={p.id} className="flex items-center justify-between gap-2 py-1">
+                      <span className="min-w-0 truncate">
+                        {p.name} <span className="text-xs text-muted-foreground">{p.email}</span>
+                      </span>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => add(p.id)}>
+                        <Plus />
+                        Aggiungi
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {suggested.missing.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <h3 className="text-xs text-muted-foreground">Non ancora nell&apos;app ({suggested.missing.length})</h3>
+                <p className="text-muted-foreground">{suggested.missing.join(" · ")}</p>
+                {isAdmin && (
+                  <Link href="/amministrazione/utenti" className="text-xs text-primary hover:underline">
+                    Invitale da Amministratore → Utenti
+                  </Link>
+                )}
+              </div>
+            )}
+            {fromTeam.length === 0 && suggested.missing.length === 0 && (
+              <p className="text-muted-foreground">Tutte le persone del Team sono già nel team del progetto.</p>
+            )}
+          </div>
+        </details>
+      )}
     </form>
   );
 }

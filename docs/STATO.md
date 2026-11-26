@@ -22,7 +22,11 @@
 - `0.12.0` (creazione guidata del progetto e scheda "Prepara l'area di lavoro", vedi CHANGELOG)
   sul branch `feature/git-mic-integration`, 2026-11-26. Comprende le repo per numero
   (`gitlab_project_id`, migrazione `20261126190851_gitlab_project_id.sql` applicata in locale, da
-  applicare sul cloud) e la repo documenti modificabile dal dialog del progetto. Typecheck, lint, build e pgTAP ok;
+  applicare sul cloud) e la repo documenti modificabile. Dopo il commit `45ea896` (non ancora
+  committata): pagina del progetto a schede Percorso · File · Impostazioni con colonna destra
+  (route group `progetti/[id]/(schede)/`, dialog Modifica sostituito da Impostazioni › Generale).
+  Il dev server sulla 4100 (avviato fuori dalla sessione) non vedeva le route spostate:
+  riavviarlo. Typecheck, lint, build e pgTAP ok;
   creazione GitLab provata in locale con gruppo padre `asdp-sandbox` (`GITLAB_PROJECTS_GROUP` in
   `.env.local`), progetto di prova PSW → `asdp-sandbox/psw/{adsp,fe,be}`. Restano da provare:
   creazione del canale Teams su un **Team di test** (mai quello di PFS), la proposta dei membri, la vista

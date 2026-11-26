@@ -155,6 +155,13 @@ export const createChannel = (graph: Graph, teamId: string, displayName: string,
     body: JSON.stringify({ displayName, description, membershipType: "standard" }),
   });
 
+// Team (gruppo Microsoft 365) che possiede la raccolta documenti: per i canali di un Team è il
+// Team stesso; null per un drive che non è di un gruppo.
+export async function teamOfDrive(graph: Graph, driveId: string) {
+  const drive = await graph<{ owner?: { group?: { id: string } } }>(`/drives/${driveId}?$select=owner`);
+  return drive.owner?.group?.id ?? null;
+}
+
 export type TeamMember = { displayName: string; email: string | null };
 
 export async function listTeamMembers(graph: Graph, teamId: string) {
