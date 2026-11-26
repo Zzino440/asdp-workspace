@@ -1,12 +1,9 @@
 import { cache } from "react";
 import { listDocuments } from "@/lib/documents";
 import { featureOf } from "@/lib/features";
+import { isDone } from "@/lib/phase-progress";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectMap, type MapDoc, type MapType, type NextStep } from "./project-map";
-
-const DONE_STATES = ["Completo", "Approvato"];
-const isDone = (doc: MapDoc) => doc.state !== null && DONE_STATES.includes(doc.state);
-
 
 // Catalogo dei tipi con skill (document_types) incrociato con l'indice, e passi aperti.
 // Lo usano la mappa del percorso e il pulsante "Passa alla fase" dell'intestazione

@@ -66,6 +66,19 @@
   Ricerca file: Graph `search` è full-text (trovava tutto cercando "DST", nome del sito); ora
   `searchFolder` tiene solo i risultati col testo nel nome (fino a 200 letti, 50 mostrati).
   Typecheck e lint ok; non provata nel browser.
+  **Pagina Progetti** come vista di portafoglio (2026-11-26, non committata, funzione nuova →
+  MINOR): colonne Progetto (cliente · natura sotto), Stato, Fase con barra "pronti/attesi" della
+  fase attuale, Attenzione (scaduti, in approvazione, manca PM/TL, Setup solo per admin/PM),
+  Persone (PM e i miei ruoli), Fine (rossa se passata). Ricerca, filtro stato (default Attivi =
+  non chiusi), "Solo i miei" (solo per chi vede progetti senza ruolo), ordinamento, riga
+  cliccabile; filtri nell'URL. Letture in blocco con paginazione `.range()` (tetto `max_rows`
+  1000). Calcolo dell'avanzamento estratto in `src/lib/phase-progress.ts`, usato anche dalla
+  mappa. Tolta "ultima attività": `indexed_at` si riscrive a ogni Reindicizza. File:
+  `progetti/page.tsx`, `progetti/projects-table.tsx`. Titolo e filtri sticky; tabella con
+  altezza massima `max(16rem, 100dvh - 12rem)` e intestazione delle colonne fissa, come la
+  scheda File (provato a 460 e 360 px di altezza). Typecheck, lint, build ok; provata nel
+  browser con admin (filtri, ordinamento, ritorno indietro, x/y uguale alla mappa di PFS); non
+  provata con `pm@`.
 
 ## Milestone
 

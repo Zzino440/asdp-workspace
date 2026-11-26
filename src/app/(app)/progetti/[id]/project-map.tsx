@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PHASES } from "@/lib/labels";
 import { guidaHref, guidaHrefForType } from "@/lib/guida";
+import { phaseProgress } from "@/lib/phase-progress";
 import { stepPrompt } from "@/lib/prompts";
 import { CopyPromptButton } from "./copy-prompt-button";
 
@@ -39,8 +40,6 @@ export type NextStep = {
   doc: MapDoc | null;
 };
 type ProjectInfo = { code: string; nature: string; teams: boolean };
-
-const isDone = (d: MapDoc) => d.state === "Completo" || d.state === "Approvato";
 
 // Colore del pallino di un documento: i token --state-* del frontespizio.
 const DOT: Record<string, string> = {
@@ -73,21 +72,7 @@ export function ProjectMap({
   const q = query.trim().toLowerCase();
   const search = useRef<HTMLInputElement>(null);
 
-  // Avanzamento di una fase: documenti attesi (un tipo, o un tipo per ogni Feature) e quelli pronti.
-  const progress = (phase: number) => {
-    let expected = 0;
-    let ready = 0;
-    let started = false;
-    for (const t of types.filter((t) => t.phase === phase)) {
-      const slots = t.perFeature ? features.map((f) => t.docs.filter((d) => (d.feature ?? "") === f)) : [t.docs];
-      for (const docs of slots) {
-        expected++;
-        if (docs.length > 0) started = true;
-        if (docs.length > 0 && docs.every(isDone)) ready++;
-      }
-    }
-    return { expected, ready, started };
-  };
+  const progress = (phase: number) => phaseProgress(types, features, phase);
   const complete = (phase: number) => {
     const p = progress(phase);
     return p.expected > 0 && p.ready === p.expected;
