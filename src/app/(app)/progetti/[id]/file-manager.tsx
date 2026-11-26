@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { ChevronRight, Folder, FolderPlus, MoreHorizontal, MoveRight, Pencil, Trash2, Upload } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition } from "react";
+import { ChevronRight, Folder, FolderPlus, MoreHorizontal, MoveRight, Pencil, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -14,9 +15,11 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   deleteFile,
+  deleteFiles,
   type FileResult,
   listFolders,
   moveFile,
+  moveFiles,
   newFolder,
   refreshFiles,
   renameFile,
@@ -145,7 +148,13 @@ export function ItemActions({
         onSubmit={(name) => renameFile(projectId, locationId, item.id, name)}
       />
       {dialog === "move" && (
-        <MoveDialog projectId={projectId} locationId={locationId} item={item} onClose={close} />
+        <MoveDialog
+          projectId={projectId}
+          locationId={locationId}
+          title={`Sposta «${item.name}»`}
+          onMove={(target) => moveFile(projectId, locationId, item.id, target)}
+          onClose={close}
+        />
       )}
       <ConfirmDialog
         open={dialog === "delete"}
@@ -155,6 +164,141 @@ export function ItemActions({
         onConfirm={() => deleteFile(projectId, locationId, item.id)}
       />
     </>
+  );
+}
+
+// --- Selezione multipla: checkbox sulle righe, barra con le azioni di gruppo ---
+
+type SelectableItem = { id: string; name: string; folder: boolean };
+
+const SelectionContext = createContext<{
+  items: SelectableItem[];
+  selected: SelectableItem[];
+  isSelected: (id: string) => boolean;
+  toggle: (id: string, checked: boolean, range: boolean) => void;
+  setAll: (checked: boolean) => void;
+  clear: () => void;
+} | null>(null);
+
+function useSelection() {
+  const context = useContext(SelectionContext);
+  if (!context) throw new Error("FileSelection mancante");
+  return context;
+}
+
+// Va rimontato (key) quando cambia cartella o ricerca: la selezione non segue la navigazione.
+export function FileSelection({ items, children }: { items: SelectableItem[]; children: React.ReactNode }) {
+  const [ids, setIds] = useState<Set<string>>(new Set());
+  const anchor = useRef<string | null>(null);
+  // Dopo un ricaricamento restano selezionati solo gli elementi ancora presenti.
+  const selected = items.filter((i) => ids.has(i.id));
+
+  const toggle = (id: string, checked: boolean, range: boolean) => {
+    const from = items.findIndex((i) => i.id === anchor.current);
+    const to = items.findIndex((i) => i.id === id);
+    // Maiuscolo+clic: stessa scelta su tutte le righe tra l'ultima cliccata e questa.
+    const affected = range && from >= 0 ? items.slice(Math.min(from, to), Math.max(from, to) + 1).map((i) => i.id) : [id];
+    setIds((current) => {
+      const next = new Set(current);
+      for (const a of affected) {
+        if (checked) next.add(a);
+        else next.delete(a);
+      }
+      return next;
+    });
+    anchor.current = id;
+  };
+
+  return (
+    <SelectionContext.Provider
+      value={{
+        items,
+        selected,
+        isSelected: (id) => ids.has(id),
+        toggle,
+        setAll: (checked) => setIds(new Set(checked ? items.map((i) => i.id) : [])),
+        clear: () => setIds(new Set()),
+      }}
+    >
+      {children}
+    </SelectionContext.Provider>
+  );
+}
+
+export function SelectAllCheckbox() {
+  const { items, selected, setAll } = useSelection();
+  const all = items.length > 0 && selected.length === items.length;
+  return (
+    <Checkbox
+      aria-label="Seleziona tutto"
+      disabled={items.length === 0}
+      checked={all}
+      indeterminate={selected.length > 0 && !all}
+      onCheckedChange={(checked) => setAll(checked)}
+    />
+  );
+}
+
+export function RowCheckbox({ id, name }: { id: string; name: string }) {
+  const { isSelected, toggle } = useSelection();
+  const shift = useRef(false);
+  return (
+    <Checkbox
+      aria-label={`Seleziona «${name}»`}
+      checked={isSelected(id)}
+      onPointerDown={(e) => (shift.current = e.shiftKey)}
+      onKeyDown={() => (shift.current = false)}
+      onCheckedChange={(checked) => toggle(id, checked, shift.current)}
+    />
+  );
+}
+
+// Con almeno un elemento selezionato prende il posto della barra (children) sopra la tabella.
+export function SelectionBar({ projectId, locationId, children }: Target & { children?: React.ReactNode }) {
+  const { selected, clear } = useSelection();
+  const [dialog, setDialog] = useState<"move" | "delete" | null>(null);
+  const close = () => setDialog(null);
+  if (selected.length === 0) return children;
+
+  const ids = selected.map((i) => i.id);
+  const label = selected.length === 1 ? `«${selected[0].name}»` : `${selected.length} elementi`;
+  const done = (result: FileResult) => {
+    if (!result.error) clear();
+    return result;
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button variant="ghost" size="icon-sm" aria-label="Deseleziona" title="Deseleziona" onClick={clear}>
+        <X />
+      </Button>
+      <span className="text-sm font-medium">
+        {selected.length === 1 ? "1 elemento selezionato" : `${selected.length} elementi selezionati`}
+      </span>
+      <Button variant="outline" size="sm" onClick={() => setDialog("move")}>
+        <MoveRight /> Sposta
+      </Button>
+      <Button variant="outline" size="sm" className="text-destructive" onClick={() => setDialog("delete")}>
+        <Trash2 /> Elimina
+      </Button>
+
+      {dialog === "move" && (
+        <MoveDialog
+          projectId={projectId}
+          locationId={locationId}
+          title={`Sposta ${label}`}
+          onMove={async (target) => done(await moveFiles(projectId, locationId, ids, target))}
+          onClose={close}
+        />
+      )}
+      <ConfirmDialog
+        open={dialog === "delete"}
+        onClose={close}
+        title={`Eliminare ${label}?`}
+        description={`Va${selected.length === 1 ? "" : "nno"} nel cestino del sito SharePoint del Team, da dove si può recuperare.${selected.some((i) => i.folder) ? " Con le cartelle si eliminano anche i file che contengono." : ""}`}
+        onConfirm={async () => done(await deleteFiles(projectId, locationId, ids))}
+      />
+    </div>
   );
 }
 
@@ -273,9 +417,10 @@ function ConfirmDialog({
 function MoveDialog({
   projectId,
   locationId,
-  item,
+  title,
+  onMove,
   onClose,
-}: Target & { item: { id: string; name: string }; onClose: () => void }) {
+}: Target & { title: string; onMove: (target: string) => Promise<FileResult>; onClose: () => void }) {
   const [path, setPath] = useState<string[]>([]);
   const [folders, setFolders] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -300,7 +445,7 @@ function MoveDialog({
     <Dialog open onOpenChange={(value) => !value && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Sposta «{item.name}»</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <nav aria-label="Destinazione" className="flex flex-wrap items-center gap-1 text-sm">
           <button type="button" className="font-medium hover:underline" onClick={() => open([])}>
@@ -340,7 +485,7 @@ function MoveDialog({
             disabled={pending || folders === null}
             onClick={() =>
               startTransition(async () => {
-                const result = await moveFile(projectId, locationId, item.id, path.join("/"));
+                const result = await onMove(path.join("/"));
                 if (result.error) setError(result.error);
                 else onClose();
               })

@@ -204,9 +204,13 @@ export async function searchFolder(graph: Graph, driveId: string, itemId: string
   const root = await getItem(graph, driveId, itemId);
   const rootPath = pathOf(root);
   const { value } = await graph<{ value: DriveItem[] }>(
-    `/drives/${driveId}/items/${itemId}/search(q='${encodeURIComponent(query.replace(/'/g, "''"))}')?$select=id&$top=25`,
+    `/drives/${driveId}/items/${itemId}/search(q='${encodeURIComponent(query.replace(/'/g, "''"))}')?$select=id,name&$top=200`,
   );
-  const items = await Promise.all(value.map((r) => getItem(graph, driveId, r.id)));
+  // La ricerca di Graph è full-text (contenuto, percorso, nome del sito): si tengono solo gli
+  // elementi il cui nome contiene il testo cercato.
+  const needle = query.toLocaleLowerCase("it");
+  const matches = value.filter((r) => r.name.toLocaleLowerCase("it").includes(needle)).slice(0, 50);
+  const items = await Promise.all(matches.map((r) => getItem(graph, driveId, r.id)));
   return items
     .filter((i) => i.parentReference.path === rootPath || i.parentReference.path?.startsWith(`${rootPath}/`))
     .map((item) => ({ item, folder: item.parentReference.path!.slice(rootPath.length + 1) }));

@@ -57,6 +57,15 @@
   Scheda File: tabella con altezza massima pari allo spazio sotto l'intestazione (minimo 16rem),
   scorre al suo interno con intestazione delle colonne fissa (`project-files.tsx`). CSS verificato
   nel browser; non provata con file reali (utente del browser senza account Microsoft).
+  Scheda File: **selezione multipla** con checkbox (seleziona tutto, Maiuscolo+clic per un
+  intervallo) e barra di gruppo al posto di Carica/Nuova cartella: Sposta ed Elimina su più
+  elementi (`moveFiles`/`deleteFiles` in `progetti/file-actions.ts`, max 100, 4 alla volta, errori
+  parziali riportati; nell'eliminazione un 404 conta come già eliminato). Funzione nuova → MINOR
+  al rilascio. Typecheck, lint e build ok; **non provata end to end** (serve un utente con account
+  Microsoft): provare su cartelle di prova di PSW.
+  Ricerca file: Graph `search` è full-text (trovava tutto cercando "DST", nome del sito); ora
+  `searchFolder` tiene solo i risultati col testo nel nome (fino a 200 letti, 50 mostrati).
+  Typecheck e lint ok; non provata nel browser.
 
 ## Milestone
 

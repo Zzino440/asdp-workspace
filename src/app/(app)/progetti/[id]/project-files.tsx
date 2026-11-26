@@ -1,5 +1,8 @@
 import Link from "next/link";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronRight,
   Download,
   ExternalLink,
@@ -26,9 +29,41 @@ import { createClient } from "@/lib/supabase/server";
 import { disconnectMicrosoft } from "../file-actions";
 import { CopyLinkButton } from "./copy-link-button";
 import { FileSearch } from "./file-search";
-import { FolderToolbar, ItemActions } from "./file-manager";
+import {
+  FileSelection,
+  FolderToolbar,
+  ItemActions,
+  RowCheckbox,
+  SelectAllCheckbox,
+  SelectionBar,
+} from "./file-manager";
 
-export type FilesParams = { file?: string; cartella?: string; cerca?: string; errore?: string };
+export type FilesParams = {
+  file?: string;
+  cartella?: string;
+  cerca?: string;
+  errore?: string;
+  ordina?: string;
+  verso?: string;
+};
+
+type SortKey = "nome" | "modificato" | "dimensione";
+
+// Cartelle sempre prima dei file; dentro ciascun gruppo l'ordine scelto.
+function sortRows<T extends { item: DriveItem }>(rows: T[], key: SortKey, desc: boolean) {
+  const value = (i: DriveItem) =>
+    key === "modificato" ? i.lastModifiedDateTime : key === "dimensione" ? (i.folder?.childCount ?? i.size ?? 0) : i.name;
+  return [...rows].sort((a, b) => {
+    if (Boolean(a.item.folder) !== Boolean(b.item.folder)) return a.item.folder ? -1 : 1;
+    const x = value(a.item);
+    const y = value(b.item);
+    const order =
+      typeof x === "number" && typeof y === "number"
+        ? x - y
+        : String(x).localeCompare(String(y), "it", { numeric: true, sensitivity: "base" });
+    return desc ? -order : order;
+  });
+}
 
 // Icona per tipo di file, dall'estensione.
 export function FileIcon({ item }: { item: DriveItem }) {
@@ -148,6 +183,44 @@ export async function ProjectFiles({
   const segments = folder.split("/").filter(Boolean);
   const openUrl = data.kind === "folder" ? data.current.webUrl : location.web_url;
 
+  // Senza ordinamento scelto: per nome, nessuna colonna evidenziata.
+  const sortKey: SortKey | null =
+    params.ordina === "nome" || params.ordina === "modificato" || params.ordina === "dimensione" ? params.ordina : null;
+  const desc = sortKey !== null && params.verso === "desc";
+  const rows = sortRows(
+    data.kind === "folder" ? data.items.map((item) => ({ item, folder })) : data.results,
+    sortKey ?? "nome",
+    desc,
+  );
+  // Intestazione ordinabile, a tre stati: crescente → decrescente → nessun ordinamento.
+  const sortHead = (key: SortKey, label: string, className?: string) => {
+    const active = sortKey === key;
+    const reset = active && desc;
+    const Icon = !active ? ArrowUpDown : desc ? ArrowDown : ArrowUp;
+    return (
+      <TableHead className={className} aria-sort={active ? (desc ? "descending" : "ascending") : undefined}>
+        <Link
+          href={href({
+            file: location.id,
+            cartella: folder || undefined,
+            cerca: query || undefined,
+            ordina: reset ? undefined : key,
+            verso: active && !desc ? "desc" : undefined,
+          })}
+          scroll={false}
+          title={reset ? "Togli ordinamento" : active ? "Ordina decrescente" : "Ordina crescente"}
+          className={cn(
+            "inline-flex items-center gap-1 hover:text-foreground",
+            !active && "text-muted-foreground",
+          )}
+        >
+          {label}
+          <Icon className={cn("size-3.5", !active && "opacity-50")} />
+        </Link>
+      </TableHead>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {params.errore && (
@@ -202,30 +275,39 @@ export async function ProjectFiles({
         </a>
       </div>
 
-      {!error && data.kind === "folder" && (
-        <FolderToolbar projectId={projectId} locationId={location.id} folder={folder} />
-      )}
-
       {error ? (
         message(error)
       ) : (
-        // Altezza massima pari allo spazio sotto l'intestazione: la tabella scorre al suo interno.
+        <FileSelection
+          key={`${location.id}/${folder}/${query}`}
+          items={rows.map(({ item }) => ({ id: item.id, name: item.name, folder: Boolean(item.folder) }))}
+        >
+        <SelectionBar projectId={projectId} locationId={location.id}>
+          {data.kind === "folder" && <FolderToolbar projectId={projectId} locationId={location.id} folder={folder} />}
+        </SelectionBar>
+        {/* Altezza massima pari allo spazio sotto l'intestazione: la tabella scorre al suo interno. */}
         <div className="[&>[data-slot=table-container]]:max-h-[max(16rem,calc(100dvh-var(--project-header-h)-18rem))] [&>[data-slot=table-container]]:overflow-y-auto">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-background shadow-[inset_0_-1px_0_var(--border)]">
             <TableRow>
-              <TableHead>Nome</TableHead>
+              <TableHead className="w-8">
+                <SelectAllCheckbox />
+              </TableHead>
+              {sortHead("nome", "Nome")}
               {data.kind === "search" && <TableHead>Cartella</TableHead>}
               <TableHead>Modificato da</TableHead>
-              <TableHead>Modificato</TableHead>
-              <TableHead className="text-right">Dimensione</TableHead>
+              {sortHead("modificato", "Modificato")}
+              {sortHead("dimensione", "Dimensione", "text-right")}
               <TableHead className="w-28" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(data.kind === "folder" ? data.items.map((item) => ({ item, folder })) : data.results).map(
+            {rows.map(
               ({ item, folder: parent }) => (
-                <TableRow key={item.id}>
+                <TableRow key={item.id} className="has-data-checked:bg-muted/50">
+                  <TableCell className="w-8">
+                    <RowCheckbox id={item.id} name={item.name} />
+                  </TableCell>
                   <TableCell className="max-w-96">
                     {item.folder ? (
                       <Link
@@ -289,9 +371,9 @@ export async function ProjectFiles({
                 </TableRow>
               ),
             )}
-            {(data.kind === "folder" ? data.items : data.results).length === 0 && (
+            {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableCell colSpan={7} className="text-muted-foreground">
                   {query ? "Nessun file trovato in questa cartella." : "Cartella vuota."}
                 </TableCell>
               </TableRow>
@@ -299,6 +381,7 @@ export async function ProjectFiles({
           </TableBody>
         </Table>
         </div>
+        </FileSelection>
       )}
 
       {/* Account Microsoft: visibile anche con un errore, quando serve poterlo scollegare. */}

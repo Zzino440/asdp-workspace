@@ -187,6 +187,69 @@ export async function deleteFile(projectId: string, locationId: string, itemId: 
   });
 }
 
+// --- Azioni di gruppo sugli elementi selezionati ---
+
+const idsSchema = z.array(z.string().min(1)).min(1).max(100);
+
+// Esegue l'operazione su ogni elemento, 4 alla volta (Graph limita le richieste a raffica), e va
+// avanti anche se qualcuno fallisce; alla fine ricarica la card e riporta quanti non sono riusciti.
+async function runEach(
+  projectId: string,
+  locationId: string,
+  itemIds: string[],
+  operation: (ctx: Awaited<ReturnType<typeof location>>, itemId: string) => Promise<unknown>,
+): Promise<FileResult> {
+  const ids = idsSchema.safeParse(itemIds);
+  if (!ids.success) return { error: "Seleziona da 1 a 100 elementi." };
+  let ctx: Awaited<ReturnType<typeof location>>;
+  try {
+    ctx = await location(projectId, locationId);
+  } catch (e) {
+    return failure(e);
+  }
+
+  const queue = [...ids.data];
+  const errors: string[] = [];
+  const worker = async () => {
+    for (let id = queue.shift(); id; id = queue.shift()) {
+      try {
+        await operation(ctx, id);
+      } catch (e) {
+        errors.push(failure(e).error ?? "errore");
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: 4 }, worker));
+  refresh();
+
+  if (!errors.length) return {};
+  if (errors.length === ids.data.length) return { error: errors[0] };
+  return { error: `${errors.length} di ${ids.data.length} elementi non riusciti: ${errors[0]}` };
+}
+
+export async function moveFiles(projectId: string, locationId: string, itemIds: string[], target: string) {
+  let destination: Promise<{ id: string; folder?: unknown }> | undefined;
+  return runEach(projectId, locationId, itemIds, async ({ graph, drive, root }, itemId) => {
+    destination ??= getItem(graph, drive, root, target);
+    const [, folder] = await Promise.all([itemInFolder(graph, drive, root, itemId), destination]);
+    if (!folder.folder) throw new MicrosoftError(404, "La destinazione non è una cartella");
+    await moveItem(graph, drive, itemId, folder.id);
+  });
+}
+
+export async function deleteFiles(projectId: string, locationId: string, itemIds: string[]) {
+  return runEach(projectId, locationId, itemIds, async ({ graph, drive, root }, itemId) => {
+    try {
+      await itemInFolder(graph, drive, root, itemId);
+      await deleteItem(graph, drive, itemId);
+    } catch (e) {
+      // Già eliminato insieme alla cartella che lo conteneva (selezione dai risultati di ricerca).
+      if (e instanceof MicrosoftError && e.status === 404) return;
+      throw e;
+    }
+  });
+}
+
 // Prepara il caricamento: il browser poi manda il file direttamente a SharePoint (uploadUrl).
 export async function startUpload(projectId: string, locationId: string, folder: string, fileName: string) {
   const parsed = nameSchema.safeParse(fileName);
