@@ -2,7 +2,7 @@
 
 import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
-import { login, type LoginState } from "./actions";
+import { login, loginWithMicrosoft, type LoginState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,9 @@ export default function LoginPage() {
 
 function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initialState);
-  const next = useSearchParams().get("next") ?? "";
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "";
+  const microsoftError = searchParams.get("error") === "microsoft";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -29,7 +31,24 @@ function LoginForm() {
           <CardTitle>ASDP Workspace</CardTitle>
           <CardDescription>Accedi con il tuo account DST.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          <form action={loginWithMicrosoft} className="flex flex-col gap-2">
+            <input type="hidden" name="next" value={next} />
+            <Button type="submit" variant="outline">
+              Accedi con Microsoft
+            </Button>
+            {microsoftError && (
+              <p className="text-sm text-destructive">
+                Accesso con Microsoft non riuscito. Serve un account DST: se il problema resta,
+                contatta un amministratore.
+              </p>
+            )}
+          </form>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            oppure con email e password
+            <span className="h-px flex-1 bg-border" />
+          </div>
           <form action={formAction} className="flex flex-col gap-4">
             <input type="hidden" name="next" value={next} />
             <div className="flex flex-col gap-2">
