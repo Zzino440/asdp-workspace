@@ -24,7 +24,14 @@ export async function inviteUser(_prev: ActionResult, formData: FormData): Promi
   const { data: isAdmin } = await supabase.rpc("is_admin");
   if (!isAdmin) return { error: "Solo un amministratore può invitare utenti." };
 
-  const { error } = await createAdminClient().auth.admin.inviteUserByEmail(parsed.data.email, {
+  const admin = createAdminClient();
+  // L'hook before_user_created accetta una registrazione email solo se c'è l'invito.
+  const { error: inviteRowError } = await admin
+    .from("signup_invites")
+    .upsert({ email: parsed.data.email.toLowerCase() });
+  if (inviteRowError) return { error: "Impossibile inviare l'invito." };
+
+  const { error } = await admin.auth.admin.inviteUserByEmail(parsed.data.email, {
     data: { full_name: parsed.data.full_name },
     // Usato solo dal template standard del cloud; il template locale va su /auth/confirm.
     redirectTo: `${(await headers()).get("origin")}/auth/invito`,

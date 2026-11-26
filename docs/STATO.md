@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-26 — Lorenzo Belli con Claude Code (0.14.0, scheda Percorso)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.14.0, scheda Percorso; accesso con Microsoft)
 
 ## Versione
 
@@ -97,6 +97,27 @@
   scheda File (provato a 460 e 360 px di altezza). Typecheck, lint, build ok; provata nel
   browser con admin (filtri, ordinamento, ritorno indietro, x/y uguale alla mappa di PFS); non
   provata con `pm@`.
+
+- **Accesso con Microsoft** (2026-11-27, worktree `claude/microsoft-registration-integration-6c1a37`,
+  non committato, da unire in `feature/microsoft-login` e poi `master`): provider `azure` di
+  Supabase Auth (app `ASDP`, tenant DST), pulsante in `/login`, ritorno su `/auth/callback`.
+  `enable_signup = true` + hook `before_user_created` (migrazione `20261126230933_microsoft_signup.sql`,
+  applicata in locale): Microsoft solo con dominio `dstech.it`, email/password solo se invitata
+  (tabella `signup_invites`, scritta da Invita: l'evento dell'hook non distingue invito da signup
+  pubblico, verificato). Config locale: `api.external_url = http://localhost:54321` (Azure non
+  accetta 127.0.0.1) → `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321` in `.env.local` e app da
+  `localhost`; id e segreto in `supabase/.env` (gitignorato). Provati: hook dal vivo (signup 403,
+  invito senza riga 403, con riga ok e riga consumata), pgTAP `microsoft_signup` 7/7, typecheck,
+  lint, build. Entra → app `ASDP`: aggiunti redirect `http://localhost:54321/auth/v1/callback` e
+  claim opzionali `xms_edov` + `email` (Manifest). **Provato end to end in locale** con l'account
+  DST: primo accesso crea l'utente (attivo, non admin, nessun progetto); eliminato e rientrato,
+  ricreato con il nome da Microsoft (scope `email profile`). Non provati: collegamento a un utente
+  email già esistente con la stessa email (in locale non c'era) e MCP locale dopo il cambio di
+  `external_url`. Per il cloud aggiungere in Entra anche
+  `https://uirrkpvkrhuvbobthrna.supabase.co/auth/v1/callback`. Verificare se DST ha altri domini email
+  oltre `dstech.it` (lista nell'hook). Prima di aprirlo ad altri o al cloud: avvisare l'IT
+  (consenso dato "solo Lorenzo in locale"); da valutare una app registration separata solo login.
+  Cloud: `db push --remote`, `config push` con `MICROSOFT_CLIENT_ID/SECRET` nell'env della shell.
 
 ## Milestone
 

@@ -26,7 +26,7 @@ Problemi che risolve (call Lorenzo–Denis del 2026-11-18):
 |---|---|---|
 | App | Next.js 16 (App Router, TypeScript, Cache Components) | Un linguaggio e un repo per UI e backend; tipi condivisi; deploy nativo su Vercel; lo stack che gli agenti AI conoscono meglio |
 | UI | Tailwind 4 + shadcn/ui (Base UI) + lucide | Componenti nel repo, modificabili; stile vicino al design Stitch |
-| Dati e auth | Supabase: Postgres + RLS, Auth, Storage, Realtime | Permessi per ruolo applicati nel DB; login email in dev, Microsoft Entra in produzione |
+| Dati e auth | Supabase: Postgres + RLS, Auth, Storage, Realtime | Permessi per ruolo applicati nel DB; login con Microsoft (Entra, tenant DST) o email e password su invito |
 | Documenti | GitLab DST, un Project `adsp` per progetto | Unica copia, versioning, già usato dal team tecnico |
 | AI | Anthropic Managed Agents (skill) + Messages API (modifiche puntuali) | Nessuna infrastruttura per eseguire le skill; sessioni lunghe asincrone |
 | Deploy | Vercel | Preview per branch, zero configurazione |
@@ -192,9 +192,16 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 - **File di progetto su SharePoint**: deroga voluta alla regola "permessi solo in RLS". L'app
   chiama Graph con il token delegato dell'utente, quindi decide SharePoint chi vede e modifica;
   la RLS decide solo quale cartella è collegata al progetto e chi può cambiarla.
-- **Utenti su invito**: registrazione libera disattivata (`enable_signup = false`). L'email di
-  invito porta a `/auth/confirm` (token verificato lato server), poi a `/imposta-password`; in
-  produzione il template `supabase/templates/invite.html` va copiato nella dashboard Supabase.
+- **Accesso con Microsoft o su invito**: provider `azure` di Supabase Auth (app registration
+  `ASDP`, solo tenant DST), ritorno su `/auth/callback`. La registrazione di Auth è aperta
+  (`enable_signup = true`, serve al primo accesso con Microsoft), ma chi può creare un account lo
+  decide l'hook `before_user_created` (`public.hook_before_user_created`): Microsoft con email di un
+  dominio DST, oppure email/password solo se l'azione Invita ha scritto l'email in
+  `signup_invites` (l'evento dell'hook non distingue un invito da una registrazione pubblica).
+  Un utente eliminato che rientra con Microsoft viene ricreato senza ruoli: per bloccarlo si usa
+  Sospendi. L'email di invito porta a `/auth/confirm` (token verificato lato server), poi a
+  `/imposta-password`; in produzione il template `supabase/templates/invite.html` va copiato
+  nella dashboard Supabase.
 - **Sospensione**: lo stato `sospeso` (modificabile solo dall'admin, via RLS) imposta
   `auth.users.banned_until`; login e refresh vengono rifiutati, il JWT già emesso resta valido
   fino alla scadenza (1 h).
