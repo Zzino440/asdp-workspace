@@ -31,7 +31,7 @@ Se hai il plugin `asdp-project`, puoi chiedere direttamente "cosa faccio adesso?
 
 ## 3. Chiedi a Claude
 
-Scrivi in linguaggio naturale. Nomina il progetto, la skill o il documento, e gli input. Alcuni esempi:
+Dalla mappa del progetto, **Copia prompt per Claude** (nel Prossimo passo o accanto a un documento da creare) ti dà la richiesta già pronta da incollare. Se preferisci scriverla tu, usa il linguaggio naturale: nomina il progetto, la skill o il documento, e gli input. Alcuni esempi:
 
 > Usa p1-3-requirements-consolidation sulla trascrizione allegata. Progetto ABC, greenfield.
 

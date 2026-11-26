@@ -242,10 +242,9 @@ vengono dopo.
    "Come si fa" dalla mappa e "Cos'è questo documento" dal documento. Verificata in locale
    (build, navigazione, link). Da fare: rilettura dei testi da parte di Lorenzo/team; divergenze
    Guida ↔ plugin in `TODO.md`.
-2. **Ponte passo → Claude**: scheda "Come fare questo passo" con "Copia prompt per Claude"
-   (codice progetto, skill, input da leggere via MCP); `create_document` fatto (i template li
-   porta la skill del plugin, l'app non ne ha copie), `skill_name`/`per_feature` in
-   `get_project`, tool `next_step`, prompt MCP per passo, istruzioni del server con la mappa
+2. **Ponte passo → Claude**: "Copia prompt per Claude" fatto in 0.12.0 (Prossimo passo e righe da
+   creare della mappa, `src/lib/prompts.ts`); `create_document` già fatto (i template li porta la
+   skill del plugin, l'app non ne ha copie). Restano `skill_name`/`per_feature` in `get_project`, tool `next_step`, prompt MCP per passo, istruzioni del server con la mappa
    fasi → skill → documenti; pagina "Collega Claude".
 3. **Domande aperte D[N]**: estrazione nell'indexer, vista unica di progetto, risposta con un
    clic (scrive la casella nel Markdown), prompt pronto per rilanciare la skill in aggiornamento.

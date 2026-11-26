@@ -6,6 +6,7 @@ import { AdvancePhaseButton } from "../advance-phase";
 import { loadProjectSteps } from "../document-list";
 import { loadProject } from "../project-data";
 import { ProjectTabs } from "../project-tabs";
+import { ReindexMenu } from "../reindex-button";
 
 // Intestazione compatta del progetto e schede Percorso · File · Impostazioni; le pagine
 // documento stanno fuori da questo gruppo e hanno la loro intestazione.
@@ -26,28 +27,31 @@ async function Header({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">{project.name}</h1>
-          <span className="font-mono text-sm text-muted-foreground">{project.code}</span>
-          <Badge variant="secondary">{PROJECT_STATUS_LABELS[project.status]}</Badge>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold">{project.name}</h1>
+            <span className="font-mono text-sm text-muted-foreground">{project.code}</span>
+            <Badge variant="secondary">{PROJECT_STATUS_LABELS[project.status]}</Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <span>{project.client}</span>
+            <span aria-hidden>·</span>
+            <span>{NATURE_LABELS[project.nature]}</span>
+            <span aria-hidden>·</span>
+            <span>
+              Fase {project.current_phase} · {PHASES[project.current_phase]?.name}
+            </span>
+            <span aria-hidden>·</span>
+            <span>asdp {project.framework_version}</span>
+            {canManage && project.current_phase < 4 && (
+              <Suspense>
+                <AdvancePhase projectId={project.id} currentPhase={project.current_phase} />
+              </Suspense>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-          <span>{project.client}</span>
-          <span aria-hidden>·</span>
-          <span>{NATURE_LABELS[project.nature]}</span>
-          <span aria-hidden>·</span>
-          <span>
-            Fase {project.current_phase} · {PHASES[project.current_phase]?.name}
-          </span>
-          <span aria-hidden>·</span>
-          <span>asdp {project.framework_version}</span>
-          {canManage && project.current_phase < 4 && (
-            <Suspense>
-              <AdvancePhase projectId={project.id} currentPhase={project.current_phase} />
-            </Suspense>
-          )}
-        </div>
+        {canManage && <ReindexMenu projectId={project.id} />}
       </div>
       <Suspense fallback={null}>
         <ProjectTabs projectId={project.id} files={microsoftEnabled()} settings={canManage} />

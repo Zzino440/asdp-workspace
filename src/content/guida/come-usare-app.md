@@ -31,29 +31,24 @@ Il **Percorso** è la mappa dei documenti del progetto.
 
 In alto c'è il riquadro **Prossimo passo**: il primo documento non ancora pronto, a partire dalla fase attuale del progetto. Può dire due cose:
 
-- **Crea** un documento che non esiste ancora, con il nome della skill che lo genera (per esempio `/asdp:t1-4-functional-analysis`).
-- **Completa** un documento che esiste ma non è ancora Completo, con il pulsante **Apri documento**.
+- **Crea** un documento che non esiste ancora: **Copia prompt per Claude** copia una richiesta pronta (progetto, skill, documenti da leggere dal connettore) da incollare in Claude con il plugin `asdp`.
+- **Completa** un documento che esiste ma non è ancora Completo: **Apri documento**, oppure **Copia prompt** per farlo completare a Claude.
 
-Se documenti di fasi precedenti non sono pronti, sotto il riquadro compare un avviso con il loro numero.
+Se documenti di fasi precedenti non sono pronti, sotto il riquadro compare un avviso: cliccalo per aprire la prima fase con documenti da finire.
 
-### Barra delle fasi
+### Le fasi
 
-Sotto ci sono le cinque fasi. Ogni fase mostra quanti documenti sono pronti su quelli attesi, per esempio "2 di 3 pronti". Un documento è pronto quando è **Completo** o **Approvato** (vedi [Stati e frontespizio](/guida/stati)). L'etichetta **Fase attuale** indica dove si trova il progetto; un segno di spunta indica una fase completa.
+Sotto ci sono tutte e cinque le fasi, una sotto l'altra. Ogni fase mostra quanti documenti sono pronti su quelli attesi, per esempio "2/3". Un documento è pronto quando è **Completo** o **Approvato** (vedi [Stati e frontespizio](/guida/stati)). **attuale** indica dove si trova il progetto; un segno di spunta indica una fase completa.
 
-Clicca una fase per vederne i documenti.
+Le fasi complete sono chiuse, con un pallino colorato per lo stato di ogni documento; le altre sono aperte. Clicca il nome di una fase per aprirla o chiuderla.
 
-### Documenti di una fase
-
-Per ogni tipo di documento della fase vedi:
-
-- il documento, con versione e stato, se esiste;
-- un riquadro tratteggiato **Non ancora creato**, con la skill da usare, se manca.
+Per ogni tipo di documento della fase vedi il documento, con versione e stato, se esiste; se manca, la skill da usare e **Copia prompt**.
 
 Nella [Fase 4](/guida/fase-4) l'Analisi Tecnica, il Piano di lavoro e i Task + Scaffold sono raggruppati per Feature.
 
 ### Ricerca e altri file
 
-La casella **Cerca un documento** filtra per nome, codice o titolo. In fondo, **Altri file nella cartella del progetto** raccoglie i file che non corrispondono a un tipo di documento ASDP.
+La casella **Cerca un documento** filtra per nome, codice o titolo; premi **/** per andarci subito. **Reindicizza da GitLab** è nel menu ⋯ accanto al nome del progetto. In fondo, **Altri file nella cartella del progetto** raccoglie i file che non corrispondono a un tipo di documento ASDP.
 
 ### Dati del progetto, team e repository
 

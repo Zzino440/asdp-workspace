@@ -67,12 +67,12 @@ export const loadProjectSteps = cache(async (projectId: string) => {
 // Mappa del percorso ASDP.
 export async function DocumentList({
   projectId,
+  project,
   currentPhase,
-  canReindex,
 }: {
   projectId: string;
+  project: { code: string; nature: string };
   currentPhase: number;
-  canReindex: boolean;
 }) {
   const { mapTypes, otherFiles, features, open } = await loadProjectSteps(projectId);
 
@@ -83,9 +83,8 @@ export async function DocumentList({
 
   return (
     <ProjectMap
-      projectId={projectId}
+      project={{ code: project.code, nature: project.nature }}
       currentPhase={currentPhase}
-      canReindex={canReindex}
       types={mapTypes}
       features={features}
       otherFiles={otherFiles}

@@ -52,7 +52,7 @@ async function Percorso({
           </Alert>
         )}
         <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
-          <DocumentList projectId={project.id} currentPhase={project.current_phase} canReindex={canManage} />
+          <DocumentList projectId={project.id} project={project} currentPhase={project.current_phase} />
         </Suspense>
       </div>
 

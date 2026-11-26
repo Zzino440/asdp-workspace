@@ -61,6 +61,12 @@
   e una colonna destra (da 1280 px; sotto, una riga da tre) mostra area di lavoro (solo passi aperti),
   team e collegamenti. Le modifiche (dati del progetto, che prima erano nel dialog Modifica, team,
   repository, cartelle Teams) sono tutte in Impostazioni. File mostra solo i file.
+- **Percorso come timeline**: tutte le fasi in un elenco, chiuse quelle complete (con i pallini di
+  stato dei documenti), aperte le altre; niente più caselle da selezionare. "Copia prompt per
+  Claude" nel Prossimo passo e sulle righe da creare (richiesta pronta con progetto, skill e
+  connettore; se il browser non permette gli appunti il prompt si apre per copiarlo a mano).
+  L'avviso dei documenti arretrati apre la prima fase da finire; `/` porta sulla ricerca;
+  Reindicizza è nel menu ⋯ accanto al nome del progetto.
 - **Suggerimenti delle repo**: nei campi del percorso GitLab (Nuovo progetto, Impostazioni ›
   Generale, aggiunta di una repo di codice) mentre scrivi compaiono le repo che l'app vede
   (ricerca di GitLab). Resta possibile scrivere il percorso a mano.
