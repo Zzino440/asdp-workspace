@@ -48,7 +48,7 @@ Nella [Fase 4](/guida/fase-4) l'Analisi Tecnica, il Piano di lavoro e i Task + S
 
 ### Ricerca e altri file
 
-La casella **Cerca un documento** filtra per nome, codice o titolo; premi **/** per andarci subito. **Reindicizza da GitLab** è nel menu ⋯ accanto al nome del progetto. In fondo, **Altri file nella cartella del progetto** raccoglie i file che non corrispondono a un tipo di documento ASDP.
+La casella **Cerca un documento** filtra per nome, codice o titolo; premi **/** per andarci subito. **Reindicizza da GitLab** è il pulsante in alto a destra, accanto al nome del progetto. In fondo, **Altri file nella cartella del progetto** raccoglie i file che non corrispondono a un tipo di documento ASDP.
 
 ### Dati del progetto, team e repository
 

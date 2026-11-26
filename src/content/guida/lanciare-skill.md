@@ -56,7 +56,7 @@ Le domande che la skill non può risolvere da sola restano nel documento come [d
 
 Con il connettore collegato, di norma la skill salva **nell'app**: ogni salvataggio è un commit a tuo nome, visibile in **Cronologia**. Un documento nuovo compare subito nella mappa, uno esistente passa alla nuova versione.
 
-Se preferisci lavorare sui file, chiedi a Claude di salvare in locale. Lo fa da solo se la cartella aperta è un clone della repo documenti. Dopo il commit e il push su GitLab l'app indicizza il file da sola; se non lo vedi, usa **Reindicizza** dal menu `⋯` del progetto.
+Se preferisci lavorare sui file, chiedi a Claude di salvare in locale. Lo fa da solo se la cartella aperta è un clone della repo documenti. Dopo il commit e il push su GitLab l'app indicizza il file da sola; se non lo vedi, usa il pulsante **Reindicizza da GitLab** in alto a destra nella pagina del progetto.
 
 | Caso | Dove finisce |
 |---|---|

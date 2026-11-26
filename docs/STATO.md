@@ -34,6 +34,9 @@
   "Caricamento…" (anche col codice di prima): riavviare il dev server sulla 4100 prima di
   riprovare. Per il cloud: `GITLAB_PROJECTS_GROUP` su Vercel e un token di gruppo (vedi
   `TODO.md`, "Token GitLab per i progetti veri").
+- Branch `feature/mcp-miglioramenti-teams`, 2026-11-26 (non committato): "Reindicizza da GitLab"
+  tolto dal menu ⋯ e reso pulsante sempre visibile nell'intestazione del progetto
+  (`progetti/[id]/reindex-button.tsx`), guide aggiornate. Typecheck, lint, build ok.
 
 ## Milestone
 

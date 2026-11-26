@@ -6,7 +6,7 @@ import { AdvancePhaseButton } from "../advance-phase";
 import { loadProjectSteps } from "../document-list";
 import { loadProject } from "../project-data";
 import { ProjectTabs } from "../project-tabs";
-import { ReindexMenu } from "../reindex-button";
+import { ReindexButton } from "../reindex-button";
 
 // Intestazione compatta del progetto e schede Percorso · File · Impostazioni; le pagine
 // documento stanno fuori da questo gruppo e hanno la loro intestazione.
@@ -51,7 +51,7 @@ async function Header({ params }: { params: Promise<{ id: string }> }) {
             )}
           </div>
         </div>
-        {canManage && <ReindexMenu projectId={project.id} />}
+        {canManage && <ReindexButton projectId={project.id} />}
       </div>
       <Suspense fallback={null}>
         <ProjectTabs projectId={project.id} files={microsoftEnabled()} settings={canManage} />
