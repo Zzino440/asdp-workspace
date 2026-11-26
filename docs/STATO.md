@@ -285,9 +285,11 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
   `20261125231607_microsoft_accounts.sql` (refresh token per utente, RLS solo la propria riga;
   applicata in locale) e test pgTAP; `src/lib/microsoft.ts` (OAuth con state e PKCE, Graph con
   `fetch`); route `/api/microsoft/login` e `/callback`; pagina `/file-microsoft` (Team →
-  cartelle dei canali → file in Office web, sola lettura), fuori dal menu. Senza
+  cartelle dei canali → file in Office web, sola lettura). Senza
   `MICROSOFT_CLIENT_ID` pagina e route rispondono 404, quindi sul cloud non si vede. Aprire
-  l'app da `localhost`, non da `127.0.0.1`.
+  l'app da `localhost`, non da `127.0.0.1`. Dal 2026-11-26 è nel menu come "File Microsoft"
+  con etichetta WIP (solo se `MICROSOFT_CLIENT_ID` c'è); typecheck, lint e build ok, non
+  provata nel browser (Docker spento), non committata.
 - Scelte tecniche: refresh token in tabella (non in cookie) perché i cookie non si scrivono nei
   Server Components e perché MCP e skill (7c) non hanno il browser; nessun permesso
   applicativo; niente MSAL, solo `fetch`. Il codice chiede oggi solo `offline_access User.Read

@@ -9,7 +9,7 @@ import { graphClient, microsoftEnabled } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
 
 // Pagina di prova della milestone 7: i Team dell'utente e i file dei loro canali, in sola lettura,
-// letti da Microsoft Graph con l'account Microsoft collegato. Nascosta: non è nel menu.
+// letti da Microsoft Graph con l'account Microsoft collegato. Nel menu come WIP, solo con MICROSOFT_CLIENT_ID.
 export default function FileMicrosoftPage({ searchParams }: PageProps<"/file-microsoft">) {
   return (
     <div className="flex flex-col gap-6">
