@@ -16,6 +16,7 @@ import {
 import { type FieldValue, setFrontMatterFields } from "@/lib/front-matter";
 import { gateFor } from "@/lib/gates";
 import { type AsdpRole, ROLE_LABELS } from "@/lib/labels";
+import { questionsOf } from "@/lib/questions";
 
 // Livello di servizio unico per i documenti: lo usano le server action della UI e i tool MCP.
 // Riceve sempre un client Supabase: quello dell'utente (RLS) oppure, solo nel webhook, quello
@@ -103,12 +104,13 @@ export async function indexProject(supabase: SupabaseClient, projectId: string) 
   const rows = await Promise.all(
     paths.map(async (path) => {
       const file = await readFile(repo, project.gitlab_branch, path);
-      const { frontMatter } = path.endsWith(".md") ? splitFrontMatter(file.content) : { frontMatter: {} };
+      const { frontMatter, body } = path.endsWith(".md") ? splitFrontMatter(file.content) : { frontMatter: {}, body: "" };
       return {
         project_id: project.id,
         path,
         document_type: detectType(path, docsRoot, frontMatter, types ?? []),
         front_matter: frontMatter,
+        questions: questionsOf(body),
         last_commit_id: file.lastCommitId,
         indexed_at: new Date().toISOString(),
       };
@@ -133,7 +135,7 @@ export async function indexProject(supabase: SupabaseClient, projectId: string) 
 export async function listDocuments(supabase: SupabaseClient, projectId: string) {
   const { data } = await supabase
     .from("documents")
-    .select("path, document_type, front_matter, last_commit_id, indexed_at")
+    .select("path, document_type, front_matter, questions, last_commit_id, indexed_at")
     .eq("project_id", projectId)
     .order("path");
   return data ?? [];
@@ -303,6 +305,7 @@ export async function saveDocument(
   }
 
   const fileName = input.path.split("/").pop();
+  const message = `${input.message?.trim() || `Aggiorna ${fileName}`}${note}`;
   let commitId: string;
   try {
     commitId = await updateFile(
@@ -310,7 +313,7 @@ export async function saveDocument(
       project.gitlab_branch,
       { path: input.path, content, lastCommitId: input.lastCommitId },
       {
-        message: `${input.message?.trim() || `Aggiorna ${fileName}`}${note}\n\nVia: ${input.via}`,
+        message: `${message}\n\nVia: ${input.via}`,
         authorName: profile.full_name || profile.email,
         authorEmail: profile.email,
       },
@@ -321,13 +324,27 @@ export async function saveDocument(
   }
 
   // Indice aggiornato subito (in locale il webhook non arriva); se fallisce lo ripara il webhook.
-  const { frontMatter } = input.path.endsWith(".md") ? splitFrontMatter(content) : { frontMatter: {} };
+  const { frontMatter, body } = input.path.endsWith(".md") ? splitFrontMatter(content) : { frontMatter: {}, body: "" };
   const { error } = await supabase
     .from("documents")
-    .update({ front_matter: frontMatter, last_commit_id: commitId, indexed_at: new Date().toISOString() })
+    .update({
+      front_matter: frontMatter,
+      questions: questionsOf(body),
+      last_commit_id: commitId,
+      indexed_at: new Date().toISOString(),
+    })
     .eq("project_id", input.projectId)
     .eq("path", input.path);
   if (error) console.error("Indice non aggiornato dopo il salvataggio", error);
+  await recordEvent(supabase, {
+    project_id: input.projectId,
+    path: input.path,
+    document_type: indexed.document_type,
+    commit_id: commitId,
+    author_name: profile.full_name || profile.email,
+    via: input.via,
+    message,
+  });
 
   return { lastCommitId: commitId };
 }
@@ -457,7 +474,9 @@ export async function createDocument(
     throw new DocumentError("invalid_path");
   }
 
-  const frontMatter = input.path.endsWith(".md") ? splitFrontMatter(input.content).frontMatter : {};
+  const { frontMatter, body } = input.path.endsWith(".md")
+    ? splitFrontMatter(input.content)
+    : { frontMatter: {}, body: "" };
   const documentType = detectType(input.path, docsRoot, frontMatter, types ?? []);
   if (!documentType) throw new DocumentError("unknown_type");
 
@@ -474,6 +493,7 @@ export async function createDocument(
   if (indexed) throw new DocumentError("exists");
 
   const fileName = input.path.split("/").pop();
+  const message = input.message?.trim() || `Crea ${fileName}`;
   let commitId: string;
   try {
     commitId = await createFile(
@@ -481,7 +501,7 @@ export async function createDocument(
       project.gitlab_branch,
       { path: input.path, content: input.content },
       {
-        message: `${input.message?.trim() || `Crea ${fileName}`}\n\nVia: ${input.via}`,
+        message: `${message}\n\nVia: ${input.via}`,
         authorName: profile.full_name || profile.email,
         authorEmail: profile.email,
       },
@@ -497,10 +517,20 @@ export async function createDocument(
     path: input.path,
     document_type: documentType,
     front_matter: frontMatter,
+    questions: questionsOf(body),
     last_commit_id: commitId,
     indexed_at: new Date().toISOString(),
   });
   if (error) console.error("Indice non aggiornato dopo la creazione", error);
+  await recordEvent(supabase, {
+    project_id: input.projectId,
+    path: input.path,
+    document_type: documentType,
+    commit_id: commitId,
+    author_name: profile.full_name || profile.email,
+    via: input.via,
+    message,
+  });
 
   return { documentType, lastCommitId: commitId };
 }
@@ -516,6 +546,42 @@ async function visibleProject(supabase: SupabaseClient, projectId: string, path:
   if (!indexed) return null;
   const { data: project } = await loadProject(supabase, projectId);
   return project?.repo ? { ...project, repo: project.repo } : null;
+}
+
+// Registra un salvataggio nell'attività del progetto: titolo = prima riga del messaggio, dettaglio
+// = il resto (es. il motivo di "Richiede modifiche"). Un errore non annulla il salvataggio.
+export async function recordEvent(
+  supabase: SupabaseClient,
+  event: {
+    project_id: string;
+    path: string;
+    document_type: string | null;
+    commit_id: string;
+    author_name: string;
+    via: "app" | "mcp" | "git";
+    message: string;
+  },
+) {
+  const { message, ...row } = event;
+  const [title, ...rest] = message.trim().split("\n");
+  const { error } = await supabase
+    .from("document_events")
+    .upsert(
+      { ...row, title, detail: rest.join("\n").trim() || null },
+      { onConflict: "commit_id,path", ignoreDuplicates: true },
+    );
+  if (error) console.error("Attività non registrata", error);
+}
+
+// Ultimi salvataggi dei documenti del progetto visibili all'utente (RLS), dal più recente.
+export async function listActivity(supabase: SupabaseClient, projectId: string, limit = 50) {
+  const { data } = await supabase
+    .from("document_events")
+    .select("path, document_type, author_name, via, title, detail, created_at")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
 }
 
 // Storico del documento: un commit per versione, con il canale da cui arriva (trailer "Via:").

@@ -1,7 +1,8 @@
 import { cache } from "react";
-import { listDocuments } from "@/lib/documents";
+import { listActivity, listDocuments } from "@/lib/documents";
 import { featureOf } from "@/lib/features";
 import { isDone } from "@/lib/phase-progress";
+import type { Question } from "@/lib/questions";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectMap, type MapDoc, type MapType, type NextStep } from "./project-map";
 
@@ -10,25 +11,45 @@ import { ProjectMap, type MapDoc, type MapType, type NextStep } from "./project-
 // (cache: una sola lettura per richiesta).
 export const loadProjectSteps = cache(async (projectId: string) => {
   const supabase = await createClient();
-  const [documents, { data: types }] = await Promise.all([
+  const [documents, { data: types }, activity] = await Promise.all([
     listDocuments(supabase, projectId),
     supabase
       .from("document_types")
       .select("code, name, phase, skill_name, per_feature, sort_order")
       .not("skill_name", "is", null)
       .order("sort_order"),
+    listActivity(supabase, projectId, 200),
   ]);
+
+  // Ultimo passo del flusso di approvazione per documento: se è "Richiede modifiche" e il
+  // documento è ancora In corso, il motivo del revisore resta in vista.
+  const lastReview = new Map<string, (typeof activity)[number]>();
+  for (const e of activity) {
+    if (!lastReview.has(e.path) && /^(Richiede modifiche a|Segna come completo|Approva|Revoca)/.test(e.title))
+      lastReview.set(e.path, e);
+  }
+  const text = (value: unknown) => (value === null || value === undefined ? "" : String(value).trim());
+  const isoDate = (value: unknown) => (/^\d{4}-\d{2}-\d{2}$/.test(text(value)) ? text(value) : null);
 
   const toDoc = (d: (typeof documents)[number]): MapDoc => {
     const front = d.front_matter as Record<string, unknown>;
+    const state = front.stato ? String(front.stato) : null;
+    const review = lastReview.get(d.path);
     return {
       path: d.path,
       href: `/progetti/${projectId}/documenti/${d.path.split("/").map(encodeURIComponent).join("/")}`,
       title: String(front.titolo || d.path.split("/").pop()),
-      state: front.stato ? String(front.stato) : null,
+      state,
       version: front.versione ? String(front.versione) : null,
       typeCode: d.document_type,
       feature: featureOf(d.path),
+      owner: [text(front.autore), front.ruolo_owner ? `(${text(front.ruolo_owner)})` : ""].filter(Boolean).join(" ") || null,
+      deadline: isoDate(front.scadenza),
+      questions: (d.questions ?? []) as Question[],
+      changesRequested:
+        state === "In corso" && review?.title.startsWith("Richiede modifiche")
+          ? { by: review.author_name, reason: review.detail ?? "" }
+          : null,
     };
   };
 
@@ -58,7 +79,7 @@ export const loadProjectSteps = cache(async (projectId: string) => {
         open.push({ code: type.code, name: type.name, phase: type.phase, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null });
     }
   }
-  return { mapTypes, otherFiles, features, open };
+  return { mapTypes, otherFiles, features, open, activity };
 });
 
 // Mappa del percorso ASDP.

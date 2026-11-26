@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-26 — Lorenzo Belli con Claude Code
+**Ultimo aggiornamento**: 2026-11-26 — Lorenzo Belli con Claude Code (0.14.0, scheda Percorso)
 
 ## Versione
 
@@ -18,6 +18,19 @@
   `master` con fast-forward, tag `0.13.0`, 2026-11-26. Non ancora pushati master e tag. `0.12.0`
   era già su `master` (`69b53d3`) senza tag. Migrazione `20261126211145_project_details.sql`
   da applicare sul cloud.
+- `0.14.0` (branch `feature/miglioramenti-ui-ux`, 2026-11-26, **non committata**): scheda
+  Percorso con owner/scadenza nelle righe, badge e motivo "Modifiche
+  richieste", riquadro "Domande aperte D[N]" con "Applica le risposte", "Attività recente" nella
+  colonna destra (vedi CHANGELOG). Migrazione `20261126224116_percorso_activity.sql`
+  (`documents.questions`, tabella `document_events`) applicata in locale con `migration up`; da
+  applicare sul cloud, poi "Reindicizza". Typecheck, lint, build, pgTAP nuovi e prova nel browser
+  ok. Il T3.1 della sandbox ha due commit di prova (Richiede modifiche, Segna come completo): stato
+  di nuovo Completo. Non provati: D[N] su un documento vero (nessuno in sandbox ne ha) e
+  l'attività "con Claude" via MCP. Il dev server sulla 4100 ora è quello avviato dal pannello del
+  browser di Claude (il vecchio processo appeso è stato chiuso).
+  Stessa versione, non committata: pagina Progetti, colonna "Persone" → "Team" (PM e TL, numero
+  di persone, "Tu: <ruoli>", team completo nel tooltip). Typecheck, lint, build e prova nel
+  browser ok.
 - Restano da provare: `0.9.0` con un utente senza ruolo PM e i link GitLab; le scritture di
   `0.11.0` (7b) su una cartella Teams di test.
 - `0.11.1` (migrazione `20261126161428_security_definer_execute.sql`: `EXECUTE` tolto ad `anon`

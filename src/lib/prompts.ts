@@ -18,6 +18,11 @@ function teamsLine(project: { teams: boolean }, code: string) {
   return ` I file del cliente sono nella cartella Teams del progetto, in ${names}: elencali con list_project_files e leggi quelli utili con read_project_file.`;
 }
 
+// Domande D[N] con la risposta spuntata: rilancia la skill in aggiornamento (Guida, domande-aperte).
+export function answersPrompt(project: { code: string }, doc: { name: string; skill: string; docPath: string }) {
+  return `Progetto ${project.code}. Ho risposto ad alcune domande D[N] di ${doc.name} (${doc.docPath}). Aggiorna il documento con la skill ${doc.skill} applicando le risposte, senza toccare le domande ancora aperte, e salvalo dal connettore ASDP Workspace.`;
+}
+
 export function stepPrompt(project: { code: string; nature: string; teams: boolean }, step: Step) {
   const teams = teamsLine(project, step.code);
   if (step.docPath) {

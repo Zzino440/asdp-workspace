@@ -69,4 +69,4 @@ Nella T1.4 una casella spuntata non basta: la skill si ferma e ti rimanda al con
 
 Nell'Analisi Tecnica chiudi tutte le domande prima del [gate G2](/guida/gate). Il Piano di lavoro non parte con domande aperte, e una domanda che passa il gate diventa un task rifiutato più avanti, molto più caro da correggere.
 
-> **Nota:** è in arrivo nell'app una vista unica delle domande aperte di un progetto, con la risposta in un clic e la richiesta pronta per rilanciare la skill.
+> **Nell'app:** nella scheda **Percorso** del progetto il riquadro **Domande aperte D[N]** elenca le domande di tutti i documenti, aperte o con risposta. Per un documento con risposte da applicare, **Applica le risposte** copia la richiesta pronta per rilanciare la skill. Il conteggio si aggiorna quando il documento viene salvato.

@@ -8,7 +8,7 @@ import { ASDP_ROLES, ROLE_LABELS } from "@/lib/labels";
 import { microsoftEnabled } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
 import { loadSetupState } from "@/lib/workspace";
-import { DocumentList } from "../document-list";
+import { DocumentList, loadProjectSteps } from "../document-list";
 import { gitlabHref, loadProject } from "../project-data";
 import { WorkspaceSetup } from "../workspace-setup";
 
@@ -107,6 +107,10 @@ async function Percorso({
           )}
         </section>
 
+        <Suspense fallback={null}>
+          <RecentActivity projectId={id} />
+        </Suspense>
+
         <section className="flex flex-col gap-2">
           <h2 className="text-xs text-muted-foreground">Collegamenti</h2>
           <ul className="flex flex-col gap-1.5 text-sm">
@@ -127,6 +131,43 @@ async function Percorso({
       </aside>
     </div>
   );
+}
+
+// Ultimi salvataggi dei documenti (app, Claude via MCP, push diretti su GitLab).
+async function RecentActivity({ projectId }: { projectId: string }) {
+  const { activity, mapTypes } = await loadProjectSteps(projectId);
+  if (activity.length === 0) return null;
+  const names = new Map(mapTypes.map((t) => [t.code, t.name]));
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="text-xs text-muted-foreground">Attività recente</h2>
+      <ul className="flex flex-col gap-2.5">
+        {activity.slice(0, 8).map((e) => (
+          <li key={`${e.created_at}-${e.path}`} className="flex flex-col text-sm">
+            <Link
+              href={`/progetti/${projectId}/documenti/${e.path.split("/").map(encodeURIComponent).join("/")}`}
+              className="truncate hover:underline"
+              title={e.title}
+            >
+              {names.get(e.document_type ?? "") ?? e.path.split("/").pop()}
+            </Link>
+            <span className="truncate text-xs text-muted-foreground" title={e.title}>
+              {e.author_name}
+              {e.via === "mcp" ? " con Claude" : ""} · {timeAgo(e.created_at)} · {e.title}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function timeAgo(iso: string) {
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  const rtf = new Intl.RelativeTimeFormat("it", { numeric: "auto" });
+  if (minutes < 60) return rtf.format(-minutes, "minute");
+  if (minutes < 60 * 24) return rtf.format(-Math.round(minutes / 60), "hour");
+  return rtf.format(-Math.round(minutes / (60 * 24)), "day");
 }
 
 function RailLink({ href, label, external }: { href: string | null; label: string; external?: boolean }) {

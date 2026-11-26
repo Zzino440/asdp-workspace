@@ -30,6 +30,8 @@ export type ProjectRow = {
   missingRoles: string[];
   setup: string[];
   pm: string;
+  tl: string;
+  team: string[]; // "Nome (ruoli)", per il tooltip
   myRoles: AsdpRole[];
   endDate: string | null;
 };
@@ -158,7 +160,7 @@ export function ProjectsTable({ header, rows, today }: { header: React.ReactNode
                 <TableHead>Stato</TableHead>
                 {sortHead("fase", "Fase")}
                 {sortHead("attenzione", "Attenzione")}
-                <TableHead>Persone</TableHead>
+                <TableHead>Team</TableHead>
                 {sortHead("fine", "Fine")}
               </TableRow>
             </TableHeader>
@@ -216,14 +218,29 @@ export function ProjectsTable({ header, rows, today }: { header: React.ReactNode
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">{r.pm ? <span className="text-muted-foreground">PM </span> : null}{r.pm || "—"}</div>
-                      {r.myRoles.length > 0 && (
-                        <div className="mt-1 flex gap-1">
-                          {r.myRoles.map((role) => (
-                            <Badge key={role} variant="secondary" title="I miei ruoli">
-                              {ROLE_LABELS[role]}
-                            </Badge>
-                          ))}
+                      {r.pm || r.tl ? (
+                        <div className="text-sm">
+                          {r.pm && (
+                            <>
+                              <span className="text-muted-foreground">PM </span>
+                              {r.pm}
+                            </>
+                          )}
+                          {r.pm && r.tl && <span className="text-muted-foreground"> · </span>}
+                          {r.tl && (
+                            <>
+                              <span className="text-muted-foreground">TL </span>
+                              {r.tl}
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm">—</div>
+                      )}
+                      {r.team.length > 0 && (
+                        <div className="text-xs text-muted-foreground" title={r.team.join("\n")}>
+                          {r.team.length} {r.team.length === 1 ? "persona" : "persone"}
+                          {r.myRoles.length > 0 && ` · Tu: ${r.myRoles.map((role) => ROLE_LABELS[role]).join(", ")}`}
                         </div>
                       )}
                     </TableCell>

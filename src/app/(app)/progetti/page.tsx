@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { featureOf } from "@/lib/features";
-import { NATURE_LABELS, PHASES, type AsdpRole } from "@/lib/labels";
+import { NATURE_LABELS, PHASES, ROLE_LABELS, type AsdpRole } from "@/lib/labels";
 import { microsoftEnabled } from "@/lib/microsoft";
 import { isDone, phaseProgress } from "@/lib/phase-progress";
 import { createClient } from "@/lib/supabase/server";
@@ -62,6 +62,17 @@ const isoDate = (value: unknown) => (/^\d{4}-\d{2}-\d{2}$/.test(String(value ?? 
 
 type Member = { project_id: string; user_id: string; roles: AsdpRole[]; profiles: unknown };
 type Doc = { project_id: string; path: string; document_type: string | null; stato: string | null; scadenza: string | null };
+
+// Relazione molti-a-uno: PostgREST restituisce un oggetto, i tipi non generati un array.
+const nameOf = (m: Member) => {
+  const profile = m.profiles as { full_name: string; email: string } | null;
+  return profile?.full_name || profile?.email || "";
+};
+const namesWith = (team: Member[], role: AsdpRole) =>
+  team
+    .filter((m) => m.roles.includes(role))
+    .map(nameOf)
+    .join(", ");
 
 // Legge tutte le righe a pagine, per non fermarsi al tetto di max_rows.
 async function readAll<T>(page: (from: number, to: number) => PromiseLike<{ data: unknown[] | null }>) {
@@ -163,14 +174,9 @@ async function Projects() {
       }).length,
       missingRoles: (["pm", "tl"] as const).filter((r) => !roles.includes(r)).map((r) => r.toUpperCase()),
       setup,
-      pm: team
-        .filter((m) => m.roles.includes("pm"))
-        .map((m) => {
-          // Relazione molti-a-uno: PostgREST restituisce un oggetto, i tipi non generati un array.
-          const profile = m.profiles as { full_name: string; email: string } | null;
-          return profile?.full_name || profile?.email || "";
-        })
-        .join(", "),
+      pm: namesWith(team, "pm"),
+      tl: namesWith(team, "tl"),
+      team: team.map((m) => `${nameOf(m)} (${m.roles.map((r) => ROLE_LABELS[r]).join(", ")})`),
       myRoles: mine,
       endDate: isoDate(p.end_date),
     };

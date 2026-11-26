@@ -25,6 +25,46 @@
 
 ## Storia
 
+## [0.14.0] 2026-11-26 — Percorso: stati, domande D[N] e attività recente
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Scheda Percorso, righe dei documenti**: owner e scadenza (rossa se passata e il documento non è
+  pronto), numero di domande D[N] aperte e con risposta da applicare, badge "Modifiche richieste"
+  (motivo al passaggio del mouse).
+- **Domande aperte D[N]**: riquadro con le domande di tutti i documenti, aperte o con risposta, e
+  "Applica le risposte" che copia la richiesta per rilanciare la skill in aggiornamento.
+- **Modifiche richieste**: se il documento del Prossimo passo è stato rimandato, il motivo del
+  revisore compare nella card.
+- **Attività recente** nella colonna destra: ultimi salvataggi dei documenti (chi, cosa, quando,
+  "con Claude" se via MCP), con la stessa visibilità dei documenti.
+- Indice: le D[N] si ricavano dal testo (`src/lib/questions.ts`) a ogni indicizzazione e salvataggio.
+  Ogni commit di app e MCP finisce in `document_events`; il webhook GitLab registra i push diretti
+  (commit senza trailer `Via:`).
+- Guida, "Rispondere alle domande D[N]": dice dove si vedono le domande nell'app.
+- **Progetti, colonna Team** (prima "Persone"): PM e TL per nome, numero di persone e i tuoi
+  ruoli ("Tu: Designer"); al passaggio del mouse tutto il team con i ruoli. Prima mostrava solo il
+  PM e i tuoi ruoli come badge senza etichetta.
+
+### Migrazioni e configurazione
+- `20261126224116_percorso_activity.sql`: colonna `documents.questions`, tabella
+  `document_events` con RLS (lettura come `documents`, inserimento con "edit" sul tipo). Da
+  applicare sul cloud; dopo, "Reindicizza" sui progetti per riempire le domande. L'attività parte
+  dai salvataggi successivi alla migrazione.
+
+### Test eseguiti
+- Typecheck, lint, build ok.
+- pgTAP: `document_events.test.sql` 5/5; gli altri fallimenti (7) sono quelli già noti dei dati
+  locali in più rispetto al seed.
+- Parser D[N] su casi di prova: nessuna casella, "Da decidere", "Altro" vuoto e più caselle →
+  aperta; opzione o "Altro" con testo → con risposta.
+- Browser con `pm@asdp.test` su PFS (sandbox): owner e scadenza nelle righe,
+  "Richiedi modifiche" sul T3.1 → badge e voce in Attività, poi riportato a Completo; riquadro D[N]
+  con dati simulati nell'indice locale (azzerati da Reindicizza).
+- Webhook locale con push simulato: commit diretto registrato come "git", commit con `Via: app`
+  saltato.
+
 ## [0.13.0] 2026-11-26 — Nuovo progetto a passi, portafoglio progetti e file in blocco
 
 **Autore**: Lorenzo Belli con Claude Code

@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, ChevronRight, Search } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, CircleHelp, Search } from "lucide-react";
 import { cn } from "cn";
 import { DocumentStateBadge } from "@/components/document-state-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PHASES } from "@/lib/labels";
 import { guidaHref, guidaHrefForType } from "@/lib/guida";
-import { phaseProgress } from "@/lib/phase-progress";
-import { stepPrompt } from "@/lib/prompts";
+import { isDone, phaseProgress } from "@/lib/phase-progress";
+import { answersPrompt, stepPrompt } from "@/lib/prompts";
+import type { Question } from "@/lib/questions";
 import { CopyPromptButton } from "./copy-prompt-button";
 
 export type MapDoc = {
@@ -21,6 +22,10 @@ export type MapDoc = {
   version: string | null;
   typeCode: string | null;
   feature: string | null;
+  owner: string | null;
+  deadline: string | null;
+  questions: Question[];
+  changesRequested: { by: string; reason: string } | null;
 };
 export type MapType = {
   code: string;
@@ -110,6 +115,7 @@ export function ProjectMap({
   return (
     <div className="flex flex-col gap-5">
       {next && <NextStepCard project={project} next={next} />}
+      <OpenQuestions project={project} types={types} />
       {behind > 0 && (
         <button
           type="button"
@@ -252,6 +258,12 @@ function NextStepCard({ project, next }: { project: ProjectInfo; next: NextStep 
           )}{" "}
           <GuideLink code={next.code} />
         </span>
+        {next.doc?.changesRequested && (
+          <span className="text-sm">
+            <span className="text-destructive">Modifiche richieste da {next.doc.changesRequested.by}:</span>{" "}
+            {next.doc.changesRequested.reason}
+          </span>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
         {next.doc && (
@@ -347,12 +359,32 @@ function TypeItems({
 }
 
 function DocRow({ doc, name }: { doc: MapDoc; name: string }) {
+  const overdue = doc.deadline !== null && doc.deadline < today() && !isDone(doc);
+  const open = doc.questions.filter((q) => !q.answered).length;
+  const answered = doc.questions.length - open;
   return (
     <Link href={doc.href} title={doc.path} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent">
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{name}</span>
         {doc.title !== name && <span className="truncate text-xs text-muted-foreground">{doc.title}</span>}
+        {(doc.owner || doc.deadline || doc.questions.length > 0) && (
+          <span className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+            {doc.owner && <span>{doc.owner}</span>}
+            {doc.deadline && (
+              <span className={cn(overdue && "text-destructive")}>
+                {overdue ? "Scaduto il" : "Scadenza"} {formatDate(doc.deadline)}
+              </span>
+            )}
+            {open > 0 && <span>{open === 1 ? "1 domanda aperta" : `${open} domande aperte`}</span>}
+            {answered > 0 && <span className="text-primary">{answered} con risposta da applicare</span>}
+          </span>
+        )}
       </div>
+      {doc.changesRequested && (
+        <span className="shrink-0 text-xs text-destructive" title={doc.changesRequested.reason}>
+          Modifiche richieste
+        </span>
+      )}
       {doc.version && <span className="text-xs text-muted-foreground">{doc.version}</span>}
       <DocumentStateBadge state={doc.state} />
       <ChevronRight className="size-4 text-muted-foreground" />
@@ -384,6 +416,64 @@ function SearchResults({ types, otherFiles, q }: { types: MapType[]; otherFiles:
       ))}
     </ul>
   );
+}
+
+// Domande D[N] ancora nei documenti: aperte, oppure con risposta da applicare rilanciando la skill.
+function OpenQuestions({ project, types }: { project: ProjectInfo; types: MapType[] }) {
+  const docs = types.flatMap((t) => t.docs.filter((d) => d.questions.length > 0).map((d) => ({ doc: d, type: t })));
+  const total = docs.reduce((n, { doc }) => n + doc.questions.length, 0);
+  if (total === 0) return null;
+  return (
+    <details className="rounded-lg border border-border">
+      <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm">
+        <CircleHelp className="size-4 text-muted-foreground" />
+        Domande aperte D[N] ({total})
+        <Link href={guidaHref("domande-aperte")} className="ml-auto text-xs text-primary hover:underline">
+          Come si risponde
+        </Link>
+      </summary>
+      <div className="divide-y divide-border border-t border-border">
+        {docs.map(({ doc, type }) => {
+          const answered = doc.questions.filter((q) => q.answered).length;
+          return (
+            <div key={doc.path} className="flex flex-col gap-2 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href={doc.href} className="font-medium hover:underline">
+                  {type.name}
+                  {doc.feature ? ` · Feature ${doc.feature}` : ""}
+                </Link>
+                {answered > 0 && (
+                  <CopyPromptButton
+                    variant="ghost"
+                    label={answered === 1 ? "Applica la risposta" : `Applica ${answered} risposte`}
+                    prompt={answersPrompt(project, { name: type.name, skill: type.skill, docPath: doc.path })}
+                  />
+                )}
+              </div>
+              <ul className="flex flex-col gap-1 text-sm">
+                {doc.questions.map((q) => (
+                  <li key={q.id} className="flex gap-2">
+                    <span className="w-8 shrink-0 font-mono text-xs leading-5 text-muted-foreground">{q.id}</span>
+                    <span className="min-w-0 flex-1">{q.title}</span>
+                    <span className={cn("shrink-0 text-xs", q.answered ? "text-primary" : "text-muted-foreground")}>
+                      {q.answered ? "con risposta" : "aperta"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+function formatDate(iso: string) {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
 }
 
 function GuideLink({ code }: { code: string }) {

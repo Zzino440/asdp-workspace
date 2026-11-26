@@ -1,9 +1,21 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
-import { indexProject } from "@/lib/documents";
+import { indexProject, recordEvent } from "@/lib/documents";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type PushEvent = { object_kind?: string; ref?: string; project?: { id?: number; path_with_namespace?: string } };
+type PushCommit = {
+  id: string;
+  message: string;
+  author?: { name?: string };
+  added?: string[];
+  modified?: string[];
+};
+type PushEvent = {
+  object_kind?: string;
+  ref?: string;
+  project?: { id?: number; path_with_namespace?: string };
+  commits?: PushCommit[];
+};
 
 function validToken(received: string | null) {
   const expected = process.env.GITLAB_WEBHOOK_SECRET ?? "";
@@ -32,6 +44,28 @@ export async function POST(request: NextRequest) {
     .or(`gitlab_project_id.eq.${repoId},and(gitlab_project_id.is.null,gitlab_project_path.eq."${repo.replace(/"/g, "")}")`)
     .eq("gitlab_branch", branch ?? "");
 
-  for (const project of projects ?? []) await indexProject(supabase, project.id);
+  // I commit dell'app e dell'MCP (trailer "Via:") li registra già il service layer.
+  const direct = (event.commits ?? []).filter((c) => !/^Via: (app|mcp)$/m.test(c.message));
+
+  for (const project of projects ?? []) {
+    await indexProject(supabase, project.id);
+    if (direct.length === 0) continue;
+    const { data: documents } = await supabase.from("documents").select("path, document_type").eq("project_id", project.id);
+    const types = new Map((documents ?? []).map((d) => [d.path, d.document_type as string | null]));
+    for (const commit of direct) {
+      for (const path of new Set([...(commit.added ?? []), ...(commit.modified ?? [])])) {
+        if (!types.has(path)) continue;
+        await recordEvent(supabase, {
+          project_id: project.id,
+          path,
+          document_type: types.get(path) ?? null,
+          commit_id: commit.id,
+          author_name: commit.author?.name || "GitLab",
+          via: "git",
+          message: commit.message,
+        });
+      }
+    }
+  }
   return Response.json({ indexed: projects?.length ?? 0 });
 }
