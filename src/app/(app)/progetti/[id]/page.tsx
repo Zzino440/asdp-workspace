@@ -5,17 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NATURE_LABELS, PHASES, PROJECT_STATUS_LABELS, type AsdpRole } from "@/lib/labels";
 import { microsoftEnabled } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
+import { gitlabCreationEnabled, loadSetupState, teamMemberSuggestions } from "@/lib/workspace";
+import { graphClient } from "@/lib/microsoft";
 import { AdvancePhaseButton } from "./advance-phase";
 import { DocumentList, loadProjectSteps } from "./document-list";
 import { ProjectEditDialog } from "./project-edit-dialog";
 import { type FilesParams, ProjectFiles } from "./project-files";
 import { Repositories } from "./repositories";
 import { TeamEditor } from "./team-editor";
+import { WorkspaceSetup } from "./workspace-setup";
+
+// avviso: problema della preparazione appena fatta; membri: Team di cui proporre i membri.
+type PageParams = FilesParams & { avviso?: string; membri?: string };
 
 export default function ProgettoPage({ params, searchParams }: PageProps<"/progetti/[id]">) {
   return (
     <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
-      <ProjectDetail params={params} searchParams={searchParams as Promise<FilesParams>} />
+      <ProjectDetail params={params} searchParams={searchParams as Promise<PageParams>} />
     </Suspense>
   );
 }
@@ -25,7 +31,7 @@ async function ProjectDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<FilesParams>;
+  searchParams: Promise<PageParams>;
 }) {
   const [{ id }, filesParams] = await Promise.all([params, searchParams]);
   const supabase = await createClient();
@@ -51,6 +57,8 @@ async function ProjectDetail({
     supabase.from("project_repositories").select("id, gitlab_path, role, branch").eq("project_id", id).order("gitlab_path"),
   ]);
   const canManage = Boolean(isAdmin || isPm);
+  const setup = canManage ? await loadSetupState(supabase, id) : null;
+  const suggested = canManage && filesParams.membri ? await suggestions(filesParams.membri) : null;
 
   // Link a GitLab costruiti qui: GITLAB_URL resta sul server.
   const gitlabRepo = (path: string) => (process.env.GITLAB_URL ? `${process.env.GITLAB_URL}/${path}` : null);
@@ -84,6 +92,20 @@ async function ProjectDetail({
         {canManage && <ProjectEditDialog project={project} />}
       </div>
 
+      {setup && (
+        <WorkspaceSetup
+          projectId={project.id}
+          code={project.code}
+          state={setup}
+          currentPhase={project.current_phase}
+          canCreateGitLab={Boolean(isAdmin) && gitlabCreationEnabled()}
+          clone={[project.gitlab_project_path, ...(repositories ?? []).map((r) => r.gitlab_path)]
+            .filter((p): p is string => Boolean(p) && Boolean(process.env.GITLAB_URL))
+            .map((p) => `${process.env.GITLAB_URL}/${p}.git`)}
+          warning={filesParams.avviso ?? null}
+        />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Percorso ASDP</CardTitle>
@@ -110,7 +132,7 @@ async function ProjectDetail({
       )}
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
-        <Card>
+        <Card id="team">
           <CardHeader>
             <CardTitle>Team</CardTitle>
           </CardHeader>
@@ -131,11 +153,12 @@ async function ProjectDetail({
                 };
               })}
               people={(people ?? []).map((p) => ({ id: p.id, name: p.full_name || p.email, email: p.email }))}
+              suggested={suggested}
             />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="repository">
           <CardHeader>
             <CardTitle>Repository</CardTitle>
           </CardHeader>
@@ -165,4 +188,17 @@ async function AdvancePhase({ projectId, currentPhase }: { projectId: string; cu
     mapTypes.some((t) => t.phase === currentPhase) && !open.some((s) => s.phase === currentPhase);
   if (!complete) return null;
   return <AdvancePhaseButton projectId={projectId} nextPhase={currentPhase + 1} />;
+}
+
+// Membri del Team Microsoft già nell'app, da proporre nel team del progetto dopo aver creato il
+// canale. Un errore di Graph non deve bloccare la pagina: niente proposte.
+async function suggestions(teamId: string) {
+  const supabase = await createClient();
+  const graph = await graphClient(supabase);
+  if (!graph) return null;
+  try {
+    return await teamMemberSuggestions(supabase, graph, teamId);
+  } catch {
+    return null;
+  }
 }

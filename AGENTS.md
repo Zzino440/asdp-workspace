@@ -145,6 +145,7 @@ src/lib/supabase/         Supabase clients (admin.ts: service role, invite only;
 src/lib/labels.ts         Italian labels of the schema enums
 src/lib/gitlab.ts         GitLab REST client (server-only, GITLAB_URL / GITLAB_TOKEN)
 src/lib/documents/        document service layer shared by UI and MCP
+src/lib/workspace.ts      project setup: GitLab group and repos, Teams channel, setup checklist state
 src/lib/mcp/              MCP tools: thin adapters over src/lib/documents/
 src/proxy.ts              auth gate and session refresh
 supabase/migrations/      schema, RLS, framework reference data

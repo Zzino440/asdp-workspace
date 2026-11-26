@@ -25,6 +25,61 @@
 
 ## Storia
 
+## [0.12.0] 2026-11-26 — Creazione guidata del progetto e preparazione dell'area di lavoro
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Nuovo progetto**: form in tre sezioni (progetto, repository, dopo la creazione), codice
+  suggerito dal nome. Con "Crea su GitLab" l'app crea il gruppo del progetto sotto
+  `GITLAB_PROJECTS_GROUP` con la repo documenti `adsp` (README con le cartelle del framework) e,
+  a scelta, `fe` e `be` vuote, registrate come repo di codice; poi webhook. "Collega una repo
+  esistente" resta come prima.
+- **Pagina del progetto**: scheda "Prepara l'area di lavoro" per admin e PM con i passi mancanti
+  (repo documenti, repo di codice, canale Teams, PM e TL, collegamento di Claude con i comandi di
+  clone per il TL, primo passo Kickoff). Ogni passo è idempotente; la scheda sparisce quando è
+  tutto pronto e, dopo la Fase 0, compare solo se manca la repo documenti. Repo su GitLab solo
+  dall'admin; una repo documenti già collegata non si cambia, e non si collega da qui una repo
+  che ha già dei file o che è di un altro progetto.
+- **Teams** (solo con `MICROSOFT_CLIENT_ID`): nella pagina di collegamento, scelto il Team,
+  "Crea il canale del progetto" crea (o riusa) il canale, le cartelle Input cliente, Verbali e
+  trascrizioni, Governance, Consegne e lo collega; poi "Gestisci team" si apre con i membri del
+  Team che hanno un account nell'app.
+- **MCP**: `get_project` restituisce `setup` (`teams_folder`, `missing`); le istruzioni del server
+  dicono di segnalare all'utente la repo documenti mancante (l'unico passo che blocca il
+  salvataggio) e di citare gli altri solo se servono.
+- **Repo per numero**: le repo GitLab si identificano dal numero (`gitlab_project_id`), che non
+  cambia se la repo viene spostata o rinominata. Il percorso resta per i link: "Reindicizza" lo
+  riallinea da GitLab, per la repo documenti e per le repo di codice, e compila il numero dei
+  progetti esistenti. Il webhook riconosce la repo dal numero (dal percorso solo se il numero
+  manca). Le repo create dall'app salvano subito il numero.
+- **Modifica progetto**: admin e PM possono cambiare la repo documenti. L'app la verifica su
+  GitLab (repo, branch, non già di un altro progetto), ricrea il webhook e reindicizza; il
+  webhook sulla repo vecchia va tolto a mano.
+- **Indice**: una repo documenti senza la cartella `asdp/` vale come vuota (prima Reindicizza dava
+  errore); repo o branch inesistenti restano un errore.
+- **Guida**: sezione "Creare e preparare un progetto" in "Come si usa questa app".
+
+### Migrazioni e configurazione
+- `20261126190851_gitlab_project_id.sql`: colonna `gitlab_project_id` su `projects` e
+  `project_repositories`. Da applicare sul cloud, poi "Reindicizza" sui progetti esistenti.
+- Nuova variabile `GITLAB_PROJECTS_GROUP` (gruppo padre GitLab). Il token GitLab deve poter creare
+  sottogruppi e project sotto quel gruppo. Senza variabile si può solo collegare una repo esistente.
+
+### Test eseguiti
+- `tsc --noEmit`, `lint`, `build` ok; `supabase test db` 52/52.
+- Repo per numero: Reindicizza su PFS (sandbox spostata in `asdp-sandbox/sandbox-test`) → numero
+  946 salvato, 4 documenti; su PSW → 952 per adsp, 953 e 954 per fe e be. Nel dialog un percorso
+  inesistente viene rifiutato con "Repo non trovata su GitLab o non accessibile all'app".
+- In locale con `admin@asdp.test` e gruppo padre di test `asdp-sandbox`: creato il progetto PSW
+  con fe e be. Su GitLab ci sono `asdp-sandbox/psw/{adsp,fe,be}` privati su `main`, il README con
+  autore l'utente e le repo collegate nell'app. Scheda con i passi 1–2 fatti; Reindicizza su repo
+  senza `asdp/` → 0 file, nessun errore. Scheda assente su PFS (Fase 2, repo collegata), presente
+  su APA (Fase 1, senza repo).
+- Non provati: creazione del canale Teams e proposta dei membri (serve un Team di test; la pagina
+  di collegamento restava su "Caricamento…" anche con il codice di prima), vista con `pm@`/`tl@`,
+  `get_project` via MCP.
+
 ## [0.11.1] 2026-11-26 — Permessi delle funzioni security definer
 
 **Autore**: Lorenzo Belli

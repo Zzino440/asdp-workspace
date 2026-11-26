@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { indexProject } from "@/lib/documents";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type PushEvent = { object_kind?: string; ref?: string; project?: { path_with_namespace?: string } };
+type PushEvent = { object_kind?: string; ref?: string; project?: { id?: number; path_with_namespace?: string } };
 
 function validToken(received: string | null) {
   const expected = process.env.GITLAB_WEBHOOK_SECRET ?? "";
@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
 
   const event = (await request.json()) as PushEvent;
   const repo = event.project?.path_with_namespace;
-  if (event.object_kind !== "push" || !repo) return Response.json({ indexed: 0 });
+  const repoId = Number(event.project?.id);
+  if (event.object_kind !== "push" || !repo || !Number.isInteger(repoId)) return Response.json({ indexed: 0 });
 
   // Nessun utente: service role, solo dopo aver verificato il segreto del webhook.
   const supabase = createAdminClient();
@@ -27,7 +28,8 @@ export async function POST(request: NextRequest) {
   const { data: projects } = await supabase
     .from("projects")
     .select("id")
-    .eq("gitlab_project_path", repo)
+    // Per numero; il percorso vale per i progetti non ancora reindicizzati dopo la migrazione.
+    .or(`gitlab_project_id.eq.${repoId},and(gitlab_project_id.is.null,gitlab_project_path.eq."${repo.replace(/"/g, "")}")`)
     .eq("gitlab_branch", branch ?? "");
 
   for (const project of projects ?? []) await indexProject(supabase, project.id);

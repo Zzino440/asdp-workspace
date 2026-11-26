@@ -34,17 +34,27 @@ export class GitLabError extends Error {
   get isExisting() {
     return this.status === 400 && this.body.includes("already exists");
   }
+
+  get isNotFound() {
+    return this.status === 404;
+  }
 }
 
 const project = (projectPath: string) => `/projects/${encodeURIComponent(projectPath)}`;
 
-// Tutti i file sotto una cartella (ricorsivo, paginato).
+// Tutti i file sotto una cartella (ricorsivo, paginato). Cartella che non esiste ancora (repo
+// appena preparata, nessun documento) = nessun file.
 export async function listFiles(projectPath: string, ref: string, folder: string) {
   const files: string[] = [];
   let page = "1";
   while (page) {
     const query = new URLSearchParams({ path: folder, ref, recursive: "true", per_page: "100", page });
-    const response = await gitlab(`${project(projectPath)}/repository/tree?${query}`);
+    const response = await findOrNullResponse(`${project(projectPath)}/repository/tree?${query}`);
+    if (!response) {
+      // Repo o branch sbagliati o non accessibili: errore, non un indice vuoto.
+      if (!(await branchExists(projectPath, ref))) throw new GitLabError(404, project(projectPath), "Repo o branch non trovati");
+      return files;
+    }
     const entries = (await response.json()) as TreeEntry[];
     files.push(...entries.filter((e) => e.type === "blob").map((e) => e.path));
     page = response.headers.get("x-next-page") ?? "";
@@ -139,6 +149,77 @@ export async function ensurePushWebhook(projectPath: string, url: string, token:
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url, token, push_events: true, enable_ssl_verification: true }),
   });
+}
+
+// --- Preparazione del progetto (gruppo e repo), usata da src/lib/workspace.ts ---
+
+type Group = { id: number; full_path: string; web_url: string };
+type GitLabProject = { id: number; path_with_namespace: string; web_url: string; empty_repo: boolean };
+
+const json = (method: string, body: unknown): RequestInit => ({
+  method,
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
+// null se non esiste (o il token non lo vede).
+async function findOrNullResponse(path: string) {
+  try {
+    return await gitlab(path);
+  } catch (error) {
+    if (error instanceof GitLabError && error.isNotFound) return null;
+    throw error;
+  }
+}
+
+async function findOrNull<T>(path: string) {
+  const response = await findOrNullResponse(path);
+  return response && ((await response.json()) as T);
+}
+
+export const getGroup = (groupPath: string) => findOrNull<Group>(`/groups/${encodeURIComponent(groupPath)}`);
+
+export const getProject = (projectPath: string) => findOrNull<GitLabProject>(project(projectPath));
+
+// Sottogruppo privato sotto parentId.
+export async function createGroup(parentId: number, path: string, name: string) {
+  const response = await gitlab("/groups", json("POST", { parent_id: parentId, path, name, visibility: "private" }));
+  return (await response.json()) as Group;
+}
+
+// Project privato nel gruppo; con readme crea anche il primo commit sul branch predefinito.
+export async function createProject(namespaceId: number, path: string, name: string, readme: boolean) {
+  const response = await gitlab(
+    "/projects",
+    json("POST", {
+      namespace_id: namespaceId,
+      path,
+      name,
+      visibility: "private",
+      default_branch: "main",
+      initialize_with_readme: readme,
+    }),
+  );
+  return (await response.json()) as GitLabProject;
+}
+
+// Un commit con più file nuovi (su una repo vuota crea anche il branch).
+export async function commitFiles(
+  projectPath: string,
+  branch: string,
+  files: { path: string; content: string }[],
+  commit: { message: string; authorName: string; authorEmail: string },
+) {
+  await gitlab(
+    `${project(projectPath)}/repository/commits`,
+    json("POST", {
+      branch,
+      commit_message: commit.message,
+      author_name: commit.authorName,
+      author_email: commit.authorEmail,
+      actions: files.map((f) => ({ action: "create", file_path: f.path, content: f.content })),
+    }),
+  );
 }
 
 // true se il branch esiste e il token dell'app lo vede; 404/403 → false. Timeout breve: è un

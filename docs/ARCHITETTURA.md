@@ -60,6 +60,8 @@ meno.
 
 - Ogni progetto ha **una repo documenti dedicata** (`projects.gitlab_project_path`), separata dal
   codice: funziona uguale con una o più repo di codice (BE, FE, …).
+- Le repo si identificano dal numero GitLab (`gitlab_project_id`), che resta lo stesso se la repo
+  viene spostata; il percorso serve per i link e "Reindicizza" lo riallinea.
 - `projects.docs_root` (default `asdp/`) è la cartella dei documenti; per i progetti esistenti
   con i documenti dentro una repo di codice si punta a quella repo e cartella.
 - Le repo di codice sono registrate in `project_repositories` (percorso, ruolo, branch): servono
@@ -120,7 +122,15 @@ permessi, stessi commit.
    dell'evidenza.
 6. **Modifica con AI.** Una chiamata Messages API sulla selezione → testo proposto → diff in UI →
    Accetta = salvataggio normale (flusso 1).
-7. **MCP.** Il server MCP dell'app (`/api/mcp`, Streamable HTTP) agisce come l'utente: token
+7. **Preparazione del progetto.** "Nuovo progetto" (solo admin) crea la riga e, con "Crea su
+   GitLab", il gruppo del progetto sotto `GITLAB_PROJECTS_GROUP` con `adsp` (solo README) e le
+   repo di codice scelte, come §18.4.3 della Guida; poi webhook. La scheda "Prepara l'area di
+   lavoro" (admin e PM) mostra i passi mancanti, ricavati dai dati esistenti (nessuna tabella):
+   repo, canale Teams (creato in un Team esistente con quattro cartelle e collegato), PM e TL,
+   Claude, Kickoff. Ogni passo è idempotente. Codice in `src/lib/workspace.ts`; il permesso si
+   controlla col client dell'utente prima di usare il token GitLab. L'MCP vede solo lo stato
+   (`get_project.setup`), non crea nulla.
+8. **MCP.** Il server MCP dell'app (`/api/mcp`, Streamable HTTP) agisce come l'utente: token
    OAuth → JWT Supabase → RLS e `document_level()`. Tool: `list_projects`, `get_project` (team,
    repo, e per ogni tipo di documento livello dell'utente e documenti presenti), `list_documents`,
    `read_document` (testo esatto in `content`), `list_versions`, `update_document`,

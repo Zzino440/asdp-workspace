@@ -16,9 +16,20 @@
 - Restano da provare: `0.9.0` con un utente senza ruolo PM e i link GitLab; le scritture di
   `0.11.0` (7b) su una cartella Teams di test.
 - `0.11.1` (migrazione `20261126161428_security_definer_execute.sql`: `EXECUTE` tolto ad `anon`
-  sugli helper della RLS e a tutti i ruoli API sui trigger) su `master`, 2026-11-26: applicata
-  in locale, test verdi; da committare, taggare e applicare sul cloud.
+  sugli helper della RLS e a tutti i ruoli API sui trigger) su `master` (`1777f5a`), 2026-11-26:
+  pushata, tag `0.11.1` fatto; applicata in locale, test verdi; da applicare sul cloud.
 - Sandbox: T2.2 rimasto In corso, T3.1 In corso (modifiche richieste) dopo le prove di 0.8.0.
+- `0.12.0` (creazione guidata del progetto e scheda "Prepara l'area di lavoro", vedi CHANGELOG)
+  sul branch `feature/git-mic-integration`, 2026-11-26. Comprende le repo per numero
+  (`gitlab_project_id`, migrazione `20261126190851_gitlab_project_id.sql` applicata in locale, da
+  applicare sul cloud) e la repo documenti modificabile dal dialog del progetto. Typecheck, lint, build e pgTAP ok;
+  creazione GitLab provata in locale con gruppo padre `asdp-sandbox` (`GITLAB_PROJECTS_GROUP` in
+  `.env.local`), progetto di prova PSW → `asdp-sandbox/psw/{adsp,fe,be}`. Restano da provare:
+  creazione del canale Teams su un **Team di test** (mai quello di PFS), la proposta dei membri, la vista
+  con `pm@` e `tl@`, `get_project.setup` via MCP. La pagina `/file/collega` restava su
+  "Caricamento…" (anche col codice di prima): riavviare il dev server sulla 4100 prima di
+  riprovare. Per il cloud: `GITLAB_PROJECTS_GROUP` su Vercel e un token di gruppo (vedi
+  `TODO.md`, "Token GitLab per i progetti veri").
 
 ## Milestone
 
@@ -352,7 +363,7 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
 |---|---|
 | Locale | `pnpm dev -p 4100 -H 127.0.0.1`; Supabase locale con Docker (`pnpm exec supabase start`), Mailpit su 54324; utenti di test del seed (`admin@`, `pm@`, `tl@`, `af@`, `nessuno@asdp.test`, password in `supabase/seed.sql`). MCP locale: `asdp` registrato in Claude Code solo per questa cartella (scope local) |
 | Cloud di test | Vercel `ds-tech4/asdp-workspace`, Supabase `uirrkpvkrhuvbobthrna`. **In pausa dal 2026-11-20**: per riaccenderlo vedi "Come riaccendere il cloud di test" |
-| GitLab | Istanza https://git.dstech.info, repo di prova `l.belli/sandbox-test` (id 946, branch `main`), documenti sotto `asdp/`. Token del service account in `GITLAB_TOKEN` (`.env.local`, mai in chat) |
+| GitLab | Istanza https://git.dstech.info, repo di prova `asdp-sandbox/sandbox-test` (id 946, branch `main`; spostata da `l.belli/sandbox-test` il 2026-11-26, percorso e numero aggiornati nel DB locale; sul cloud di test, dopo `db push` della migrazione di 0.12.0, basta "Reindicizza": GitLab segue il percorso vecchio e l'app salva numero e percorso nuovo), documenti sotto `asdp/`. Token del service account in `GITLAB_TOKEN` (`.env.local`, mai in chat) |
 
 ## Note e problemi aperti
 

@@ -16,6 +16,7 @@ import {
   renameItem,
 } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
+import { createProjectChannel } from "@/lib/workspace";
 
 const linkSchema = z.object({
   drive: z.string().min(1),
@@ -52,6 +53,32 @@ export async function linkFolder(projectId: string, formData: FormData) {
     redirect(`/progetti/${projectId}/file/collega?errore=${encodeURIComponent(message)}`);
   }
   redirect(`/progetti/${projectId}?file=${data.id}`);
+}
+
+// Crea (o riusa) il canale del progetto nel Team scelto, con le cartelle base, e lo collega;
+// poi la pagina del progetto propone i membri del Team come team del progetto.
+export async function createTeamsChannel(projectId: string, teamId: string) {
+  const supabase = await createClient();
+  const graph = await graphClient(supabase);
+  if (!graph) redirect(`/progetti/${projectId}/file/collega`);
+  let locationId: string;
+  try {
+    locationId = await createProjectChannel(supabase, graph, projectId, teamId);
+  } catch (e) {
+    console.error("Creazione del canale Teams non riuscita", e);
+    const message =
+      e instanceof MicrosoftError
+        ? e.isForbidden
+          ? "Non puoi creare canali in questo Team: chiedi a un proprietario del Team."
+          : e.status === 400 || e.status === 409
+            ? "Teams non accetta questo nome di canale: probabilmente esiste un canale eliminato con lo stesso nome. Ripristinalo da Teams (Canali → Eliminato → Ripristina) e premi di nuovo «Crea il canale del progetto»: verrà riusato. Il nome si libera da solo circa 30 giorni dopo l'eliminazione."
+            : `Microsoft non risponde (errore ${e.status}): riprova tra poco.`
+        : e instanceof Error
+          ? e.message
+          : "Canale non creato.";
+    redirect(`/progetti/${projectId}/file/collega?team=${teamId}&errore=${encodeURIComponent(message)}`);
+  }
+  redirect(`/progetti/${projectId}?file=${locationId}&membri=${teamId}`);
 }
 
 // Scollega una cartella dal progetto: su Teams non cambia niente.

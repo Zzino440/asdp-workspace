@@ -18,8 +18,10 @@ import {
   microsoftEnabled,
 } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
-import { linkFolder } from "../../../file-actions";
+import { createTeamsChannel, linkFolder } from "../../../file-actions";
+import { TEAMS_FOLDERS } from "@/lib/workspace";
 import { FileIcon } from "../../project-files";
+import { CreateChannelButton } from "./create-channel-button";
 
 // Collega una cartella di Teams al progetto (PM o admin): Team → canale → cartella, poi un nome.
 // Qui il PM vede tutti i suoi Team; nella pagina del progetto si vedono solo le cartelle collegate.
@@ -47,7 +49,7 @@ async function Content({
   if (!microsoftEnabled()) notFound();
   const supabase = await createClient();
   const [{ data: project }, { data: isAdmin }, { data: isPm }] = await Promise.all([
-    supabase.from("projects").select("id, name").eq("id", id).maybeSingle(),
+    supabase.from("projects").select("id, code, name").eq("id", id).maybeSingle(),
     supabase.rpc("is_admin"),
     supabase.rpc("has_project_role", { p_project_id: id, p_roles: ["pm"] }),
   ]);
@@ -109,7 +111,7 @@ async function Content({
       <>
         {back}
         {errorAlert}
-        <p className="text-sm text-muted-foreground">Scegli il Team del progetto.</p>
+        <p className="text-sm text-muted-foreground">Scegli il Team: poi crei il canale del progetto o ne colleghi uno.</p>
         <Form action={base} className="flex w-fit items-center gap-1">
           <Input name="q" defaultValue={query.q} placeholder="Cerca un Team" className="h-8 w-64" />
           <Button type="submit" variant="outline" size="icon" aria-label="Cerca">
@@ -141,7 +143,18 @@ async function Content({
         <Link href={base} className="w-fit text-sm text-muted-foreground hover:underline">
           ← Tutti i Team
         </Link>
-        <p className="text-sm text-muted-foreground">Scegli il canale: si apre la sua cartella dei file.</p>
+        {errorAlert}
+        <form
+          action={createTeamsChannel.bind(null, id, query.team!)}
+          className="flex flex-wrap items-center gap-3 rounded-md border p-4"
+        >
+          <CreateChannelButton />
+          <p className="text-sm text-muted-foreground">
+            Canale «{project.code} {project.name}» con le cartelle {TEAMS_FOLDERS.join(", ")}, collegato al progetto.
+            Se esiste già si riusa.
+          </p>
+        </form>
+        <p className="text-sm text-muted-foreground">Oppure collega un canale esistente: si apre la sua cartella dei file.</p>
         <ul className="flex flex-col gap-1">
           {data.channels.map((c) => (
             <li key={c.id}>

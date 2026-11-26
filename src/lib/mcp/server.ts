@@ -11,6 +11,7 @@ import {
   readDocument,
   saveDocument,
 } from "@/lib/documents";
+import { loadSetupState, missingSteps } from "@/lib/workspace";
 
 // Tool MCP dell'app: adattatori sottili sopra src/lib/documents/, sempre col client dell'utente.
 // Progetti identificati dal codice (es. "PFS"), documenti dal percorso nella repo.
@@ -36,7 +37,8 @@ export const INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti 
 - Prima di modificare un documento leggilo con read_document; poi cambia solo le parti necessarie di content e passalo intero a update_document con il last_commit_id letto. Lascia invariato tutto il resto, commenti del frontespizio compresi.
 - Stati del documento: Da fare, In corso, Completo, Approvato. Lo stato Approvato e i campi approvato_da, approvato_il, versione_approvata, evidenza_approvazione li cambia solo chi approva; non modificare versione_frontespizio. Se cambi il testo di un documento Approvato, il server lo riporta In corso e svuota i dati di approvazione: va riapprovato.
 - Quando una skill ASDP legge o scrive un file asdp/..., di norma usa questo server: read_document per gli input, create_document per un file nuovo, update_document per uno esistente, con lo stesso percorso. Salva su file locale solo se l'utente lo chiede o se la cartella di lavoro è un clone della repo documenti (il push lo porta nell'app). Il server non cancella file.
-- Ogni salvataggio è un commit a nome dell'utente: scrivi messaggi di commit brevi e chiari in italiano.`;
+- Ogni salvataggio è un commit a nome dell'utente: scrivi messaggi di commit brevi e chiari in italiano.
+- Se get_project.setup.missing contiene docs_repository il progetto non ha una repo documenti e non si può salvare: dillo all'utente e rimandalo alla scheda "Prepara l'area di lavoro" del progetto nell'app. Gli altri passi di setup.missing citali solo se servono a ciò che l'utente chiede. Il server non crea repo, canali o team.`;
 
 export function registerTools(server: McpServer, clientFor: ClientFor) {
   server.registerTool(
@@ -63,14 +65,15 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       description:
         "Dati del progetto, team con ruoli, repo dei documenti e repo di codice collegate, ruoli dell'utente e, per " +
         "ogni tipo di documento del framework, fase, cartella, livello dell'utente (none/view/edit/approve) e " +
-        "documenti già presenti con stato e versione.",
+        "documenti già presenti con stato e versione. setup.missing elenca i passi di preparazione mancanti " +
+        "(docs_repository, code_repositories, teams_folder, team, kickoff).",
       inputSchema: z.object({ project: z.string().describe("Codice del progetto, es. PFS") }),
     },
     async ({ project }, ctx) => {
       const { supabase, userId } = clientFor(ctx);
       const id = await projectId(supabase, project);
       if (!id) return failure(NOT_FOUND);
-      const [{ data: info }, { data: members }, { data: repositories }, { data: types }, documents] = await Promise.all([
+      const [{ data: info }, { data: members }, { data: repositories }, { data: types }, documents, setup] = await Promise.all([
         supabase
           .from("projects")
           .select("code, name, client, nature, status, current_phase, framework_version, gitlab_project_path, gitlab_branch, docs_root")
@@ -80,6 +83,7 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         supabase.from("project_repositories").select("gitlab_path, role, branch").eq("project_id", id),
         supabase.from("document_types").select("code, name, phase, folder").order("sort_order"),
         listDocuments(supabase, id),
+        loadSetupState(supabase, id),
       ]);
       const levels = await Promise.all((types ?? []).map((t) => documentLevel(supabase, id, t.code)));
       const team = (members ?? []).map((m) => {
@@ -91,6 +95,8 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         team,
         my_roles: (members ?? []).find((m) => m.user_id === userId)?.roles ?? [],
         code_repositories: repositories ?? [],
+        // Solo se c'è un canale collegato, non quale (le cartelle SharePoint non passano dall'MCP).
+        setup: { teams_folder: setup.teamsFolder, missing: missingSteps(setup) },
         document_types: (types ?? []).map((t, i) => ({
           ...t,
           my_level: levels[i],

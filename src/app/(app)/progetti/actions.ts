@@ -6,12 +6,13 @@ import { z } from "zod";
 import { checkRepository, ensureProjectWebhook, indexProject } from "@/lib/documents";
 import { ASDP_ROLES } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
+import { gitlabCreationEnabled, provisionGitLab, relinkDocsRepository, syncCodeRepositories } from "@/lib/workspace";
 
 // ok distingue il salvataggio riuscito dallo stato iniziale (serve ai dialog per chiudersi).
 export type FormState = { error: string | null; ok?: boolean; warning?: string | null };
 
 const projectSchema = z.object({
-  code: z.string().trim().min(1).max(20),
+  code: z.string().trim().toUpperCase().min(1).max(20),
   name: z.string().trim().min(1),
   client: z.string().trim().min(1),
   nature: z.enum(["greenfield", "evolutiva"]),
@@ -21,19 +22,55 @@ const projectSchema = z.object({
   docs_root: z.string().trim().min(1),
 });
 
+// repos: "crea" = gruppo GitLab nuovo con adsp (+ fe/be), "collega" = repo documenti esistente.
+const setupSchema = z.object({
+  repos: z.enum(["crea", "collega"]),
+  fe: z.literal("on").optional(),
+  be: z.literal("on").optional(),
+});
+
 export async function createProject(_prev: FormState, formData: FormData): Promise<FormState> {
-  const parsed = projectSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: "Compila tutti i campi obbligatori." };
+  const fields = Object.fromEntries(formData);
+  const parsed = projectSchema.safeParse(fields);
+  const setup = setupSchema.safeParse(fields);
+  if (!parsed.success || !setup.success) return { error: "Compila tutti i campi obbligatori." };
+  const create = setup.data.repos === "crea" && gitlabCreationEnabled();
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("projects").insert(parsed.data).select("id").single();
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({ ...parsed.data, ...(create && { gitlab_project_path: null }) })
+    .select("id")
+    .single();
   if (error?.code === "23505") return { error: "Esiste già un progetto con questo codice." };
   if (error?.code === "42501") return { error: "Solo un amministratore può creare progetti." };
   if (error) return { error: "Impossibile creare il progetto." };
 
-  // Un eventuale problema col webhook non blocca la creazione: lo segnala "Reindicizza".
-  await ensureProjectWebhook(supabase, data.id);
-  redirect(`/progetti/${data.id}`);
+  // Un problema con GitLab non blocca la creazione: la card "Prepara l'area di lavoro" lo
+  // mostra e permette di riprovare.
+  let problem: string | null = null;
+  if (create) {
+    try {
+      problem = (await provisionGitLab(supabase, data.id, { fe: !!setup.data.fe, be: !!setup.data.be })).warnings.join(" ") || null;
+    } catch (e) {
+      problem = e instanceof Error ? e.message : "Preparazione GitLab non riuscita.";
+    }
+  } else {
+    problem = await ensureProjectWebhook(supabase, data.id);
+  }
+  redirect(`/progetti/${data.id}${problem ? `?avviso=${encodeURIComponent(problem)}` : ""}`);
+}
+
+// Passo "Repo documenti" della card: crea (o riusa) gruppo, adsp e repo di codice scelte.
+export async function runGitLabSetup(projectId: string, code: { fe: boolean; be: boolean }): Promise<FormState> {
+  const supabase = await createClient();
+  try {
+    const { warnings } = await provisionGitLab(supabase, projectId, code);
+    refresh();
+    return { error: null, ok: true, warning: warnings.join(" ") || null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Preparazione GitLab non riuscita." };
+  }
 }
 
 const teamSchema = z.array(
@@ -50,19 +87,31 @@ const projectUpdateSchema = z.object({
   status: z.enum(["aperto", "in_presidio", "in_attesa", "chiuso"]),
   current_phase: z.coerce.number().int().min(0).max(4),
   framework_version: z.string().trim().min(1),
+  gitlab_project_path: z.string().trim().optional(),
 });
 
-// Dati del progetto (admin o PM del progetto, via RLS). Repo documenti, branch e cartella
-// restano fissi: cambiarli richiederebbe reindicizzare e rifare il webhook.
+// Dati del progetto (admin o PM del progetto, via RLS). Se cambia la repo documenti si verifica
+// su GitLab, si ricrea il webhook e si reindicizza (relinkDocsRepository); branch e cartella
+// restano fissi.
 export async function updateProject(projectId: string, _prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = projectUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: "Compila tutti i campi obbligatori." };
+  const { gitlab_project_path: docsPath, ...fields } = parsed.data;
 
   const supabase = await createClient();
-  const { data } = await supabase.from("projects").update(parsed.data).eq("id", projectId).select("id");
-  if (!data?.length) return { error: "Non hai i permessi per modificare questo progetto." };
+  const { data } = await supabase.from("projects").update(fields).eq("id", projectId).select("id, gitlab_project_path").single();
+  if (!data) return { error: "Non hai i permessi per modificare questo progetto." };
+
+  let warning: string | null = null;
+  if (docsPath && docsPath !== data.gitlab_project_path) {
+    try {
+      warning = (await relinkDocsRepository(supabase, projectId, docsPath)).warnings.join(" ") || null;
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Repo documenti non collegata." };
+    }
+  }
   refresh();
-  return { error: null, ok: true };
+  return { error: null, ok: true, warning };
 }
 
 export async function advancePhase(projectId: string, phase: number): Promise<FormState> {
@@ -125,6 +174,7 @@ export async function reindexDocuments(projectId: string): Promise<ReindexResult
   const supabase = await createClient();
   try {
     const count = await indexProject(supabase, projectId);
+    await syncCodeRepositories(supabase, projectId);
     const warning = await ensureProjectWebhook(supabase, projectId);
     refresh();
     return { error: null, count, warning };
@@ -155,6 +205,7 @@ export async function addRepository(
   if (error?.code === "23505") return { error: "Repo già collegata." };
   if (error) return { error: "Non hai i permessi per modificare le repo del progetto." };
   const warning = await checkRepository(parsed.data.gitlab_path, parsed.data.branch);
+  if (!warning) await syncCodeRepositories(supabase, projectId);
   refresh();
   return { error: null, ok: true, warning };
 }

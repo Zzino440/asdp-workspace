@@ -31,6 +31,17 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   `dstech.it`), "Reindicizza" crea il nuovo webhook ma non toglie quello vecchio: va rimosso a
   mano da GitLab.
 
+## Preparazione del progetto (0.12.0)
+
+- [ ] **Membri GitLab dei gruppi creati.** L'app crea gruppo e repo col service account ma non
+  aggiunge le persone: oggi le aggiunge a mano chi gestisce GitLab (TL/admin).
+- [ ] **Team Microsoft nuovo per progetto**: serve `Team.Create`, nuovo consenso dell'IT. Oggi si
+  crea solo un canale in un Team esistente.
+- [ ] **Restyling generale dell'app** (richiesta di Lorenzo del 2026-11-26), dopo le priorità
+  funzionali.
+- [ ] Gruppo di test `asdp-sandbox/psw` (progetto PSW nel DB locale) creato nelle prove di
+  0.12.0: eliminarlo da GitLab quando non serve più.
+
 ## Framework e permessi
 
 - [ ] **RACI del seed diverso dalla Guida ASDP** (`delivery-tech/DST-ASDP-Guida-Framework.md`

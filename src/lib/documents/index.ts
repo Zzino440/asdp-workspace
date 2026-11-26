@@ -6,6 +6,7 @@ import {
   compareFile,
   createFile,
   ensurePushWebhook,
+  getProject,
   GitLabError,
   listFileCommits,
   listFiles,
@@ -21,7 +22,13 @@ import { type AsdpRole, ROLE_LABELS } from "@/lib/labels";
 // con la service role.
 
 type DocumentType = { code: string; folder: string };
-type Project = { id: string; gitlab_project_path: string | null; gitlab_branch: string; docs_root: string };
+type Project = {
+  id: string;
+  gitlab_project_id: number | null;
+  gitlab_project_path: string | null;
+  gitlab_branch: string;
+  docs_root: string;
+};
 
 // Frontespizio GUIDA-FRONT: blocco YAML tra due righe "---" in testa al file.
 export function splitFrontMatter(content: string) {
@@ -58,18 +65,36 @@ function detectType(
   return inFolder.length === 1 ? inFolder[0].code : null;
 }
 
-const loadProject = (supabase: SupabaseClient, projectId: string) =>
-  supabase
+// repo: riferimento per le chiamate a GitLab, il numero se c'è (non cambia se la repo viene
+// spostata), altrimenti il percorso. Il percorso resta per i link.
+const loadProject = async (supabase: SupabaseClient, projectId: string) => {
+  const result = await supabase
     .from("projects")
-    .select("id, gitlab_project_path, gitlab_branch, docs_root")
+    .select("id, gitlab_project_id, gitlab_project_path, gitlab_branch, docs_root")
     .eq("id", projectId)
     .single<Project>();
+  const project = result.data;
+  return {
+    ...result,
+    data: project && { ...project, repo: project.gitlab_project_id ? String(project.gitlab_project_id) : project.gitlab_project_path },
+  };
+};
 
 // Ricostruisce l'indice del progetto leggendo tutta la cartella dei documenti su GitLab.
 export async function indexProject(supabase: SupabaseClient, projectId: string) {
   const { data: project, error } = await loadProject(supabase, projectId);
-  if (error || !project.gitlab_project_path) throw new Error("Progetto senza repo documenti.");
-  const repo = project.gitlab_project_path;
+  if (error || !project?.repo) throw new Error("Progetto senza repo documenti.");
+  const repo = project.repo;
+
+  // Numero e percorso riallineati da GitLab (la repo può essere stata spostata o rinominata).
+  const remote = await getProject(repo);
+  if (!remote) throw new Error("Repo documenti non trovata su GitLab o non accessibile all'app.");
+  if (remote.id !== project.gitlab_project_id || remote.path_with_namespace !== project.gitlab_project_path) {
+    await supabase
+      .from("projects")
+      .update({ gitlab_project_id: remote.id, gitlab_project_path: remote.path_with_namespace })
+      .eq("id", project.id);
+  }
   const docsRoot = project.docs_root.replace(/\/?$/, "/");
 
   const { data: types } = await supabase.from("document_types").select("code, folder");
@@ -158,9 +183,9 @@ export async function readDocument(supabase: SupabaseClient, projectId: string, 
   if (!indexed) return null;
 
   const { data: project } = await loadProject(supabase, projectId);
-  if (!project?.gitlab_project_path) return null;
+  if (!project?.repo) return null;
 
-  const file = await readFile(project.gitlab_project_path, project.gitlab_branch, path);
+  const file = await readFile(project.repo, project.gitlab_branch, path);
   return {
     path,
     documentType: indexed.document_type as string | null,
@@ -247,12 +272,12 @@ export async function saveDocument(
     loadProject(supabase, input.projectId),
     supabase.from("profiles").select("full_name, email").eq("id", input.userId).single(),
   ]);
-  if (!project?.gitlab_project_path || !profile) throw new DocumentError("not_found");
+  if (!project?.repo || !profile) throw new DocumentError("not_found");
 
   // Versione da cui parte l'utente: un id che non esiste vale come conflitto (va riletto).
   let previous: string;
   try {
-    previous = (await readFile(project.gitlab_project_path, input.lastCommitId, input.path)).content;
+    previous = (await readFile(project.repo, input.lastCommitId, input.path)).content;
   } catch (error) {
     if (error instanceof GitLabError && error.status === 404) throw new DocumentError("conflict");
     throw error;
@@ -281,7 +306,7 @@ export async function saveDocument(
   let commitId: string;
   try {
     commitId = await updateFile(
-      project.gitlab_project_path,
+      project.repo,
       project.gitlab_branch,
       { path: input.path, content, lastCommitId: input.lastCommitId },
       {
@@ -353,11 +378,11 @@ export async function changeApproval(
       .eq("user_id", input.userId)
       .maybeSingle(),
   ]);
-  if (!project?.gitlab_project_path || !profile) throw new DocumentError("not_found");
+  if (!project?.repo || !profile) throw new DocumentError("not_found");
 
   let previous: string;
   try {
-    previous = (await readFile(project.gitlab_project_path, input.lastCommitId, input.path)).content;
+    previous = (await readFile(project.repo, input.lastCommitId, input.path)).content;
   } catch (error) {
     if (error instanceof GitLabError && error.status === 404) throw new DocumentError("conflict");
     throw error;
@@ -425,7 +450,7 @@ export async function createDocument(
     supabase.from("profiles").select("full_name, email").eq("id", input.userId).single(),
     supabase.from("document_types").select("code, folder"),
   ]);
-  if (!project?.gitlab_project_path || !profile) throw new DocumentError("not_found");
+  if (!project?.repo || !profile) throw new DocumentError("not_found");
 
   const docsRoot = project.docs_root.replace(/\/?$/, "/");
   if (!input.path.startsWith(docsRoot) || !/\.(md|csv)$/.test(input.path) || input.path.includes("..")) {
@@ -452,7 +477,7 @@ export async function createDocument(
   let commitId: string;
   try {
     commitId = await createFile(
-      project.gitlab_project_path,
+      project.repo,
       project.gitlab_branch,
       { path: input.path, content: input.content },
       {
@@ -490,14 +515,14 @@ async function visibleProject(supabase: SupabaseClient, projectId: string, path:
     .maybeSingle();
   if (!indexed) return null;
   const { data: project } = await loadProject(supabase, projectId);
-  return project?.gitlab_project_path ? { ...project, gitlab_project_path: project.gitlab_project_path } : null;
+  return project?.repo ? { ...project, repo: project.repo } : null;
 }
 
 // Storico del documento: un commit per versione, con il canale da cui arriva (trailer "Via:").
 export async function listVersions(supabase: SupabaseClient, projectId: string, path: string) {
   const project = await visibleProject(supabase, projectId, path);
   if (!project) return null;
-  const commits = await listFileCommits(project.gitlab_project_path, project.gitlab_branch, path);
+  const commits = await listFileCommits(project.repo, project.gitlab_branch, path);
   return commits.map((c) => ({
     ...c,
     title: c.message.split("\n")[0],
@@ -515,7 +540,7 @@ export async function readVersion(
 ) {
   const project = await visibleProject(supabase, projectId, path);
   if (!project) return null;
-  const repo = project.gitlab_project_path;
+  const repo = project.repo;
   const [file, diff] = await Promise.all([
     readFile(repo, commitId, path),
     previousId ? compareFile(repo, previousId, commitId, path) : Promise.resolve(null),
@@ -535,9 +560,9 @@ export async function ensureProjectWebhook(supabase: SupabaseClient, projectId: 
   if (!host || !secret) return null;
 
   const { data: project } = await loadProject(supabase, projectId);
-  if (!project?.gitlab_project_path) return null;
+  if (!project?.repo) return null;
   try {
-    await ensurePushWebhook(project.gitlab_project_path, `https://${host}/api/gitlab/webhook`, secret);
+    await ensurePushWebhook(project.repo, `https://${host}/api/gitlab/webhook`, secret);
     return null;
   } catch (error) {
     console.error("Webhook GitLab non configurato", error);

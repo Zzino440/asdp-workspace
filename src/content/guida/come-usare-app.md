@@ -6,6 +6,17 @@ La pagina **Progetti** mostra solo i progetti di cui fai parte, con cliente, nat
 
 Solo l'amministratore crea un progetto nuovo.
 
+## Creare e preparare un progetto
+
+In **Nuovo progetto** l'amministratore indica nome, codice, cliente e natura, poi sceglie come avere le repo:
+
+- **Crea su GitLab**: l'app crea un gruppo per il progetto con la repo documenti `adsp` e, se servono, le repo di codice `fe` e `be` vuote, già collegate al progetto. È la scelta normale per un progetto nuovo.
+- **Collega una repo esistente**: per un'evolutiva o quando i documenti stanno già in una repo.
+
+Nella pagina del progetto compare poi la scheda **Prepara l'area di lavoro**, visibile all'amministratore e al PM. Elenca i passi che mancano, in qualsiasi ordine: repo, canale Teams (dove disponibile), team con PM e TL, collegamento di Claude e primo passo del percorso (il Kickoff). Ogni passo si può rifare senza creare doppioni. Quando è tutto pronto la scheda sparisce.
+
+Il canale Teams si crea in un Team che esiste già, con le cartelle Input cliente, Verbali e trascrizioni, Governance e Consegne. I documenti ASDP restano su GitLab. Subito dopo l'app propone come team del progetto i membri del Team che hanno un account nell'app. Gli altri li invita l'amministratore da Amministratore → Utenti.
+
 ## Pagina del progetto
 
 Si apre con il **Percorso ASDP**, la mappa dei documenti del progetto.

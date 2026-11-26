@@ -147,6 +147,21 @@ export async function listChannels(graph: Graph, teamId: string) {
   return value.sort((a, b) => a.displayName.localeCompare(b.displayName, "it"));
 }
 
+// Canale standard nuovo (Channel.Create, già approvato dall'IT).
+export const createChannel = (graph: Graph, teamId: string, displayName: string, description: string) =>
+  graph<Channel>(`/teams/${teamId}/channels`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ displayName, description, membershipType: "standard" }),
+  });
+
+export type TeamMember = { displayName: string; email: string | null };
+
+export async function listTeamMembers(graph: Graph, teamId: string) {
+  const { value } = await graph<{ value: TeamMember[] }>(`/teams/${teamId}/members`);
+  return value;
+}
+
 // Cartella dei file di un canale (per i canali privati e condivisi è in un sito a parte).
 export async function channelFolder(graph: Graph, teamId: string, channelId: string) {
   return graph<DriveItem>(`/teams/${teamId}/channels/${channelId}/filesFolder`);

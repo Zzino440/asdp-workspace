@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Users } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { saveTeam, type FormState } from "../actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,8 @@ import { ASDP_ROLES, ROLE_LABELS, type AsdpRole } from "@/lib/labels";
 
 type Member = { user_id: string; name: string; email: string; roles: AsdpRole[]; isNew?: boolean };
 type Person = { id: string; name: string; email: string };
+// Proposte dal Team Microsoft del progetto: persone già nell'app e nomi di chi non c'è.
+type Suggested = { people: Person[]; missing: string[] } | null;
 
 const initialState: FormState = { error: null };
 
@@ -31,13 +34,23 @@ export function TeamEditor({
   canEdit,
   members,
   people,
+  suggested,
 }: {
   projectId: string;
   canEdit: boolean;
   members: Member[];
   people: Person[];
+  suggested: Suggested;
 }) {
-  const [open, setOpen] = useState(false);
+  const proposals = (suggested?.people ?? []).filter((p) => !members.some((m) => m.user_id === p.id));
+  const [open, setOpen] = useState(canEdit && (proposals.length > 0 || Boolean(suggested?.missing.length)));
+  const router = useRouter();
+  const pathname = usePathname();
+  // Dopo il salvataggio le proposte non servono più: si tolgono dall'indirizzo.
+  const saved = () => {
+    setOpen(false);
+    if (suggested) router.replace(pathname);
+  };
   const missing = (["pm", "tl"] as const).filter((role) => !members.some((m) => m.roles.includes(role)));
 
   return (
@@ -79,8 +92,24 @@ export function TeamEditor({
               <DialogTitle>Gestisci team</DialogTitle>
             </DialogHeader>
             {/* Montato solo a dialog aperto: annullare scarta le modifiche non salvate. */}
+            {proposals.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Aggiunte le persone del Team Microsoft che usano l&apos;app: spunta i loro ruoli e salva.
+              </p>
+            )}
+            {Boolean(suggested?.missing.length) && (
+              <p className="text-sm text-muted-foreground">
+                Nel Team ma non nell&apos;app: {suggested!.missing.join(", ")}. Le invita l&apos;amministratore da
+                Amministratore → Utenti.
+              </p>
+            )}
             {open && (
-              <TeamMatrix projectId={projectId} members={members} people={people} onSaved={() => setOpen(false)} />
+              <TeamMatrix
+                projectId={projectId}
+                members={[...members, ...proposals.map((p) => ({ user_id: p.id, name: p.name, email: p.email, roles: [], isNew: true }))]}
+                people={people}
+                onSaved={saved}
+              />
             )}
           </DialogContent>
         </Dialog>
