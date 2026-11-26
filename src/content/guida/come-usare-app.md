@@ -8,10 +8,17 @@ Solo l'amministratore crea un progetto nuovo.
 
 ## Creare e preparare un progetto
 
-In **Nuovo progetto** l'amministratore indica nome, codice, cliente e natura, poi sceglie come avere le repo:
+**Nuovo progetto** è una procedura in quattro passi. Si va avanti con **Avanti** e si torna a un passo già visto cliccandolo in alto:
 
-- **Crea su GitLab**: l'app crea un gruppo per il progetto con la repo documenti `adsp` e, se servono, le repo di codice `fe` e `be` vuote, già collegate al progetto. È la scelta normale per un progetto nuovo.
-- **Collega una repo esistente**: per un'evolutiva o quando i documenti stanno già in una repo.
+1. **Progetto**: nome, codice, cliente e natura (Greenfield o Evolutiva); se vuoi anche una breve descrizione e le date di inizio e fine previste.
+2. **Repository**: come avere la repo documenti e le repo di codice.
+   - **Crea su GitLab**: l'app crea un gruppo per il progetto con la repo documenti `adsp`. È la scelta normale per un progetto nuovo.
+   - **Collega una repo esistente**: per un'evolutiva o quando i documenti stanno già in una repo.
+   - Per frontend e backend scegli **Nessuna**, **Nuova vuota** (solo con Crea su GitLab) oppure **Esistente**, indicando il percorso GitLab.
+3. **Persone e Teams**: il PM e il TL del progetto e, dove disponibile, il Team in cui creare il canale del progetto. Puoi anche lasciare tutto per dopo.
+4. **Riepilogo**: controlli le scelte, le correggi con **Modifica** e crei il progetto.
+
+Se un passo non riesce, ad esempio GitLab o Teams non rispondono, il progetto viene creato lo stesso e un avviso dice cosa manca.
 
 Nella pagina del progetto, a destra del percorso, compare poi **Area di lavoro**, visibile all'amministratore e al PM. Elenca solo i passi che mancano, ognuno con il link al posto dove si fa: repo, canale Teams (dove disponibile), PM e TL, primo passo del percorso (il Kickoff). Ogni passo si può rifare senza creare doppioni. Quando è tutto pronto sparisce.
 

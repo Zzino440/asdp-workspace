@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ASDP_ROLES, ROLE_LABELS, type AsdpRole } from "@/lib/labels";
 
@@ -91,7 +91,8 @@ export function TeamEditor({
             <Users />
             Gestisci team
           </DialogTrigger>
-          <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+          {/* Niente focus automatico sulla ricerca: aprirebbe subito l'elenco delle persone. */}
+          <DialogContent initialFocus={false} className="flex h-[min(40rem,90vh)] flex-col sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Gestisci team</DialogTitle>
               <DialogDescription>
@@ -164,9 +165,14 @@ function TeamForm({
   const merged = visible.some((m) => m.roles.includes("pm") && m.roles.includes("tl"));
   const inTeam = (id: string) => visible.some((m) => m.user_id === id);
   const fromTeam = (suggested?.people ?? []).filter((p) => !inTeam(p.id));
-  const candidates = people
-    .filter((p) => !inTeam(p.id))
-    .map((p) => ({ value: p.id, label: `${p.name} · ${p.email}` }));
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  // Ogni parola cercata deve comparire in nome, cognome o email, in qualsiasi ordine.
+  const words = query.trim().toLowerCase().split(/\s+/);
+  const matches = people.filter((p) => {
+    const text = `${p.name} ${p.email}`.toLowerCase();
+    return !inTeam(p.id) && words.every((w) => text.includes(w));
+  });
 
   const setRoles = (userId: string, roles: AsdpRole[]) =>
     setMembers((list) => list.map((m) => (m.user_id === userId ? { ...m, roles } : m)));
@@ -174,6 +180,7 @@ function TeamForm({
   function add(userId: string | null) {
     const person = people.find((p) => p.id === userId);
     if (!person) return;
+    setQuery("");
     setMembers((list) =>
       list.some((m) => m.user_id === person.id)
         ? list.map((m) => (m.user_id === person.id ? { ...m, removed: false } : m))
@@ -193,23 +200,64 @@ function TeamForm({
     .map(({ user_id, roles, removed }) => ({ user_id, roles: removed ? [] : roles }));
 
   return (
-    <form action={formAction} className="flex min-h-0 flex-col gap-4">
+    <form action={formAction} className="flex min-h-0 flex-1 flex-col gap-4">
       <input type="hidden" name="team" value={JSON.stringify(payload)} />
 
-      <Select items={candidates} value={null} onValueChange={add}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Aggiungi una persona…" />
-        </SelectTrigger>
-        <SelectContent>
-          {candidates.map((c) => (
-            <SelectItem key={c.value} value={c.value}>
-              {c.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex flex-col gap-1">
+        <Input
+          type="search"
+          placeholder="Cerca una persona per nome o email…"
+          aria-label="Cerca una persona da aggiungere"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && open) {
+              // Esc chiude l'elenco, non il dialog.
+              e.stopPropagation();
+              setOpen(false);
+            }
+            // Invio aggiunge il primo risultato invece di salvare il form.
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (matches[0]) add(matches[0].id);
+            }
+          }}
+        />
+        {open && (
+          <ul className="max-h-48 overflow-y-auto rounded-md border">
+            {matches.length === 0 ? (
+              <li className="px-3 py-2 text-sm text-muted-foreground">Nessuna persona trovata.</li>
+            ) : (
+              matches.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    // mousedown: aggiunge prima che il blur del campo chiuda l'elenco.
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      add(p.id);
+                    }}
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-muted"
+                  >
+                    <Avatar name={p.name} />
+                    <span className="min-w-0 flex-1 truncate">
+                      {p.name} <span className="text-xs text-muted-foreground">{p.email}</span>
+                    </span>
+                    <Plus className="size-4 text-muted-foreground" />
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+      </div>
 
-      <div className="-mx-4 flex min-h-0 flex-col gap-5 overflow-y-auto px-4">
+      <div className="-mx-4 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4">
         {visible.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">
             Nessuno nel team: aggiungi una persona{fromTeam.length > 0 && " o scegli tra i suggeriti"}.

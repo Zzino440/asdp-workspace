@@ -39,6 +39,18 @@
   (`progetti/[id]/reindex-button.tsx`), guide aggiornate. Scheda File: ricerca mentre si digita
   (`progetti/[id]/file-search.tsx`, debounce 300 ms, minimo 2 caratteri, Invio subito, Esc
   svuota). Typecheck, lint, build ok; non provato nel browser.
+- Stesso branch, 2026-11-26 (non committato): **Nuovo progetto a passi** (Progetto → Repository →
+  Persone e Teams → Riepilogo, riepilogo dal vivo a destra da `lg`). Alla creazione si possono
+  scegliere anche descrizione e date, repo FE/BE (nessuna, nuova o esistente), PM/TL e il Team
+  per il canale. Migrazione `20261126211145_project_details.sql` (`description`, `start_date`,
+  `end_date`), applicata in locale con `migration up` (niente reset, per tenere i dati locali);
+  da applicare sul cloud. Descrizione e date si modificano in Impostazioni › Generale. Typecheck,
+  lint e build ok. Provato in locale con admin: evolutiva con BE esistente e PM/TL, salvati
+  correttamente (progetto di prova eliminato). Non provati: "Crea su GitLab" dal wizard (logica
+  invariata, solo fe/be passati in modo nuovo) e il canale Teams (serve un Team di test).
+  pgTAP: 7 test falliscono per i dati locali in più rispetto al seed (PSW e altri), non per la
+  migrazione; da rilanciare dopo un `db reset`. Il guscio dell'app non è responsive (sidebar fissa
+  da 240 px anche su mobile): voce in `TODO.md`.
 
 ## Milestone
 

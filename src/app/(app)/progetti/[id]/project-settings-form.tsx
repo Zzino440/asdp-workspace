@@ -6,6 +6,7 @@ import { updateProject, type FormState } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NATURE_LABELS, PHASES, PROJECT_STATUS_LABELS } from "@/lib/labels";
 
@@ -18,6 +19,9 @@ type Project = {
   current_phase: number;
   framework_version: string;
   gitlab_project_path: string | null;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
 };
 
 const initialState: FormState = { error: null };
@@ -42,6 +46,12 @@ export function ProjectSettingsForm({ project }: { project: Project }) {
       <SelectField name="status" label="Stato" items={statusItems} defaultValue={project.status} />
       <SelectField name="current_phase" label="Fase corrente" items={phaseItems} defaultValue={String(project.current_phase)} />
       <Field id="framework_version" label="Versione framework" defaultValue={project.framework_version} required />
+      <Field id="start_date" label="Inizio previsto" type="date" defaultValue={project.start_date ?? ""} />
+      <Field id="end_date" label="Fine prevista" type="date" defaultValue={project.end_date ?? ""} />
+      <div className="flex flex-col gap-2 sm:col-span-2 xl:col-span-3">
+        <Label htmlFor="description">Descrizione</Label>
+        <Textarea id="description" name="description" rows={3} defaultValue={project.description ?? ""} />
+      </div>
       <div className="flex flex-col gap-2 sm:col-span-2 xl:col-span-3">
         <Label htmlFor="gitlab_project_path">Repo documenti (GitLab)</Label>
         <RepoPathInput id="gitlab_project_path" name="gitlab_project_path" defaultValue={project.gitlab_project_path ?? ""} placeholder="dst/cliente/adsp" />

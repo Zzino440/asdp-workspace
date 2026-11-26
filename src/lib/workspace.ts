@@ -142,7 +142,7 @@ export async function provisionGitLab(
     throw new Error(
       error.status === 403
         ? "Il token GitLab dell'app non può creare gruppi o repo sotto il gruppo padre."
-        : "GitLab non ha completato la preparazione: riprova (i passi già fatti vengono riusati).",
+        : `GitLab non ha completato la preparazione (errore ${error.status}: ${error.body.slice(0, 200)}). Riprova: i passi già fatti vengono riusati.`,
     );
   }
 

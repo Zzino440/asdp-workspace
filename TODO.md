@@ -114,6 +114,14 @@ l'analisi GDPR per l'IT.
 - [ ] **Cloud**: URI di produzione nell'app registration (oggi `REDIRECT_URI` fisso su
   localhost), variabili `MICROSOFT_*` su Vercel, migrazioni sul progetto remoto.
 
+## Interfaccia
+
+- [ ] **Guscio dell'app responsive**: in `src/app/(app)/layout.tsx` la sidebar resta larga 240 px
+  anche sul telefono (a 375 px al contenuto restano circa 100 px). Serve una sidebar a scomparsa
+  (menu) sotto `md` e un padding più piccolo.
+- [ ] Descrizione e date del progetto (migrazione `project_details`) da mostrare
+  nell'intestazione del progetto e da esporre in `get_project` dell'MCP.
+
 ## Distribuzione
 
 - [ ] **App desktop (Electron) — valutata il 2026-11-26: valore basso, non farla ora.**

@@ -10,7 +10,7 @@ export const loadProject = cache(async (id: string) => {
   const { data: project } = await supabase
     .from("projects")
     .select(
-      "id, code, name, client, nature, status, current_phase, framework_version, gitlab_project_path, gitlab_branch, docs_root",
+      "id, code, name, client, nature, status, current_phase, framework_version, gitlab_project_path, gitlab_branch, docs_root, description, start_date, end_date",
     )
     .eq("id", id)
     .maybeSingle();

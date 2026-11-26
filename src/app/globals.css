@@ -106,7 +106,6 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
-    color-scheme: dark;
+    @apply font-sans scheme-dark;
   }
 }
