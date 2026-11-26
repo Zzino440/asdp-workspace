@@ -30,15 +30,16 @@
   utente TL); sulla sandbox il T2.2 è rimasto In corso.
 - `0.8.1` (prova nascosta del collegamento Microsoft, milestone 7) su `master`
   (`929ed36`), 2026-11-26: pushata, tag `0.8.1` fatto.
-- `0.8.1` (prova nascosta del collegamento Microsoft, milestone 7) su `master`
-  (`929ed36`), 2026-11-26: pushata, tag `0.8.1` fatto.
 - `0.9.0` (pagina del progetto: intestazione con fase, Modifica progetto, Passa alla fase
   successiva, Team in elenco + Gestisci, card Repository con link e verifica GitLab) sul branch
   `bugfix/dettaglio-progetto`, 2026-11-26: non committata. Da provare con un utente senza
   ruolo PM e i link quando GitLab torna raggiungibile.
 - `0.10.0` (card "File di progetto" con le cartelle Teams collegate, pagina Collega una cartella
   di Teams, milestone 7a) sul branch `feature/file-progetto` (da `bugfix/dettaglio-progetto`),
-  2026-11-26: non committata.
+  2026-11-26: committata (`096b48a`), branch pushato, tag `0.10.0` su quel commit (non ancora su
+  `master`: il merge in fast-forward lo porta lì; contiene anche i commit di 0.9.0).
+- `0.10.1` (via la pagina `/file-microsoft` e la voce WIP; riga "Microsoft: nome · Scollega"
+  nella card) sullo stesso branch, 2026-11-26: non committata.
 - `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
   `feature/vari-miglioramenti`: tag
   dopo il merge su `master`.
@@ -311,9 +312,9 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
    `Sites.Selected` delegato, concesso sito per sito (un'operazione dell'IT per ogni progetto).
 2. [x] **Provare il collegamento** (funziona, 2026-11-26) in locale: `pnpm dev -p 4100 -H 127.0.0.1` (riavviare se il
    vecchio processo sulla 4100 resta su "Caricamento…"), aprire
-   `http://localhost:4100/file-microsoft`, "Collega account Microsoft" con l'account DST.
-   Atteso: "Collegato come…", elenco dei Team, file dei canali, apertura in Office web; una riga
-   in `microsoft_accounts`. Il segreto del client scade (6 mesi dalla creazione): se il login
+   un progetto con una cartella collegata, "Collega account Microsoft" con l'account DST.
+   Atteso: i file nella card e una riga in `microsoft_accounts` (la pagina `/file-microsoft`
+   usata per la prima prova è stata tolta in `0.10.1`). Il segreto del client scade (6 mesi dalla creazione): se il login
    dà errore sul segreto, crearne uno nuovo in Certificati e segreti.
 2b. [ ] **Analisi GDPR per l'IT** (condizione per altri utenti e cloud). Flussi: metadati dei
    file e token passano dall'app, il contenuto va da SharePoint a Office web; con 7c il
@@ -332,10 +333,31 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
    `Channel.Create`, `TeamMember.Read.All`). La ricerca di SharePoint cerca in tutta la raccolta
    e non dà il percorso: `searchFolder` rilegge i primi 25 risultati e tiene solo quelli nella
    cartella. Verificata in locale con l'account DST (seed `admin@asdp.test`, progetto PFS).
-   Da decidere: la pagina di prova `/file-microsoft` e la voce WIP del menu servono ancora?
+   Pagina di prova `/file-microsoft` e voce WIP tolte in `0.10.1` (duplicavano Collega e
+   mostravano tutti i Team, contro la minimizzazione); l'account si vede e si scollega in fondo
+   alla card. Scollega cancella il token nell'app, non lo revoca su Microsoft (consenso da
+   myapps.microsoft.com o dall'IT): scriverlo così nell'analisi GDPR.
 4. [ ] **7b, in cantiere** (richiesta di Lorenzo): carica (upload session di Graph), nuova
    cartella, rinomina, sposta, elimina (nel cestino di SharePoint), dalla card del progetto.
 5. [ ] **7c**: file SharePoint come input delle skill (MCP: tool che legge un file del progetto).
+   Opzione economica: `get_project` restituisce le cartelle collegate e Claude Desktop le legge
+   col suo connettore M365. Bloccata dall'analisi GDPR (dati dei clienti verso Anthropic).
+5b. [ ] **Altre funzioni Teams lungo il flusso ASDP** (mappa del 2026-11-26, ordine consigliato):
+   - tracciabilità: nel documento i link ai file Teams da cui è nato (verbali, trascrizioni);
+     solo file di Lorenzo, si può fare ora, insieme a 7b;
+   - avviso nel canale del progetto quando un documento va in approvazione o è approvato
+     (`ChannelMessage.Send`, già concesso); lo vedono altri, anche ospiti del cliente: provarlo
+     solo su un Team di test e metterlo nell'analisi GDPR;
+   - D[N] per il cliente pubblicate nel canale, risposte raccolte lì (milestone 5); come sopra;
+   - pubblica approvati nella cartella collegata (milestone 6); come sopra;
+   - evidenza dell'approvazione del PO scelta da SharePoint: un link da solo è debole (il file
+     cambia o sparisce), serve versione fissa del driveItem o copia in Storage; da decidere col
+     team;
+   - creazione del progetto: scegliere Team e canale e proporre il team dai membri del Team
+     (`TeamMember.Read.All`, già concesso);
+   - dashboard "Tocca a me": file modificati di recente nei miei progetti;
+   - più avanti, con nuovi permessi e DPIA: trascrizioni dei meeting come input di P1.3, l'app
+     come scheda nel canale Teams.
 6. [ ] **Cloud**: URI di produzione `https://<app>/api/microsoft/callback` nell'app registration
    (oggi `REDIRECT_URI` è fisso su localhost in `src/lib/microsoft.ts`), variabili
    `MICROSOFT_*` su Vercel, `supabase db push --remote` per la migrazione.

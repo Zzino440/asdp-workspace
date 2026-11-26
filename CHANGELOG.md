@@ -25,6 +25,26 @@
 
 ## Storia
 
+## [0.10.1] 2026-11-26 — Account Microsoft nella card, via la pagina di prova
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **UI**: tolte la pagina di prova `/file-microsoft` e la voce "File Microsoft" (WIP) del menu.
+  I file si vedono ora solo nel progetto, e solo quelli delle cartelle collegate.
+- **UI, progetto**: in fondo alla card File di progetto compare "Microsoft: nome · **Scollega**",
+  anche quando Microsoft dà errore. Scollega cancella il token salvato dall'app; non lo revoca su
+  Microsoft (il consenso si toglie da myapps.microsoft.com o lo toglie l'IT).
+- Il login Microsoft senza pagina di ritorno porta a `/progetti`.
+- PATCH e non MINOR: chiude una prova e completa il collegamento che c'era già.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint, build; nel browser in locale: menu senza voce, `/file-microsoft` 404, riga
+  dell'account nella card, Scollega.
+
 ## [0.10.0] 2026-11-26 — File di progetto da Teams nella pagina del progetto
 
 **Autore**: Lorenzo Belli

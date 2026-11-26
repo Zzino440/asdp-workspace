@@ -49,3 +49,11 @@ export async function unlinkFolder(projectId: string, locationId: string) {
   await supabase.from("project_file_locations").delete().eq("id", locationId).eq("project_id", projectId);
   refresh();
 }
+
+// Scollega l'account Microsoft: l'app cancella il refresh token dell'utente (RLS: solo la propria
+// riga). Non lo revoca su Microsoft; il consenso si toglie da myapps.microsoft.com o lo toglie l'IT.
+export async function disconnectMicrosoft() {
+  const supabase = await createClient();
+  await supabase.from("microsoft_accounts").delete().not("user_id", "is", null);
+  refresh();
+}

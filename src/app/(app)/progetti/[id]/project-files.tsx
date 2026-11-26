@@ -26,7 +26,7 @@ import {
   searchFolder,
 } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
-import { unlinkFolder } from "../file-actions";
+import { disconnectMicrosoft, unlinkFolder } from "../file-actions";
 import { CopyLinkButton } from "./copy-link-button";
 
 export type FilesParams = { file?: string; cartella?: string; cerca?: string; errore?: string };
@@ -110,6 +110,7 @@ export async function ProjectFiles({
     | { kind: "folder"; current: DriveItem; items: DriveItem[] }
     | { kind: "search"; results: { item: DriveItem; folder: string }[] };
   let error: string | null = null;
+  let account: string | null = null;
   try {
     const graph = await graphClient(supabase);
     if (!graph) {
@@ -118,14 +119,23 @@ export async function ProjectFiles({
         connect("Collega account Microsoft"),
       );
     }
+    // Nome dell'account in parallelo ai file: serve alla riga "Microsoft: … · Scollega".
+    const me = graph<{ displayName: string }>("/me?$select=displayName");
     if (query) {
-      data = { kind: "search", results: await searchFolder(graph, location.drive_id, location.item_id, query) };
+      const [results, { displayName }] = await Promise.all([
+        searchFolder(graph, location.drive_id, location.item_id, query),
+        me,
+      ]);
+      data = { kind: "search", results };
+      account = displayName;
     } else {
-      const [current, items] = await Promise.all([
+      const [current, items, { displayName }] = await Promise.all([
         getItem(graph, location.drive_id, location.item_id, folder),
         listChildren(graph, location.drive_id, location.item_id, folder),
+        me,
       ]);
       data = { kind: "folder", current, items };
+      account = displayName;
     }
   } catch (e) {
     if (!(e instanceof MicrosoftError)) throw e;
@@ -295,6 +305,20 @@ export async function ProjectFiles({
           </TableBody>
         </Table>
       )}
+
+      {/* Account Microsoft: visibile anche con un errore, quando serve poterlo scollegare. */}
+      <form action={disconnectMicrosoft} className="flex items-center gap-1 text-xs text-muted-foreground">
+        Microsoft: {account ?? "account collegato"} ·
+        <Button
+          type="submit"
+          variant="link"
+          size="sm"
+          className="h-auto p-0 text-xs text-muted-foreground"
+          title="L'app dimentica il tuo accesso a Microsoft; i file su Teams non cambiano"
+        >
+          Scollega
+        </Button>
+      </form>
     </div>
   );
 }

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Button } from "@/components/ui/button";
 import { listToApprove } from "@/lib/documents";
-import { microsoftEnabled } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
 import { APP_VERSION } from "@/lib/version";
 import { logout } from "../login/actions";
@@ -42,11 +41,7 @@ async function SidebarForUser() {
 
   return (
     <>
-      <AppSidebar
-        isAdmin={profile?.is_admin ?? false}
-        toApprove={toApprove.length}
-        microsoft={microsoftEnabled()}
-      />
+      <AppSidebar isAdmin={profile?.is_admin ?? false} toApprove={toApprove.length} />
       <div className="mt-auto flex flex-col gap-2 px-3 text-sm">
         <span className="truncate font-medium">{profile?.full_name || profile?.email}</span>
         <form action={logout}>

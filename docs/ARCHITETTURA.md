@@ -203,7 +203,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
 | 5 | Modifica con AI, Domande aperte di progetto (anticipabili dopo 2f: risposta alle D[N] con un clic) |
 | 6 | Riservati, Pubblica su SharePoint (Microsoft Graph), login Microsoft Entra, deploy Vercel |
-| 7 | **In corso**, solo in locale per Lorenzo finché l'IT non vede l'analisi GDPR. 7a fatta (0.10.0): card "File di progetto" e pagina di collegamento. File di progetto da Teams/SharePoint (Graph, account Microsoft dell'utente): 7a sfoglia e apri in Office per il web; 7b carica, cartelle, sposta, rinomina; 7c file come input delle skill; la pubblicazione degli approvati (6) scrive nella stessa cartella. Fatta la prova nascosta `/file-microsoft` (0.8.1) |
+| 7 | **In corso**, solo in locale per Lorenzo finché l'IT non vede l'analisi GDPR. 7a fatta (0.10.0): card "File di progetto" e pagina di collegamento. File di progetto da Teams/SharePoint (Graph, account Microsoft dell'utente): 7a sfoglia e apri in Office per il web; 7b carica, cartelle, sposta, rinomina; 7c file come input delle skill; la pubblicazione degli approvati (6) scrive nella stessa cartella. La prova `/file-microsoft` (0.8.1) è stata tolta in 0.10.1 |
 
 ## 8. Punti aperti
 

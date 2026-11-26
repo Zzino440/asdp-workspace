@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CheckSquare, Cloud, FolderKanban, LayoutDashboard, Settings } from "lucide-react";
+import { BookOpen, CheckSquare, FolderKanban, LayoutDashboard, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -12,25 +12,20 @@ const NAV_ITEMS = [
   { href: "/approvazioni", label: "Approvazioni", icon: CheckSquare, adminOnly: false },
   { href: "/guida", label: "Guida", icon: BookOpen, adminOnly: false },
   { href: "/amministrazione", label: "Amministrazione", icon: Settings, adminOnly: true },
-  { href: "/file-microsoft", label: "File Microsoft", icon: Cloud, adminOnly: false },
 ];
 
 export function AppSidebar({
   isAdmin,
   toApprove,
-  microsoft,
 }: {
   isAdmin: boolean;
   toApprove: number;
-  microsoft: boolean;
 }) {
   const pathname = usePathname();
 
   return (
     <nav className="flex flex-col gap-1">
-      {NAV_ITEMS.filter(
-        (item) => (isAdmin || !item.adminOnly) && (microsoft || item.href !== "/file-microsoft"),
-      ).map(({ href, label, icon: Icon }) => (
+      {NAV_ITEMS.filter((item) => isAdmin || !item.adminOnly).map(({ href, label, icon: Icon }) => (
         <Link
           key={href}
           href={href}
@@ -44,11 +39,6 @@ export function AppSidebar({
           {href === "/approvazioni" && toApprove > 0 && (
             <Badge className="ml-auto" aria-label={`${toApprove} da approvare`}>
               {toApprove}
-            </Badge>
-          )}
-          {href === "/file-microsoft" && (
-            <Badge variant="outline" className="ml-auto">
-              WIP
             </Badge>
           )}
         </Link>
