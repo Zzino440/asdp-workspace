@@ -30,6 +30,8 @@
   utente TL); sulla sandbox il T2.2 è rimasto In corso.
 - `0.8.1` (prova nascosta del collegamento Microsoft, milestone 7) su `master`
   (`929ed36`), 2026-11-26: pushata, tag `0.8.1` fatto.
+- `0.8.1` (prova nascosta del collegamento Microsoft, milestone 7) su `master`
+  (`929ed36`), 2026-11-26: pushata, tag `0.8.1` fatto.
 - `0.9.0` (pagina del progetto: intestazione con fase, Modifica progetto, Passa alla fase
   successiva, Team in elenco + Gestisci, card Repository con link e verifica GitLab) sul branch
   `bugfix/dettaglio-progetto`, 2026-11-26: non committata. Da provare con un utente senza
