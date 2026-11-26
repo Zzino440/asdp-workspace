@@ -39,7 +39,9 @@
   2026-11-26: committata (`096b48a`), branch pushato, tag `0.10.0` su quel commit (non ancora su
   `master`: il merge in fast-forward lo porta lì; contiene anche i commit di 0.9.0).
 - `0.10.1` (via la pagina `/file-microsoft` e la voce WIP; riga "Microsoft: nome · Scollega"
-  nella card) sullo stesso branch, 2026-11-26: non committata.
+  nella card) sullo stesso branch, 2026-11-26: committata (`32f810c`), non pushata.
+- `0.11.0` (7b: carica, nuova cartella, rinomina, sposta, elimina nella card) sullo stesso
+  branch, 2026-11-26: non committata.
 - `0.2.0` (mappa del progetto e documento in vista unica) e `0.3.0` (Guida) su
   `feature/vari-miglioramenti`: tag
   dopo il merge su `master`.
@@ -337,8 +339,14 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
    mostravano tutti i Team, contro la minimizzazione); l'account si vede e si scollega in fondo
    alla card. Scollega cancella il token nell'app, non lo revoca su Microsoft (consenso da
    myapps.microsoft.com o dall'IT): scriverlo così nell'analisi GDPR.
-4. [ ] **7b, in cantiere** (richiesta di Lorenzo): carica (upload session di Graph), nuova
-   cartella, rinomina, sposta, elimina (nel cestino di SharePoint), dalla card del progetto.
+4. [x] **7b** (`0.11.0`, 2026-11-26): carica (sessione di Graph, il browser manda i byte
+   direttamente a SharePoint; nome già presente → copia rinominata), nuova cartella, rinomina,
+   sposta (dialogo che naviga le sottocartelle), elimina (cestino del sito). Componenti in
+   `progetti/[id]/file-manager.tsx`, azioni in `progetti/file-actions.ts` (ogni elemento
+   controllato con `itemInFolder`: niente fuori dalla cartella collegata), Graph in
+   `src/lib/microsoft.ts`. Permessi: li decide SharePoint. Provati nel browser solo i dialoghi;
+   le scritture vanno provate su una cartella di test (la cartella collegata a PFS in locale è
+   un Team reale con colleghi). Da valutare: sostituire un file con una nuova versione.
 5. [ ] **7c**: file SharePoint come input delle skill (MCP: tool che legge un file del progetto).
    Opzione economica: `get_project` restituisce le cartelle collegate e Claude Desktop le legge
    col suo connettore M365. Bloccata dall'analisi GDPR (dati dei clienti verso Anthropic).

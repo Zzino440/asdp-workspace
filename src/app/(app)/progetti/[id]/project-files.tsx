@@ -28,6 +28,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { disconnectMicrosoft, unlinkFolder } from "../file-actions";
 import { CopyLinkButton } from "./copy-link-button";
+import { FolderToolbar, ItemActions } from "./file-manager";
 
 export type FilesParams = { file?: string; cartella?: string; cerca?: string; errore?: string };
 
@@ -221,6 +222,10 @@ export async function ProjectFiles({
         </a>
       </div>
 
+      {!error && data.kind === "folder" && (
+        <FolderToolbar projectId={projectId} locationId={location.id} folder={folder} />
+      )}
+
       {error ? (
         message(error)
       ) : (
@@ -232,7 +237,7 @@ export async function ProjectFiles({
               <TableHead>Modificato da</TableHead>
               <TableHead>Modificato</TableHead>
               <TableHead className="text-right">Dimensione</TableHead>
-              <TableHead className="w-20" />
+              <TableHead className="w-28" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -280,8 +285,9 @@ export async function ProjectFiles({
                     {item.folder ? `${item.folder.childCount} elementi` : formatSize(item.size)}
                   </TableCell>
                   <TableCell>
-                    <div className={cn("flex justify-end gap-0.5", item.folder && "invisible")}>
-                      <a
+                    <div className="flex justify-end gap-0.5">
+                      <div className={cn("flex gap-0.5", item.folder && "invisible")}>
+                        <a
                         href={`/api/microsoft/download?drive=${location.drive_id}&item=${item.id}`}
                         className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
                         aria-label="Scarica"
@@ -289,7 +295,13 @@ export async function ProjectFiles({
                       >
                         <Download />
                       </a>
-                      <CopyLinkButton url={item.webUrl} />
+                        <CopyLinkButton url={item.webUrl} />
+                      </div>
+                      <ItemActions
+                        projectId={projectId}
+                        locationId={location.id}
+                        item={{ id: item.id, name: item.name, folder: Boolean(item.folder) }}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

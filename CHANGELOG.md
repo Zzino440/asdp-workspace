@@ -25,6 +25,26 @@
 
 ## Storia
 
+## [0.11.0] 2026-11-26 — Gestione dei file di progetto (7b)
+
+**Autore**: Lorenzo Belli
+
+### Cosa è cambiato
+- **UI, progetto**: nella card File di progetto **Carica** (più file insieme, con avanzamento) e
+  **Nuova cartella**; su ogni file e cartella il menu "…" con **Rinomina**, **Sposta** (scelta
+  della cartella di destinazione navigando) ed **Elimina** (nel cestino del sito SharePoint).
+- **Microsoft Graph**: si agisce come l'utente, quindi SharePoint decide chi può scrivere; l'app
+  limita il dove: solo dentro la cartella collegata al progetto (ogni elemento è riletto e
+  controllato). Il caricamento usa una sessione di Graph: i byte vanno dal browser direttamente
+  a SharePoint, senza passare dall'app. Con un nome già presente SharePoint crea una copia
+  rinominata, non sovrascrive.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint, build; nel browser in locale: barra e dialoghi nella card.
+
 ## [0.10.1] 2026-11-26 — Account Microsoft nella card, via la pagina di prova
 
 **Autore**: Lorenzo Belli

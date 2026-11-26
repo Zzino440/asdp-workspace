@@ -107,11 +107,12 @@ export async function graphClient(supabase: SupabaseClient) {
   return async <T>(path: string, init?: RequestInit) => {
     const response = await fetch(`https://graph.microsoft.com/v1.0${path}`, {
       ...init,
-      headers: { Authorization: `Bearer ${access}` },
+      headers: { ...(init?.headers as Record<string, string>), Authorization: `Bearer ${access}` },
       cache: "no-store",
     });
     if (init?.redirect === "manual") return response as T;
     if (!response.ok) throw new MicrosoftError(response.status, `Graph ${response.status} su ${path}`);
+    if (response.status === 204) return undefined as T;
     return (await response.json()) as T;
   };
 }
@@ -193,4 +194,49 @@ export async function downloadUrl(graph: Graph, driveId: string, itemId: string)
   const response = await graph<Response>(`/drives/${driveId}/items/${itemId}/content`, { redirect: "manual" });
   if (response.status !== 302) throw new MicrosoftError(response.status, `Graph ${response.status} sul download`);
   return response.headers.get("location")!;
+}
+
+// --- Gestione (7b): sempre dentro la cartella collegata al progetto ---
+
+const json = (method: string, body: unknown): RequestInit => ({
+  method,
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
+// Elemento dentro la cartella collegata (sottocartelle comprese, esclusa la cartella stessa);
+// altrimenti 404, come se non esistesse: dal progetto non si tocca niente fuori dalla cartella.
+export async function itemInFolder(graph: Graph, driveId: string, rootId: string, itemId: string) {
+  const [root, item] = await Promise.all([getItem(graph, driveId, rootId), getItem(graph, driveId, itemId)]);
+  const rootPath = pathOf(root);
+  const inside = item.parentReference.path === rootPath || item.parentReference.path?.startsWith(`${rootPath}/`);
+  if (!inside) throw new MicrosoftError(404, "Elemento fuori dalla cartella del progetto");
+  return item;
+}
+
+export const createFolder = (graph: Graph, driveId: string, parentId: string, name: string) =>
+  graph<DriveItem>(
+    `/drives/${driveId}/items/${parentId}/children`,
+    json("POST", { name, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }),
+  );
+
+export const renameItem = (graph: Graph, driveId: string, itemId: string, name: string) =>
+  graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, json("PATCH", { name }));
+
+export const moveItem = (graph: Graph, driveId: string, itemId: string, parentId: string) =>
+  graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, json("PATCH", { parentReference: { id: parentId } }));
+
+// Nel cestino del sito SharePoint: si recupera da lì.
+export const deleteItem = (graph: Graph, driveId: string, itemId: string) =>
+  graph<void>(`/drives/${driveId}/items/${itemId}`, { method: "DELETE" });
+
+// Sessione di caricamento: il browser manda i byte direttamente a SharePoint (uploadUrl già
+// autorizzato, senza token), quindi il file non passa dall'app. Con un nome già presente
+// SharePoint ne crea uno nuovo ("nome 1.docx") invece di sovrascrivere.
+export async function createUploadSession(graph: Graph, driveId: string, parentId: string, fileName: string) {
+  const { uploadUrl } = await graph<{ uploadUrl: string }>(
+    `/drives/${driveId}/items/${parentId}:/${encodeURIComponent(fileName)}:/createUploadSession`,
+    json("POST", { item: { "@microsoft.graph.conflictBehavior": "rename" } }),
+  );
+  return uploadUrl;
 }

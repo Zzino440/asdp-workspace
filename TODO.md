@@ -79,3 +79,52 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
     con `approve` solo per chi ha "approve" e dopo conferma esplicita dell'utente in chat;
   - nella finestra Approva: esito di Claude accanto a ogni voce della checklist, da spuntare a mano;
   - approvazione del cliente (T1.4) con upload dell'evidenza in Storage invece del testo libero.
+
+## File di progetto da Teams (milestone 7)
+
+Mappa del 2026-11-26 (dettagli in `docs/STATO.md`, "File di progetto da Teams/SharePoint"). Oggi
+l'integrazione vale solo per Lorenzo in locale: quello che tocca altre persone o l'AI aspetta
+l'analisi GDPR per l'IT.
+
+- [ ] **Sostituisci con una nuova versione**: oggi un caricamento con lo stesso nome crea una
+  copia rinominata; valutare un'azione che sovrascrive (SharePoint tiene le versioni).
+- [ ] **Tracciabilità**: nel documento ASDP (P1.3, T1.4) i link ai file Teams da cui è nato
+  (verbali, trascrizioni). Solo file di Lorenzo: si può fare subito.
+- [ ] **Analisi GDPR per l'IT** (condizione per altri utenti e cloud): flussi, trasferimenti extra
+  UE (Vercel `iad1` → `fra1`, Anthropic), contratti dei clienti, refresh token (cifrarlo a
+  riposo; Scollega lo cancella nell'app ma non lo revoca su Microsoft), minimizzazione, registro
+  dei trattamenti, informativa, DPIA per l'AI. Deve includere le voci qui sotto.
+- [ ] **Avviso nel canale Teams** quando un documento va in approvazione o è approvato
+  (`ChannelMessage.Send`, già concesso). Lo vedono altri, anche ospiti del cliente: prima un
+  Team di test, poi solo dopo l'analisi GDPR.
+- [ ] **Domande aperte D[N] nel canale** (milestone 5): pubblicarle per il cliente e raccogliere
+  lì le risposte. Come sopra.
+- [ ] **Pubblica approvati** nella cartella collegata (milestone 6), copia DOCX/PDF con la versione
+  nel nome. Come sopra.
+- [ ] **Evidenza dell'approvazione del PO scelta da SharePoint**: un link da solo è debole (il file
+  cambia o sparisce); serve una versione fissa del file o una copia in Storage. Da decidere col
+  team.
+- [ ] **7c, file come input delle skill**: opzione economica `get_project` che restituisce le
+  cartelle collegate (Claude Desktop le legge col connettore M365); opzione completa tool MCP
+  `list_project_files` / `read_project_file`. Bloccata dalla DPIA (dati dei clienti verso
+  Anthropic).
+- [ ] **Creazione del progetto da Teams**: scegliere Team e canale e proporre il team dai membri
+  del Team (`TeamMember.Read.All`, già concesso).
+- [ ] **Dashboard «Tocca a me»**: file modificati di recente nei miei progetti.
+- [ ] **Più avanti** (nuovi permessi e DPIA): trascrizioni dei meeting Teams come input di P1.3;
+  l'app come scheda nel canale Teams del progetto.
+- [ ] **Cloud**: URI di produzione nell'app registration (oggi `REDIRECT_URI` fisso su
+  localhost), variabili `MICROSOFT_*` su Vercel, migrazioni sul progetto remoto.
+
+## Distribuzione
+
+- [ ] **App desktop (Electron) — valutata il 2026-11-26: valore basso, non farla ora.**
+  L'accesso continuo al file system è già coperto da altri canali: Claude Desktop/Code lavorano
+  sui file locali e salvano via MCP; le modifiche locali ai documenti passano da clone → push →
+  webhook; i file non ASDP stanno su SharePoint/Teams (milestone 7). Una cartella locale
+  osservata dall'app creerebbe una terza copia dei documenti, con conflitti e un canale che
+  aggira le approvazioni.
+  - Se il team chiede solo un'app installabile o notifiche: **PWA** (manifest, icone, push).
+  - Ripensare a un guscio Electron sottile (progetto separato che carica l'URL dell'app, mai
+    Next.js impacchettato: segreti e MCP restano sul server) solo se emerge un caso concreto
+    che richiede programmi locali (es. aprire file in VS Code, lanciare `git` sul PC).
