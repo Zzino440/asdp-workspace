@@ -51,6 +51,12 @@
   pgTAP: 7 test falliscono per i dati locali in più rispetto al seed (PSW e altri), non per la
   migrazione; da rilanciare dopo un `db reset`. Il guscio dell'app non è responsive (sidebar fissa
   da 240 px anche su mobile): voce in `TODO.md`.
+- Branch `feature/miglioramenti-ui-ux`, 2026-11-26 (non committato): intestazione del progetto e
+  schede sticky (`progetti/[id]/sticky-header.tsx`, altezza in `--project-header-h`; la colonna
+  destra da `xl` si ancora sotto). Typecheck e lint ok, provato nel browser sulla 4100.
+  Scheda File: tabella con altezza massima pari allo spazio sotto l'intestazione (minimo 16rem),
+  scorre al suo interno con intestazione delle colonne fissa (`project-files.tsx`). CSS verificato
+  nel browser; non provata con file reali (utente del browser senza account Microsoft).
 
 ## Milestone
 

@@ -60,7 +60,7 @@ async function Percorso({
         </Suspense>
       </div>
 
-      <aside className="grid gap-6 sm:grid-cols-3 xl:sticky xl:top-8 xl:flex xl:flex-col">
+      <aside className="grid gap-6 sm:grid-cols-3 xl:sticky xl:top-[calc(var(--project-header-h)+1.5rem)] xl:flex xl:flex-col">
         {setup && (
           <WorkspaceSetup
             projectId={id}

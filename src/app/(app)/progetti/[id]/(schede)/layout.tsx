@@ -7,6 +7,7 @@ import { loadProjectSteps } from "../document-list";
 import { loadProject } from "../project-data";
 import { ProjectTabs } from "../project-tabs";
 import { ReindexButton } from "../reindex-button";
+import { StickyHeader } from "../sticky-header";
 
 // Intestazione compatta del progetto e schede Percorso · File · Impostazioni; le pagine
 // documento stanno fuori da questo gruppo e hanno la loro intestazione.
@@ -26,7 +27,7 @@ async function Header({ params }: { params: Promise<{ id: string }> }) {
   const { project, canManage } = await loadProject(id);
 
   return (
-    <div className="flex flex-col gap-4">
+    <StickyHeader>
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-3">
@@ -56,7 +57,7 @@ async function Header({ params }: { params: Promise<{ id: string }> }) {
       <Suspense fallback={null}>
         <ProjectTabs projectId={project.id} files={microsoftEnabled()} settings={canManage} />
       </Suspense>
-    </div>
+    </StickyHeader>
   );
 }
 

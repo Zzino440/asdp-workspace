@@ -209,8 +209,10 @@ export async function ProjectFiles({
       {error ? (
         message(error)
       ) : (
+        // Altezza massima pari allo spazio sotto l'intestazione: la tabella scorre al suo interno.
+        <div className="[&>[data-slot=table-container]]:max-h-[max(16rem,calc(100dvh-var(--project-header-h)-18rem))] [&>[data-slot=table-container]]:overflow-y-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-background shadow-[inset_0_-1px_0_var(--border)]">
             <TableRow>
               <TableHead>Nome</TableHead>
               {data.kind === "search" && <TableHead>Cartella</TableHead>}
@@ -296,6 +298,7 @@ export async function ProjectFiles({
             )}
           </TableBody>
         </Table>
+        </div>
       )}
 
       {/* Account Microsoft: visibile anche con un errore, quando serve poterlo scollegare. */}
