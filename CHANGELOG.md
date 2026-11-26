@@ -67,6 +67,18 @@
   connettore; se il browser non permette gli appunti il prompt si apre per copiarlo a mano).
   L'avviso dei documenti arretrati apre la prima fase da finire; `/` porta sulla ricerca;
   Reindicizza è nel menu ⋯ accanto al nome del progetto.
+- **MCP, file Teams del progetto** (solo con `MICROSOFT_CLIENT_ID`, oggi solo in locale): nuovi tool
+  `list_project_files`, `search_project_files`, `read_project_file` (testo; PDF e Office estratti
+  come testo), `create_project_folder`, `upload_project_file` (solo file di testo, non
+  sovrascrive), `move_project_file` (anche rinomina), `copy_project_file`, `delete_project_file`
+  (cestino SharePoint). Agiscono con l'account Microsoft collegato dall'utente nell'app e solo
+  dentro le cartelle collegate al progetto (percorsi relativi, `..` rifiutato). `get_project.setup`
+  restituisce anche `teams_folders` (etichetta, link, sottocartelle base); le istruzioni del server
+  dicono dove cercare gli input del cliente e di spostare o eliminare solo su richiesta esplicita.
+  Servizio in `src/lib/project-files.ts`; nuova dipendenza `unpdf`.
+- **Prompt con le cartelle Teams**: con una cartella Teams collegata, "Copia prompt" di Kickoff
+  Pack, Verbale Kickoff e Requisiti Consolidati indica a Claude le cartelle da leggere (Input
+  cliente; Verbali e trascrizioni; entrambe).
 - **Suggerimenti delle repo**: nei campi del percorso GitLab (Nuovo progetto, Impostazioni ›
   Generale, aggiunta di una repo di codice) mentre scrivi compaiono le repo che l'app vede
   (ricerca di GitLab). Resta possibile scrivere il percorso a mano.

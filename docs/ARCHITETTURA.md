@@ -134,7 +134,10 @@ permessi, stessi commit.
    OAuth → JWT Supabase → RLS e `document_level()`. Tool: `list_projects`, `get_project` (team,
    repo, e per ogni tipo di documento livello dell'utente e documenti presenti), `list_documents`,
    `read_document` (testo esatto in `content`), `list_versions`, `update_document`,
-   `create_document` (tipo ricavato come nell'indice, serve "edit"); con le milestone successive domande aperte, invio in approvazione, avvio
+   `create_document` (tipo ricavato come nell'indice, serve "edit"); con `MICROSOFT_CLIENT_ID`
+   anche i tool dei file Teams del progetto (`*_project_file(s)`, `create_project_folder`,
+   servizio `src/lib/project-files.ts`), con l'account Microsoft dell'utente e solo dentro le
+   cartelle in `project_file_locations`; con le milestone successive domande aperte, invio in approvazione, avvio
    skill. Le regole minime (leggere prima di salvare, modifiche minime, stati, campi di
    approvazione) arrivano al client come istruzioni del server; le regole dettagliate e i template
    restano nel plugin `asdp`, senza copie nell'app. Ogni scrittura è un commit

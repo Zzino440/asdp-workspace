@@ -31,7 +31,7 @@ Se hai il plugin `asdp-project`, puoi chiedere direttamente "cosa faccio adesso?
 
 ## 3. Chiedi a Claude
 
-Dalla mappa del progetto, **Copia prompt per Claude** (nel Prossimo passo o accanto a un documento da creare) ti dà la richiesta già pronta da incollare. Se preferisci scriverla tu, usa il linguaggio naturale: nomina il progetto, la skill o il documento, e gli input. Alcuni esempi:
+Dalla mappa del progetto, **Copia prompt per Claude** (nel Prossimo passo o accanto a un documento da creare) ti dà la richiesta già pronta da incollare. Per Kickoff e Requisiti Consolidati, se il progetto ha una cartella Teams, la richiesta dice anche in quali cartelle (Input cliente, Verbali e trascrizioni) Claude trova i file del cliente. Se preferisci scriverla tu, usa il linguaggio naturale: nomina il progetto, la skill o il documento, e gli input. Alcuni esempi:
 
 > Usa p1-3-requirements-consolidation sulla trascrizione allegata. Progetto ABC, greenfield.
 

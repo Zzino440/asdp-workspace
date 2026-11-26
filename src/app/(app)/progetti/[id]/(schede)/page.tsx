@@ -52,7 +52,11 @@ async function Percorso({
           </Alert>
         )}
         <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
-          <DocumentList projectId={project.id} project={project} currentPhase={project.current_phase} />
+          <DocumentList
+            projectId={project.id}
+            project={{ ...project, teams: Boolean(folders?.length) }}
+            currentPhase={project.current_phase}
+          />
         </Suspense>
       </div>
 

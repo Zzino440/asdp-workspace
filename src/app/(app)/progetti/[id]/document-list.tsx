@@ -71,7 +71,7 @@ export async function DocumentList({
   currentPhase,
 }: {
   projectId: string;
-  project: { code: string; nature: string };
+  project: { code: string; nature: string; teams: boolean };
   currentPhase: number;
 }) {
   const { mapTypes, otherFiles, features, open } = await loadProjectSteps(projectId);
@@ -83,7 +83,7 @@ export async function DocumentList({
 
   return (
     <ProjectMap
-      project={{ code: project.code, nature: project.nature }}
+      project={{ code: project.code, nature: project.nature, teams: project.teams }}
       currentPhase={currentPhase}
       types={mapTypes}
       features={features}

@@ -38,7 +38,7 @@ export type NextStep = {
   feature: string | null;
   doc: MapDoc | null;
 };
-type ProjectInfo = { code: string; nature: string };
+type ProjectInfo = { code: string; nature: string; teams: boolean };
 
 const isDone = (d: MapDoc) => d.state === "Completo" || d.state === "Approvato";
 
@@ -240,6 +240,7 @@ export function ProjectMap({
 function NextStepCard({ project, next }: { project: ProjectInfo; next: NextStep }) {
   const where = `Fase ${next.phase} · ${PHASES[next.phase].name}${next.feature ? ` · Feature ${next.feature}` : ""}`;
   const prompt = stepPrompt(project, {
+    code: next.code,
     name: next.name,
     skill: next.skill,
     feature: next.feature,
@@ -348,7 +349,7 @@ function TypeItems({
         <CopyPromptButton
           variant="ghost"
           label="Copia prompt"
-          prompt={stepPrompt(project, { name: type.name, skill: type.skill, feature, docPath: null })}
+          prompt={stepPrompt(project, { code: type.code, name: type.name, skill: type.skill, feature, docPath: null })}
         />
       </li>
     );

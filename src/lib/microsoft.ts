@@ -112,7 +112,8 @@ export async function graphClient(supabase: SupabaseClient) {
     });
     if (init?.redirect === "manual") return response as T;
     if (!response.ok) throw new MicrosoftError(response.status, `Graph ${response.status} su ${path}`);
-    if (response.status === 204) return undefined as T;
+    // 202: operazione asincrona accettata (copia), senza corpo.
+    if (response.status === 204 || response.status === 202) return undefined as T;
     return (await response.json()) as T;
   };
 }
@@ -211,9 +212,11 @@ export async function searchFolder(graph: Graph, driveId: string, itemId: string
     .map((item) => ({ item, folder: item.parentReference.path!.slice(rootPath.length + 1) }));
 }
 
-// URL di download temporaneo (Graph risponde 302 verso l'URL firmato).
-export async function downloadUrl(graph: Graph, driveId: string, itemId: string) {
-  const response = await graph<Response>(`/drives/${driveId}/items/${itemId}/content`, { redirect: "manual" });
+// URL di download temporaneo (Graph risponde 302 verso l'URL firmato). format "pdf": il file
+// Office convertito in PDF da SharePoint.
+export async function downloadUrl(graph: Graph, driveId: string, itemId: string, format?: "pdf") {
+  const query = format ? `?format=${format}` : "";
+  const response = await graph<Response>(`/drives/${driveId}/items/${itemId}/content${query}`, { redirect: "manual" });
   if (response.status !== 302) throw new MicrosoftError(response.status, `Graph ${response.status} sul download`);
   return response.headers.get("location")!;
 }
@@ -245,8 +248,19 @@ export const createFolder = (graph: Graph, driveId: string, parentId: string, na
 export const renameItem = (graph: Graph, driveId: string, itemId: string, name: string) =>
   graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, json("PATCH", { name }));
 
-export const moveItem = (graph: Graph, driveId: string, itemId: string, parentId: string) =>
-  graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, json("PATCH", { parentReference: { id: parentId } }));
+export const moveItem = (graph: Graph, driveId: string, itemId: string, parentId: string, name?: string) =>
+  graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, json("PATCH", { parentReference: { id: parentId }, name }));
+
+// Copia asincrona: SharePoint la accetta (202) e la completa da solo; un nome già presente la fa fallire.
+export const copyItem = (graph: Graph, driveId: string, itemId: string, parentId: string) =>
+  graph<void>(`/drives/${driveId}/items/${itemId}/copy`, json("POST", { parentReference: { driveId, id: parentId } }));
+
+// File di testo piccolo (fino a 4 MB) in una richiesta sola; se il nome esiste già fallisce (409).
+export const uploadSmallFile = (graph: Graph, driveId: string, parentId: string, fileName: string, content: string) =>
+  graph<DriveItem>(
+    `/drives/${driveId}/items/${parentId}:/${encodeURIComponent(fileName)}:/content?@microsoft.graph.conflictBehavior=fail`,
+    { method: "PUT", headers: { "Content-Type": "text/plain; charset=utf-8" }, body: content },
+  );
 
 // Nel cestino del sito SharePoint: si recupera da lì.
 export const deleteItem = (graph: Graph, driveId: string, itemId: string) =>

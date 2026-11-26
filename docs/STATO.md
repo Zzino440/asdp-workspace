@@ -41,7 +41,7 @@
 |---|---|
 | 0, 1, 2a, 2b, 2c | Fatte |
 | 2d — server MCP | Quasi fatta: login OAuth, tool `list_projects`, `get_project`, `list_documents`, `read_document`, `list_versions`, `update_document`, `create_document` (2026-11-25). Plugin `asdp` 0.15.0 con `.mcp.json` e skill che salvano dall'MCP sul branch `feature/asdp-mcp` (committato, non pushato). Manca la verifica da Cowork e chat di Claude Desktop sul cloud |
-| 7 — file Teams/SharePoint | Sbloccata solo per Lorenzo in locale (consenso IT del 2026-11-26); per altri utenti o cloud serve prima l'analisi GDPR. 7a fatta in `0.10.0`. Come riprendere: sezione "File di progetto da Teams/SharePoint" |
+| 7 — file Teams/SharePoint | Sbloccata solo per Lorenzo in locale (consenso IT del 2026-11-26); per altri utenti o cloud serve prima l'analisi GDPR. 7a fatta in `0.10.0`; 7c (tool MCP dei file) in `0.12.0`, da provare su una cartella di test. Come riprendere: sezione "File di progetto da Teams/SharePoint" |
 | 3 — gate e approvazioni | In corso: flusso manuale (0.6.0) e coda `/approvazioni` (0.7.0) fatti. Prossimi: approvazione assistita da AI/MCP, evidenza del cliente in Storage (vedi `TODO.md`) |
 
 ## In corso: deploy di prova su cloud
@@ -336,9 +336,18 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
    `src/lib/microsoft.ts`. Permessi: li decide SharePoint. Provati nel browser solo i dialoghi;
    le scritture vanno provate su una cartella di test (la cartella collegata a PFS in locale è
    un Team reale con colleghi). Da valutare: sostituire un file con una nuova versione.
-5. [ ] **7c**: file SharePoint come input delle skill (MCP: tool che legge un file del progetto).
-   Opzione economica: `get_project` restituisce le cartelle collegate e Claude Desktop le legge
-   col suo connettore M365. Bloccata dall'analisi GDPR (dati dei clienti verso Anthropic).
+5. [~] **7c**: file Teams come input delle skill, **solo dal connettore ASDP** (decisione di
+   Lorenzo del 2026-11-26: non si conta sul connettore M365 di Claude, gli utenti potrebbero non
+   averlo). Fatto in `0.12.0`, non committato, solo per Lorenzo in locale (registrato solo con
+   `MICROSOFT_CLIENT_ID`): tool MCP `list/search/read_project_file(s)`, `create_project_folder`,
+   `upload_project_file`, `move/copy/delete_project_file` sopra `src/lib/project-files.ts`
+   (account Microsoft dell'utente da `microsoft_accounts`, solo cartelle collegate, `..` rifiutato;
+   PDF e Office letti come testo con `unpdf`, gli Office convertiti in PDF da SharePoint);
+   `get_project.setup.teams_folders`; "Copia prompt" di T0.1a, T0.1, P1.3 indica le cartelle
+   (`TEAMS_INPUTS` in `src/lib/prompts.ts`). Typecheck, lint e build ok; **non ancora provato**:
+   serve una cartella di test (Team di test con file finti .docx, .pdf, .vtt) collegata a un
+   progetto di prova, MCP locale. Mai sulla cartella reale di PFS. Resta nell'analisi GDPR (DPIA:
+   il contenuto dei file va ad Anthropic) prima di aprirlo ad altri o al cloud.
 5b. [ ] **Altre funzioni Teams lungo il flusso ASDP** (mappa del 2026-11-26, ordine consigliato):
    - tracciabilità: nel documento i link ai file Teams da cui è nato (verbali, trascrizioni);
      solo file di Lorenzo, si può fare ora, insieme a 7b;
