@@ -423,7 +423,8 @@ function registerFileTools(server: McpServer, clientFor: ClientFor) {
         "usare con edit_powerpoint_file. Excel (.xlsx): fogli e tabelle, poi celle per riga con numero di riga e " +
         "colonne (formule mostrate come =…), da usare con edit_excel_file; sheet e range limitano la lettura. " +
         "txt, md, vtt, srt, csv, json così come sono; PDF e altri Office (doc, ppt, xls…) come testo estratto. " +
-        "Massimo 10 MB (Excel escluso); oltre il limite il testo è troncato e truncated è true.",
+        "Word e PowerPoint fino a 50 MB, gli altri formati (Excel escluso) fino a 10 MB; il testo lungo è troncato " +
+        "e truncated è true.",
       inputSchema: z.object({
         project: projectArg,
         location: locationArg,
@@ -645,7 +646,9 @@ function registerFileTools(server: McpServer, clientFor: ClientFor) {
         "Modifica un .xlsx della cartella Teams del progetto direttamente in Excel (formattazione e grafici restano, " +
         "chi lo ha aperto vede le modifiche). Prima read_project_file per fogli, tabelle e celle. set_range scrive " +
         'values o formulas (matrice delle stesse dimensioni di address, es. "B2:D4"); clear_range svuota i valori; ' +
-        "append_table_rows aggiunge righe a una tabella di Excel; add_sheet, rename_sheet, delete_sheet per i fogli.",
+        "append_table_rows aggiunge righe a una tabella di Excel; add_sheet, rename_sheet, delete_sheet per i fogli. " +
+        "Le operazioni si applicano una alla volta: se una fallisce le precedenti restano fatte, quindi rileggi il " +
+        "file prima di riprovare (non ripetere righe o fogli già aggiunti).",
       inputSchema: z.object({
         project: projectArg,
         location: locationArg,
@@ -700,7 +703,9 @@ const FILE_ERRORS: Record<FilesErrorCode, string> = {
     "punto finale.",
   unreadable:
     "Formato non supportato: si leggono testo, PDF, Word, PowerPoint ed Excel; si caricano solo file di testo (Word, Excel e PowerPoint si creano con create_office_file).",
-  too_large: "File troppo grande (lettura e modifica fino a 10 MB, caricamento e creazione fino a 4 MB).",
+  too_large:
+    "File troppo grande (Word e PowerPoint fino a 50 MB, altri formati in lettura fino a 10 MB, creazione e " +
+    "caricamento di testo fino a 4 MB).",
   conflict: "Il file è cambiato dopo l'ultima lettura: rileggilo con read_project_file e riapplica le modifiche.",
   invalid_op: "Operazione non valida:",
   unavailable: "Microsoft non risponde: riprova tra poco.",

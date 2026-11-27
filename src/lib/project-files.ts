@@ -57,6 +57,8 @@ export class FilesError extends Error {
 }
 
 const MAX_READ_BYTES = 10 * 1024 * 1024;
+// docx e pptx si aprono in memoria senza conversione: le presentazioni con immagini sono grandi.
+const MAX_OFFICE_BYTES = 50 * 1024 * 1024;
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_CHARS = 150_000;
 const TEXT = ["txt", "md", "vtt", "srt", "csv", "tsv", "json", "xml", "html", "log"];
@@ -159,7 +161,7 @@ export async function projectFiles(supabase: SupabaseClient, projectId: string, 
   const rewrite = async <R extends object>(path: string, kind: "docx" | "pptx", etag: string, change: (pkg: Parts) => R) => {
     const file = await officeFile(path, kind);
     if (file.eTag !== etag) throw new FilesError("conflict");
-    if ((file.size ?? 0) > MAX_READ_BYTES) throw new FilesError("too_large");
+    if ((file.size ?? 0) > MAX_OFFICE_BYTES) throw new FilesError("too_large");
     const pkg = openPackage(await bytesOf(file));
     const result = change(pkg);
     const saved = await replaceContent(graph, drive, file.id, savePackage(pkg), MIME[kind], etag);
@@ -190,8 +192,8 @@ export async function projectFiles(supabase: SupabaseClient, projectId: string, 
           const { text, truncated } = await readExcel(graph, drive, file.id, options);
           return { ...entry(file, normalized(path)), format: "excel", truncated, text };
         }
-        if ((file.size ?? 0) > MAX_READ_BYTES) throw new FilesError("too_large");
         if (ext === "docx" || ext === "pptx") {
+          if ((file.size ?? 0) > MAX_OFFICE_BYTES) throw new FilesError("too_large");
           const pkg = openPackage(await bytesOf(file));
           const text = ext === "docx" ? readWord(pkg) : readPowerPoint(pkg);
           return {
@@ -201,6 +203,7 @@ export async function projectFiles(supabase: SupabaseClient, projectId: string, 
             text: text.slice(0, MAX_CHARS),
           };
         }
+        if ((file.size ?? 0) > MAX_READ_BYTES) throw new FilesError("too_large");
         const asPdf = ext === "pdf" || OFFICE.includes(ext);
         if (!asPdf && !TEXT.includes(ext)) throw new FilesError("unreadable");
         const url = await downloadUrl(graph, drive, file.id, OFFICE.includes(ext) ? "pdf" : undefined);
@@ -256,6 +259,12 @@ export async function projectFiles(supabase: SupabaseClient, projectId: string, 
         split(from);
         const name = newName ? split(newName).name : undefined;
         const [source, parent] = await Promise.all([item(from), folderAt(toFolder)]);
+        // Un elemento con lo stesso nome farebbe fallire la copia e l'attesa troverebbe quello vecchio.
+        const existing = await getItem(graph, drive, parent.id, name ?? source.name).catch((e) => {
+          if (e instanceof MicrosoftError && e.status === 404) return null;
+          throw e;
+        });
+        if (existing) throw new FilesError("exists");
         await copyItem(graph, drive, source.id, parent.id, name);
         const copy = await waitForItem(graph, drive, parent.id, name ?? source.name);
         return entry(copy, join(normalized(toFolder), copy.name));

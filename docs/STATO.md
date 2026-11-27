@@ -153,7 +153,10 @@
   `edit_powerpoint_file`, `edit_excel_file` (API Workbook); `copy_project_file` con `new_name`.
   Codice in `src/lib/office/`. Decisioni di Lorenzo: Word con revisioni a scelta (default
   diretto), PowerPoint anche da zero (`pptxgenjs`). Typecheck, lint, build ok; moduli Office
-  provati in locale con LibreOffice. **Da provare end to end** sul progetto **PSW** e sulla
+  provati in locale e i file aperti senza errori con LibreOffice e con Word/PowerPoint/Excel
+  desktop (COM). Word e PowerPoint fino a 50 MB. Plugin `asdp` 0.16.1 (`dst-claude-skills`,
+  `feature/asdp-mcp`, committato) allinea le skill alla lettura strutturata. Lorenzo ha chiesto
+  di fermarsi prima della prova end to end. **Da provare end to end** sul progetto **PSW** e sulla
   cartella del suo canale Teams (sottocartella `Prova MCP Office`, mai PFS): serve il server MCP
   locale, oggi non registrato in Claude Code (`claude mcp add --transport http asdp-local
   http://localhost:4100/api/mcp`, poi login da `/mcp`), con dev server da `localhost` e account

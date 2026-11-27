@@ -42,7 +42,8 @@
   file aperto). Word e PowerPoint si salvano solo se l'`etag` è ancora quello letto (nuova
   versione su SharePoint).
 - **MCP, `copy_project_file`**: `new_name` per creare un file nuovo da uno esistente; attende la
-  fine della copia e restituisce il file.
+  fine della copia e restituisce il file; rifiuta un nome già presente nella destinazione.
+- Limite di Word e PowerPoint portato a 50 MB (altri formati 10 MB).
 - Codice in `src/lib/office/` (pacchetti OOXML con fflate e xmldom, Excel con Graph);
   `src/lib/project-files.ts` e `src/lib/mcp/server.ts` come adapter. Export Word: costruttore
   senza frontespizio condiviso (`markdownDocx`).
@@ -56,7 +57,9 @@
 - Typecheck, lint, build.
 - Moduli Office in locale (script fuori repo): .docx generato, letto, modificato in modo diretto e
   con revisioni; .pptx generato, testi/note cambiati, slide duplicata, spostata, eliminata; .xlsx
-  generato con formula. Tutti aperti con LibreOffice (revisioni visibili, slide corrette).
+  generato con formula. Tutti aperti con LibreOffice (revisioni visibili, slide corrette) e con
+  Word, PowerPoint ed Excel desktop via COM senza errori (8 revisioni riconosciute, formula
+  calcolata).
 - **Da fare**: prova end to end via MCP sulla cartella Teams di PSW (Excel dall'API Workbook,
   etag e conflitti, file reali con stili e logo, apertura in Office per il web).
 

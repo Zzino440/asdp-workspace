@@ -52,6 +52,7 @@ function renderRange(range: Range, budget: number) {
 }
 
 export async function readExcel(graph: Graph, driveId: string, itemId: string, options: { sheet?: string; range?: string }) {
+  if (options.range && !options.sheet) throw new OfficeError("range richiede anche sheet.");
   const base = workbook(driveId, itemId);
   const [{ value: sheets }, { value: tables }] = await Promise.all([
     graph<{ value: { name: string; visibility: string }[] }>(`${base}/worksheets?$select=name,visibility`),

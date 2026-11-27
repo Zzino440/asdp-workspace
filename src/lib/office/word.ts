@@ -159,9 +159,10 @@ function dropRun(ctx: Context, r: Element) {
 function markParagraph(ctx: Context, p: Element, name: "w:ins" | "w:del") {
   let pPr = child(p, "w:pPr");
   if (!pPr) p.insertBefore((pPr = el(ctx, "w:pPr")), p.firstChild);
+  // Ordine dello schema: in w:pPr il w:rPr sta prima di w:sectPr e w:pPrChange; in w:rPr i segni di revisione vanno per primi.
   let rPr = child(pPr, "w:rPr");
-  if (!rPr) pPr.appendChild((rPr = el(ctx, "w:rPr")));
-  rPr.appendChild(revision(ctx, name));
+  if (!rPr) pPr.insertBefore((rPr = el(ctx, "w:rPr")), child(pPr, "w:sectPr") ?? child(pPr, "w:pPrChange") ?? null);
+  rPr.insertBefore(revision(ctx, name), rPr.firstChild);
 }
 
 const firstRunProps = (p: Element) => runsOf(p).map((r) => child(r, "w:rPr")).find(Boolean);
@@ -200,7 +201,7 @@ function deleteBlock(ctx: Context, block: Element) {
   for (const tr of children(block, "w:tr")) {
     let trPr = child(tr, "w:trPr");
     if (!trPr) tr.insertBefore((trPr = el(ctx, "w:trPr")), children(tr).find((c) => c.tagName === "w:tc") ?? null);
-    trPr.appendChild(revision(ctx, "w:del"));
+    trPr.insertBefore(revision(ctx, "w:del"), child(trPr, "w:trPrChange") ?? null);
     for (const p of all(tr, "w:p")) for (const r of runsOf(p)) if (isPureText(r)) dropRun(ctx, r);
   }
 }
