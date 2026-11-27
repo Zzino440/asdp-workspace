@@ -25,6 +25,22 @@
 
 ## Storia
 
+## [0.22.1] 2026-11-27 — Editor: elenchi e caselle come in lettura
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- UI, editor del documento: elenchi puntati e caselle delle domande hanno la stessa spaziatura
+  della lettura (prima ogni voce aveva lo spazio di un paragrafo).
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint e build.
+- Browser in locale, PSW P1.3 in modifica: voce di elenco 42 px (lettura 40), casella 22 px
+  (lettura 20, prima 47).
+
 ## [0.22.0] 2026-11-27 — Documento: indice sincronizzato e pannello riducibile
 
 **Autore**: Lorenzo Belli con Claude Code

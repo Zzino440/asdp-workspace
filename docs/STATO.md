@@ -8,7 +8,13 @@
 
 **Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (domande D[N] evidenziate nel documento, branch `feat/domande-evidenziate`)
 
-## In corso: indice sincronizzato e pannello riducibile (0.22.0, 2026-11-27, `feat/domande-evidenziate`, non committato)
+## In corso: editor con la spaziatura della lettura (0.22.1, 2026-11-27, `feat/domande-evidenziate`, committato)
+
+- `EDITOR_STYLES`: `[&_li_p]:my-0 leading-normal` (nell'editor ogni voce ha un `<p>`).
+- Da valutare dopo la prova dell'utente: riquadri D[N] e "Da chiarire" anche in modifica (plugin
+  di decorazioni ProseMirror, senza toccare il Markdown salvato).
+
+## Fatto: indice sincronizzato e pannello riducibile (0.22.0, 2026-11-27, committato 0c04ea9)
 
 - `document-outline.tsx`: `MutationObserver` sul contenitore, rilegge i titoli dopo 200 ms;
   variante `compact` (trattini). Prende `containerRef` (documento) o `containerId` (guida).
@@ -18,8 +24,6 @@
   prima, con gli stessi id. Ora lettura ed editor si trovano con ref (anche `scroll-anchor.ts`
   e il salto alle D[N]); niente più `getElementById` nel documento.
 - Typecheck, lint, build ok; browser ok (vedi CHANGELOG 0.22.0).
-- Aperto, chiesto dall'utente: editor molto diverso dalla lettura (spaziatura elenchi e caselle,
-  riquadri D[N] e "Da chiarire" assenti in modifica). Proposta in chat, da decidere.
 
 ## Fatto: stesso punto tra lettura e modifica (0.21.2, 2026-11-27, committato su `feat/domande-evidenziate`)
 

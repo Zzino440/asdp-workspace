@@ -188,6 +188,8 @@ const EDITOR_STYLES = [
   "[&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold",
   "[&_p]:my-3 [&_p]:leading-relaxed",
   "[&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6",
+  // Nell'editor ogni voce di elenco ha un <p>; in lettura gli elenchi compatti no.
+  "[&_li_p]:my-0 [&_li_p]:leading-normal",
   "[&_blockquote]:my-3 [&_blockquote]:border-l-2 [&_blockquote]:pl-4 [&_blockquote]:text-muted-foreground",
   "[&_a]:text-primary [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-sm",
   "[&_li[data-item-type=task]]:-ml-6 [&_li[data-item-type=task]]:flex [&_li[data-item-type=task]]:list-none [&_li[data-item-type=task]]:items-baseline [&_li[data-item-type=task]]:gap-2",
