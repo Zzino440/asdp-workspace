@@ -37,7 +37,7 @@ const formatDate = (value: unknown) => {
 
 function Property({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex items-center gap-1.5">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="text-sm">{children}</dd>
     </div>
@@ -233,9 +233,9 @@ export function DocumentWorkspace(props: {
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <header ref={headerRef} className="sticky top-0 z-20 -mx-2 flex flex-col gap-1 border-b bg-background px-2 pt-2 pb-3">
           {props.breadcrumb}
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold">{props.title}</h1>
-            <div className="ml-auto flex items-center gap-2">
+          <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+            <h1 className="min-w-0 flex-1 basis-80 text-2xl font-semibold">{props.title}</h1>
+            <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2">
               {isEditing ? (
                 <>
                   {dirty && <span className="text-xs text-muted-foreground">Modifiche non salvate</span>}
@@ -257,6 +257,18 @@ export function DocumentWorkspace(props: {
                     Cronologia
                   </Button>
                   {!props.versionView && props.exportMenu}
+                  {!props.versionView && props.body !== null && (
+                    <ApprovalActions
+                      projectId={props.projectId}
+                      path={props.path}
+                      lastCommitId={props.lastCommitId}
+                      state={state}
+                      canEdit={props.canEdit}
+                      canApprove={props.canApprove}
+                      gate={props.gate}
+                    />
+                  )}
+                  {!props.versionView && props.publish}
                   {props.canEdit && !props.versionView && (
                     <Button size="sm" onClick={() => startEditing(null)}>
                       <Pencil />
@@ -267,53 +279,43 @@ export function DocumentWorkspace(props: {
               )}
             </div>
           </div>
-          {hasFront && (
-            <div className="flex flex-wrap items-end gap-x-8 gap-y-3 pt-2">
-              <dl className="flex flex-wrap gap-x-8 gap-y-3">
-                <Property label="Stato">
-                  <DocumentStateBadge state={state} />
-                </Property>
-                <Property label="Owner">{owner || <span className="text-muted-foreground">—</span>}</Property>
-                <Property label="Scadenza">
-                  {deadline ? (
-                    <span className={cn(overdue && "font-medium text-destructive")}>
-                      {formatDate(deadline)}
-                      {overdue && " · scaduta"}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </Property>
-                <Property label="Approvazione">
-                  {approval ?? (
-                    <span className="text-muted-foreground">
-                      {state === "Completo" ? `In attesa di ${props.gate.approver}` : "Da approvare"}
-                    </span>
-                  )}
-                </Property>
-                {props.publication && <Property label="Su Teams">{props.publication}</Property>}
-              </dl>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)}>
+          {(hasFront || meta.length > 0) && (
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
+              {hasFront && (
+                <dl className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <Property label="Stato">
+                    <DocumentStateBadge state={state} />
+                  </Property>
+                  <Property label="Owner">{owner || <span className="text-muted-foreground">—</span>}</Property>
+                  <Property label="Scadenza">
+                    {deadline ? (
+                      <span className={cn(overdue && "font-medium text-destructive")}>
+                        {formatDate(deadline)}
+                        {overdue && " · scaduta"}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </Property>
+                  <Property label="Approvazione">
+                    {approval ?? (
+                      <span className="text-muted-foreground">
+                        {state === "Completo" ? `In attesa di ${props.gate.approver}` : "Da approvare"}
+                      </span>
+                    )}
+                  </Property>
+                  {props.publication && <Property label="Su Teams">{props.publication}</Property>}
+                </dl>
+              )}
+              {meta.length > 0 && <p className="text-xs text-muted-foreground">{meta.join(" · ")}</p>}
+              {hasFront && (
+                <Button variant="ghost" size="sm" className="-ml-2" onClick={() => setDetailsOpen(true)}>
                   <SlidersHorizontal />
                   Tutti i dettagli
                 </Button>
-                {!isEditing && !props.versionView && props.body !== null && (
-                  <ApprovalActions
-                    projectId={props.projectId}
-                    path={props.path}
-                    lastCommitId={props.lastCommitId}
-                    state={state}
-                    canEdit={props.canEdit}
-                    canApprove={props.canApprove}
-                    gate={props.gate}
-                  />
-                )}
-                {!isEditing && !props.versionView && props.publish}
-              </div>
+              )}
             </div>
           )}
-          {meta.length > 0 && <p className="pt-1 text-xs text-muted-foreground">{meta.join(" · ")}</p>}
         </header>
 
         {hasFront && props.body !== null && (

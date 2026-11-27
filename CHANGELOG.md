@@ -25,6 +25,28 @@
 
 ## Storia
 
+## [0.19.2] 2026-11-27 — Intestazione del documento più ordinata
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- UI, pagina del documento: titolo e azioni sulla stessa riga (con un titolo lungo va a capo il
+  titolo, non i pulsanti); tutte le azioni in un solo gruppo (Cronologia, Esporta, Segna come
+  completo / Richiedi modifiche / Approva / Revoca, Pubblica su Teams, Modifica testo);
+  stato, owner, scadenza, approvazione, versione e "Tutti i dettagli" su righe compatte.
+  L'intestazione fissa è più bassa.
+- Il titolo non si ripete nel testo quando il titolo del frontespizio aggiunge un suffisso al
+  primo titolo del testo (es. "(TEST)").
+- "Cos'è questo documento" nel percorso è un link discreto con icona.
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- Typecheck, lint, build ok.
+- Browser (locale, PSW T0.1 Verbale Kickoff, utenti admin e PM): intestazione a 1600px e 768px
+  senza sbordi, intestazione fissa scorrendo, indice delle sezioni ok, titolo non ripetuto.
+
 ## [0.19.1] 2026-11-27 — File bloccati da Office per il web
 
 **Autore**: Lorenzo Belli con Claude Code

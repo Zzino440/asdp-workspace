@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, CircleHelp } from "lucide-react";
 import { cn } from "cn";
 import { DocumentWorkspace } from "../document-workspace";
 import { ExportMenu, PublicationInfo, PublishButton } from "../publish-actions";
@@ -102,7 +102,7 @@ async function DocumentView({
       projectId={id}
       path={document.path}
       title={title}
-      hideFirstHeading={firstHeading !== null && firstHeading === title}
+      hideFirstHeading={firstHeading !== null && title.startsWith(firstHeading)}
       frontMatterSource={document.frontMatterSource}
       body={document.body}
       lastCommitId={document.lastCommitId}
@@ -149,7 +149,11 @@ async function DocumentView({
                 {type.code} {type.name}
               </span>
               {guidaHrefForType(type.code) && (
-                <Link href={guidaHrefForType(type.code)!} className="ml-2 text-primary hover:underline">
+                <Link
+                  href={guidaHrefForType(type.code)!}
+                  className="ml-2 inline-flex items-center gap-1 hover:text-foreground hover:underline"
+                >
+                  <CircleHelp className="size-3.5" aria-hidden />
                   Cos&apos;è questo documento
                 </Link>
               )}

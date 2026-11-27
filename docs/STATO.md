@@ -6,7 +6,16 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.19.0, novità e attività nella scheda File, committata su feature/int-mcp, non pushata; provata su PSW, spostamenti e rinomine da provare)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.19.2, intestazione del documento più ordinata, branch feature/recent-activity-sharepoint, non committata)
+
+## Fatto: intestazione del documento (0.19.2, 2026-11-27, non committato)
+
+- `document-workspace.tsx`: titolo e azioni sulla stessa riga, un solo gruppo di azioni
+  (Modifica testo resta il pulsante principale, scelta dell'utente), dati e versione compatti;
+  l'intestazione resta tutta fissa (scelta dell'utente). `page.tsx`: titolo non ripetuto se il
+  frontespizio aggiunge un suffisso al primo H1; "Cos'è questo documento" discreto.
+- Typecheck, lint, build e browser (locale, PSW T0.1, 1600px e 768px) ok. Non provati: modalità
+  modifica, documento Completo/Approvato con i loro pulsanti.
 
 ## In corso: file bloccati da Word per il web (2026-11-27, non committato)
 
