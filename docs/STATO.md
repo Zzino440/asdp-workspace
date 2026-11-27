@@ -17,7 +17,7 @@
   - Mappa con «Puoi già iniziare anche» e «Serve prima».
   - MCP `parallel_steps` / `requires_missing`.
   - Guida «Cosa si può fare in parallelo».
-  - Va insieme al plugin `asdp` 0.18.0 (`dst-claude-skills`, branch `feature/percorso-parallelo` da `main` `b81ba4d`, separato da `feature/asdp-mcp`, commit `07905d0`, non unito né pushato). `feature/asdp-mcp` usa già 0.18.0 in locale: quando unirà `main` passerà a una versione sopra.
+  - Va insieme al plugin `asdp` 0.18.0 (`dst-claude-skills`, branch `feature/percorso-parallelo` da `main` `b81ba4d`, separato da `feature/asdp-mcp`, commit `07905d0`, unito in `main` con `183b2a2`, non pushato e senza tag). `feature/asdp-mcp` usa già 0.18.0 in locale: quando unirà `main` passerà a una versione sopra.
   - Migration applicata solo al DB locale (`migration up`), non al cloud.
   - Da fare: `supabase test db` dopo un `db reset` (oggi 4 file falliscono per dati locali oltre il seed); merge e tag su indicazione.
 
@@ -188,7 +188,7 @@ Tabella completa in `docs/ARCHITETTURA.md` §7.
 
 | Ambiente | Dettagli |
 |---|---|
-| Locale | `pnpm dev -p 4100 -H 127.0.0.1` (per l'accesso Microsoft aprire da `localhost`); Supabase locale con Docker (`pnpm exec supabase start`), Mailpit su 54324; utenti di test del seed (`admin@`, `pm@`, `tl@`, `af@`, `nessuno@asdp.test`, password in `supabase/seed.sql`). `admin@asdp.test` ha collegato l'account Microsoft di Lorenzo. Config Microsoft: `api.external_url = http://localhost:54321`, id e segreto in `supabase/.env` (gitignorato) |
+| Locale | `pnpm dev` (127.0.0.1:4100; `localhost` viene rimandato a 127.0.0.1 da `src/proxy.ts`, così i cookie di sessione non finiscono su `localhost` e Kong su `localhost:54321` non risponde 400 "Bad request" all'accesso Microsoft); Supabase locale con Docker (`pnpm exec supabase start`), Mailpit su 54324; utenti di test del seed (`admin@`, `pm@`, `tl@`, `af@`, `nessuno@asdp.test`, password in `supabase/seed.sql`). `admin@asdp.test` ha collegato l'account Microsoft di Lorenzo. Config Microsoft: `api.external_url = http://localhost:54321`, id e segreto in `supabase/.env` (gitignorato) |
 | MCP locale | Server "ASDP Workspace (sviluppo)" in Claude Code Desktop; `asdp` registrato in Claude Code per questa cartella (scope local). Dopo nuovi tool il client va ricollegato |
 | Cloud di test | Vercel `ds-tech4/asdp-workspace` (deploy automatico da `master`, anteprime spente), Supabase `uirrkpvkrhuvbobthrna` (eu-central-2). **In pausa dal 2026-11-20**. MCP cloud registrato come `asdp-cloud` (scope user) |
 | GitLab | https://git.dstech.info, sandbox `asdp-sandbox/sandbox-test` (id 946, branch `main`), gruppo padre dei progetti creati dall'app `asdp-sandbox` (`GITLAB_PROJECTS_GROUP`). Token in `GITLAB_TOKEN` (`.env.local`, mai in chat) |

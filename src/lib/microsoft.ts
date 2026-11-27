@@ -9,7 +9,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // rispondono 404 (oggi le variabili ci sono solo in .env.local di chi sviluppa).
 export const microsoftEnabled = () => Boolean(process.env.MICROSOFT_CLIENT_ID);
 
-// Deve essere identico all'URI registrato su Entra: aprire l'app da localhost, non da 127.0.0.1.
+// Deve essere identico all'URI registrato su Entra. In locale l'app gira su 127.0.0.1: src/proxy.ts rimanda
+// questo ritorno da localhost a 127.0.0.1, dove stanno il cookie ms_oauth e la sessione.
 // Per ora solo sviluppo locale; sul cloud servirà l'URI di produzione.
 const REDIRECT_URI = "http://localhost:4100/api/microsoft/callback";
 // .default = tutti i permessi delegati approvati dall'IT sull'app ASDP (elenco in ARCHITETTURA).
