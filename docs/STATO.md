@@ -8,13 +8,13 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.22.3 unita in `master` e taggata, da pushare)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.22.3 unita in `master`, taggata e pushata)
 
 ## Dove siamo
 
 - **Versione**: `0.22.3` su `master` (blocco 1 dell'analisi del 2026-11-27: errori gestiti,
-  frontespizio robusto, Vitest), unita da `consolidamento`. Tag `0.22.2` e `0.22.3` creati in
-  locale: `master` e tag **da pushare**. `0.22.1` pushata e taggata.
+  frontespizio robusto, Vitest), unita da `consolidamento`. `master` e tag `0.22.2`, `0.22.3`
+  pushati il 2026-11-27.
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
 - **Ultimo lavoro** (0.21–0.22, pagina del documento): domande D[N] con quattro stati e riquadri
