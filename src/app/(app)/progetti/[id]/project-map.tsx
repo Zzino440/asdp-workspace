@@ -14,6 +14,7 @@ import { isDone, phaseProgress } from "@/lib/phase-progress";
 import { answersPrompt, stepPrompt } from "@/lib/prompts";
 import { QUESTION_STATUS_LABEL, statusOf, type QuestionStatus } from "@/lib/questions";
 import type { MapDoc, MapType, NextStep } from "@/lib/project-steps";
+import { missingRequires, type MissingType } from "@/lib/step-requires";
 import { PhaseChangeButton } from "./advance-phase";
 import { CopyPromptButton } from "./copy-prompt-button";
 
@@ -40,6 +41,7 @@ export function ProjectMap({
   features,
   otherFiles,
   next,
+  parallel,
   turn,
   behind,
 }: {
@@ -51,6 +53,7 @@ export function ProjectMap({
   features: string[];
   otherFiles: MapDoc[];
   next: NextStep | null;
+  parallel: NextStep[];
   turn: StepTurn | null;
   behind: number;
 }) {
@@ -85,23 +88,28 @@ export function ProjectMap({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Prima fase precedente con documenti non pronti: la apre e la porta in vista.
-  const behindPhase = PHASES.find((p) => p.n < currentPhase && !complete(p.n));
-  const showBehind = () => {
-    if (!behindPhase) return;
-    setOpen((current) => new Set(current).add(behindPhase.n));
-    requestAnimationFrame(() => document.getElementById(`fase-${behindPhase.n}`)?.scrollIntoView({ behavior: "smooth" }));
+  // Apre una fase e la porta in vista.
+  const showPhase = (n: number) => {
+    setOpen((current) => new Set(current).add(n));
+    requestAnimationFrame(() => document.getElementById(`fase-${n}`)?.scrollIntoView({ behavior: "smooth" }));
   };
+  // Prima fase precedente con documenti non pronti.
+  const behindPhase = PHASES.find((p) => p.n < currentPhase && !complete(p.n));
 
   return (
     <div className="flex flex-col gap-5">
       {next && <NextStepCard project={project} next={next} turn={turn} />}
+      {parallel.length > 0 && <ParallelSteps project={project} types={types} steps={parallel} />}
       {behind > 0 && (
         <p className="flex flex-wrap gap-x-1.5 text-sm text-muted-foreground">
-          <button type="button" onClick={showBehind} className="text-left hover:text-foreground hover:underline">
+          <button
+            type="button"
+            onClick={() => behindPhase && showPhase(behindPhase.n)}
+            className="text-left hover:text-foreground hover:underline"
+          >
             {behind === 1
-              ? "1 documento delle fasi precedenti non è ancora pronto: mostralo"
-              : `${behind} documenti delle fasi precedenti non sono ancora pronti: mostrali`}
+              ? "1 documento delle fasi precedenti è ancora da fare: resta nel percorso, mostralo"
+              : `${behind} documenti delle fasi precedenti sono ancora da fare: restano nel percorso, mostrali`}
           </button>
           {/* Solo admin: riportare il progetto alla fase rimasta indietro (es. approvazione revocata). */}
           {isAdmin && behindPhase && (
@@ -187,7 +195,15 @@ export function ProjectMap({
                       Cosa si fa
                     </Link>
                   </div>
-                  {isOpen && <PhaseDocs project={project} types={phaseTypes} features={features} />}
+                  {isOpen && (
+                    <PhaseDocs
+                      project={project}
+                      allTypes={types}
+                      types={phaseTypes}
+                      features={features}
+                      showPhase={showPhase}
+                    />
+                  )}
                 </li>
               );
             })}
@@ -255,6 +271,11 @@ function NextStepCard({ project, next, turn }: { project: ProjectInfo; next: Nex
                 : "Nessun ruolo può modificare questo tipo di documento (Amministrazione → Permessi)."}
           </span>
         )}
+        {next.missing.length > 0 && (
+          <span className="text-sm text-muted-foreground">
+            Serve prima: <span className="text-foreground">{next.missing.map((m) => m.name).join(", ")}</span>.
+          </span>
+        )}
         {next.doc?.changesRequested && (
           <span className="text-sm">
             <span className="text-destructive">Modifiche richieste da {next.doc.changesRequested.by}:</span>{" "}
@@ -278,7 +299,71 @@ function NextStepCard({ project, next, turn }: { project: ProjectInfo; next: Nex
   );
 }
 
-function PhaseDocs({ project, types, features }: { project: ProjectInfo; types: MapType[]; features: string[] }) {
+// Passi di fasi successive che si possono già avviare: i loro prerequisiti sono pronti. Il
+// prossimo passo resta quello consigliato; le fasi intermedie restano nel percorso.
+function ParallelSteps({ project, types, steps }: { project: ProjectInfo; types: MapType[]; steps: NextStep[] }) {
+  const nameOf = (code: string) => types.find((t) => t.code === code)?.name ?? code;
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-border px-5 py-4">
+      <span className="text-xs font-medium text-muted-foreground">Puoi già iniziare anche, in parallelo</span>
+      <ul className="flex flex-col gap-2">
+        {steps.map((s) => {
+          const requires = types.find((t) => t.code === s.code)?.requires ?? [];
+          return (
+            <li key={`${s.code}-${s.feature ?? ""}`} className="flex flex-wrap items-center gap-3">
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="font-medium">
+                  {s.doc ? `Completa ${s.name}` : `Crea ${s.name}`}
+                  {s.feature ? ` · Feature ${s.feature}` : ""}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  Fase {s.phase} · {PHASES[s.phase].name}.{" "}
+                  {requires.length > 0 &&
+                    `Richiede solo ${requires.length === 1 ? "un documento già pronto" : "documenti già pronti"}: ${requires.map(nameOf).join(" e ")}. `}
+                  Il prossimo passo resta quello consigliato: i documenti delle fasi intermedie restano da fare.{" "}
+                  <Link href={guidaHref("percorso")} className="text-primary hover:underline">
+                    Perché
+                  </Link>
+                </span>
+              </div>
+              {s.doc ? (
+                <Link href={s.doc.href} className={buttonVariants({ variant: "ghost" })}>
+                  Apri documento
+                </Link>
+              ) : (
+                <CopyPromptButton
+                  variant="ghost"
+                  label="Copia prompt"
+                  prompt={stepPrompt(project, {
+                    code: s.code,
+                    name: s.name,
+                    skill: s.skill,
+                    feature: s.feature,
+                    docPath: null,
+                  })}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function PhaseDocs({
+  project,
+  allTypes,
+  types,
+  features,
+  showPhase,
+}: {
+  project: ProjectInfo;
+  allTypes: MapType[];
+  types: MapType[];
+  features: string[];
+  showPhase: (n: number) => void;
+}) {
   const single = types.filter((t) => !t.perFeature);
   const perFeature = types.filter((t) => t.perFeature);
   if (types.length === 0) {
@@ -289,7 +374,15 @@ function PhaseDocs({ project, types, features }: { project: ProjectInfo; types: 
       {single.length > 0 && (
         <ul className="divide-y divide-border">
           {single.map((t) => (
-            <TypeItems key={t.code} project={project} type={t} docs={t.docs} feature={null} />
+            <TypeItems
+              key={t.code}
+              project={project}
+              allTypes={allTypes}
+              type={t}
+              docs={t.docs}
+              feature={null}
+              showPhase={showPhase}
+            />
           ))}
         </ul>
       )}
@@ -297,6 +390,7 @@ function PhaseDocs({ project, types, features }: { project: ProjectInfo; types: 
         <p className="px-4 py-3 text-sm text-muted-foreground">
           Per ogni Feature del backlog si preparano: {perFeature.map((t) => t.name).join(", ")}. Nessuna Feature è ancora
           avviata: si parte con <Skill skill={perFeature[0].skill} />. <GuideLink code={perFeature[0].code} />
+          <MissingNote missing={missingRequires(allTypes, perFeature[0].requires, null)} showPhase={showPhase} />
         </p>
       )}
       {perFeature.length > 0 &&
@@ -308,9 +402,11 @@ function PhaseDocs({ project, types, features }: { project: ProjectInfo; types: 
                 <TypeItems
                   key={t.code}
                   project={project}
+                  allTypes={allTypes}
                   type={t}
                   docs={t.docs.filter((d) => (d.feature ?? "") === f)}
                   feature={f || null}
+                  showPhase={showPhase}
                 />
               ))}
             </ul>
@@ -322,29 +418,38 @@ function PhaseDocs({ project, types, features }: { project: ProjectInfo; types: 
 
 function TypeItems({
   project,
+  allTypes,
   type,
   docs,
   feature,
+  showPhase,
 }: {
   project: ProjectInfo;
+  allTypes: MapType[];
   type: MapType;
   docs: MapDoc[];
   feature: string | null;
+  showPhase: (n: number) => void;
 }) {
   if (docs.length === 0) {
+    const missing = missingRequires(allTypes, type.requires, feature);
     return (
       <li className="flex flex-wrap items-center gap-3 px-4 py-2.5">
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-muted-foreground">{type.name}</span>
           <span className="text-xs text-muted-foreground">
             Da creare con <Skill skill={type.skill} /> · <GuideLink code={type.code} />
+            <MissingNote missing={missing} showPhase={showPhase} />
           </span>
         </div>
-        <CopyPromptButton
-          variant="ghost"
-          label="Copia prompt"
-          prompt={stepPrompt(project, { code: type.code, name: type.name, skill: type.skill, feature, docPath: null })}
-        />
+        {/* Con prerequisiti mancanti la skill si fermerebbe: niente prompt finché non sono pronti. */}
+        {missing.length === 0 && (
+          <CopyPromptButton
+            variant="ghost"
+            label="Copia prompt"
+            prompt={stepPrompt(project, { code: type.code, name: type.name, skill: type.skill, feature, docPath: null })}
+          />
+        )}
       </li>
     );
   }
@@ -490,6 +595,24 @@ const today = () => new Date().toISOString().slice(0, 10);
 function formatDate(iso: string) {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
+}
+
+// "Serve prima: Architettura": i documenti richiesti non ancora pronti, ognuno porta alla sua fase.
+function MissingNote({ missing, showPhase }: { missing: MissingType[]; showPhase: (n: number) => void }) {
+  if (missing.length === 0) return null;
+  return (
+    <span className="block text-xs text-muted-foreground">
+      Serve prima:{" "}
+      {missing.map((m, i) => (
+        <span key={m.code}>
+          {i > 0 && ", "}
+          <button type="button" onClick={() => showPhase(m.phase)} className="text-primary hover:underline">
+            {m.name}
+          </button>
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function GuideLink({ code }: { code: string }) {

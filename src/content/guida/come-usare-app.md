@@ -41,7 +41,9 @@ In alto c'è il riquadro **Prossimo passo**: il primo documento non ancora pront
 - **Crea** un documento che non esiste ancora: **Copia prompt per Claude** copia una richiesta pronta (progetto, skill, documenti da leggere dal connettore) da incollare in Claude con il plugin `asdp`.
 - **Completa** un documento che esiste ma non è ancora Completo: **Apri documento**, oppure **Copia prompt** per farlo completare a Claude.
 
-Se documenti di fasi precedenti non sono pronti, sotto il riquadro compare un avviso: cliccalo per aprire la prima fase con documenti da finire.
+Il Prossimo passo segue l'ordine consigliato del percorso. Se un passo di una fase successiva ha già tutto quello che gli serve, sotto compare **Puoi già iniziare anche**: per esempio il Backlog, appena l'Analisi Funzionale è pronta. Puoi avviarlo in parallelo, ma i documenti delle fasi intermedie restano da fare (vedi [Cosa si può fare in parallelo](/guida/percorso)).
+
+Se documenti di fasi precedenti non sono pronti, sotto il riquadro compare un avviso: restano nel percorso, cliccalo per aprire la prima fase con documenti da finire.
 
 ### Le fasi
 
@@ -49,7 +51,7 @@ Sotto ci sono tutte e cinque le fasi, una sotto l'altra. Ogni fase mostra quanti
 
 Le fasi complete sono chiuse, con un pallino colorato per lo stato di ogni documento; le altre sono aperte. Clicca il nome di una fase per aprirla o chiuderla.
 
-Per ogni tipo di documento della fase vedi il documento, con versione e stato, se esiste; se manca, la skill da usare e **Copia prompt**.
+Per ogni tipo di documento della fase vedi il documento, con versione e stato, se esiste; se manca, la skill da usare e **Copia prompt**. Se per crearlo serve prima un altro documento, compare **Serve prima** con il documento mancante: cliccalo per aprire la sua fase. Finché manca, il prompt non c'è.
 
 Nella [Fase 4](/guida/fase-4) l'Analisi Tecnica, il Piano di lavoro e i Task + Scaffold sono raggruppati per Feature.
 

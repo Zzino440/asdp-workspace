@@ -4,6 +4,7 @@ import { listActivity, listDocuments } from "@/lib/documents";
 import { featureOf } from "@/lib/features";
 import { isDone } from "@/lib/phase-progress";
 import type { Question } from "@/lib/questions";
+import { missingRequires, parallelSteps, type MissingType } from "@/lib/step-requires";
 
 // Percorso del progetto: catalogo dei tipi con skill (document_types) incrociato con l'indice dei
 // documenti e passi aperti. Lo usano la mappa del Percorso e i tool MCP, così danno lo stesso risultato.
@@ -27,6 +28,7 @@ export type MapType = {
   phase: number;
   skill: string;
   perFeature: boolean;
+  requires: string[];
   docs: MapDoc[];
 };
 export type NextStep = {
@@ -37,6 +39,7 @@ export type NextStep = {
   perFeature: boolean;
   feature: string | null;
   doc: MapDoc | null;
+  missing: MissingType[];
 };
 
 const text = (value: unknown) => (value === null || value === undefined ? "" : String(value).trim());
@@ -47,7 +50,7 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
     listDocuments(supabase, projectId),
     supabase
       .from("document_types")
-      .select("code, name, phase, skill_name, per_feature, sort_order")
+      .select("code, name, phase, skill_name, per_feature, requires, sort_order")
       .not("skill_name", "is", null)
       .order("sort_order"),
     listActivity(supabase, projectId, 200),
@@ -89,6 +92,7 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
     phase: t.phase as number,
     skill: t.skill_name as string,
     perFeature: t.per_feature,
+    requires: t.requires ?? [],
     docs: documents.filter((d) => d.document_type === t.code).map(toDoc),
   }));
   const catalog = new Set(mapTypes.map((t) => t.code));
@@ -106,16 +110,26 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
     for (const feature of groups) {
       const docs = type.perFeature && feature !== null ? type.docs.filter((d) => (d.feature ?? "") === feature) : type.docs;
       if (docs.length === 0 || docs.some((d) => !isDone(d)))
-        open.push({ code: type.code, name: type.name, phase: type.phase, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null });
+        open.push({
+          code: type.code,
+          name: type.name,
+          phase: type.phase,
+          skill: type.skill,
+          perFeature: type.perFeature,
+          feature,
+          doc: docs.find((d) => !isDone(d)) ?? null,
+          missing: missingRequires(mapTypes, type.requires, feature),
+        });
     }
   }
   return { mapTypes, otherFiles, features, open, activity };
 }
 
-// Prossimo passo: il primo aperto dalla fase attuale in poi (se non ce ne sono, il primo arretrato).
-// Gli aperti delle fasi precedenti contano come arretrati.
+// Prossimo passo (consigliato): il primo aperto dalla fase attuale in poi (se non ce ne sono, il
+// primo arretrato). Gli aperti delle fasi precedenti contano come arretrati: restano da fare.
+// In parallelo: passi delle fasi successive con i prerequisiti già pronti (es. il Backlog).
 export function nextStep(open: NextStep[], currentPhase: number) {
   const next = open.find((s) => s.phase >= currentPhase) ?? open[0] ?? null;
   const behind = open.filter((s) => s.phase < currentPhase && s !== next);
-  return { next, behind };
+  return { next, behind, parallel: parallelSteps(open, next) };
 }

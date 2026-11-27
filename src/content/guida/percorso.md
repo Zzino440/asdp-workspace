@@ -35,7 +35,25 @@ Ogni documento si produce con una skill dedicata: la trovi nella pagina del docu
    5. gate **G3** per ogni User Story.
 9. **Sviluppo** della User Story.
 
-Il backlog richiede solo l'Analisi Funzionale; il Risk Register è un input facoltativo, che serve a collegare le storie ai rischi. I [gate](/guida/gate) sono spiegati nella pagina dedicata.
+Questo è l'**ordine consigliato**: è quello che l'app propone come Prossimo passo. I [gate](/guida/gate) sono spiegati nella pagina dedicata.
+
+## Cosa si può fare in parallelo
+
+Alcuni documenti non dipendono da quelli della fase prima. Il caso più comune è il **Backlog**: richiede solo l'Analisi Funzionale, quindi si può avviare appena è pronta, senza aspettare Architettura, Contesto Tecnico e Risk Register.
+
+Le Fasi 2 e 3 però **non si saltano**: restano nel percorso e prima o poi vanno completate. Alcuni passi successivi non partono senza:
+
+| Per fare | Serve prima |
+|---|---|
+| [Backlog (T4.1)](/guida/t4-1) | [Analisi Funzionale](/guida/t1-4) |
+| [Risk Register (T3.1)](/guida/t3-1) | Analisi Funzionale e [Architettura](/guida/t2-2) |
+| [Analisi Tecnica (T4.2)](/guida/t4-2) | Backlog e Architettura |
+| [Piano di lavoro (T4.3-INDEX)](/guida/t4-3-index) | Analisi Tecnica della stessa Feature |
+| [Task + Scaffold (T4.3-part)](/guida/t4-3-part) | Piano di lavoro e [Contesto Tecnico](/guida/t2-4) |
+
+Nella mappa del progetto il passo consigliato resta in alto. Sotto, **Puoi già iniziare anche** elenca i passi che si possono avviare in parallelo. Accanto a un documento che non si può ancora fare compare **Serve prima**, con i documenti mancanti.
+
+> **Nota:** se il backlog nasce prima del Risk Register, le User Story non sono ancora collegate ai rischi. Quando il registro è pronto, rilancia la skill del backlog sul backlog esistente, prima del gate G1: collega le storie ai rischi senza cambiare gli ID. Dopo il G1 il CSV non si tocca più e Claude elenca i collegamenti da fare a mano.
 
 > **Nota:** l'Analisi Tecnica si fa quando la Feature entra in sprint, non prima. Un contratto tecnico scritto con molto anticipo invecchia male.
 

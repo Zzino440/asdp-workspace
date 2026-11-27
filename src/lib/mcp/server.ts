@@ -57,7 +57,7 @@ const commitMessage = (message: string) => message.replace(/\n+Via: (app|mcp)\s*
 // Regole minime che il client riceve alla connessione: valgono per ogni modifica.
 const BASE_INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti del framework ASDP di DST, con gli stessi permessi che l'utente ha nell'app.
 - I progetti si indicano con il codice (es. PFS): usa list_projects, poi get_project per team, repo di codice, tipi di documento e permessi dell'utente.
-- Per "cosa devo fare" o "a che punto siamo" usa get_project: next_step è il prossimo passo come lo mostra l'app (con la skill da lanciare), behind i passi rimasti indietro; per ogni documento ci sono owner, scadenza, domande D[N] e changes_requested. list_activity dice chi ha salvato cosa di recente.
+- Per "cosa devo fare" o "a che punto siamo" usa get_project: next_step è il prossimo passo consigliato come lo mostra l'app (con la skill da lanciare), parallel_steps i passi di fasi successive che si possono già avviare in parallelo (es. il Backlog subito dopo l'Analisi Funzionale), behind i passi rimasti indietro, che restano da fare. requires_missing dice quali documenti servono prima di un passo: un passo con requires_missing non vuoto non si avvia (es. l'Analisi Tecnica senza Architettura). Proponi sempre il passo consigliato e cita i paralleli come alternativa; per ogni documento ci sono owner, scadenza, domande D[N] e changes_requested. list_activity dice chi ha salvato cosa di recente.
 - Domande D[N] (in get_project, list_documents e read_document), campo status: aperta = nessuna risposta, lascia il blocco; rimandata = spuntato "Da decidere in fase di analisi", lascia il blocco, passa all'analisi; da_applicare = answer è l'opzione spuntata, va applicata rilanciando la skill sul documento; da_correggere = più opzioni spuntate o "Altro:" senza testo, non applicare nulla e chiedi all'utente di correggere. answered = true solo per da_applicare. Nella T1.4 le D[N] sono copie di quelle dei Requisiti Consolidati (P1.3): si rispondono lì, poi si aggiorna la T1.4.
 - Se un documento ha changes_requested, chi l'ha approvato ha chiesto modifiche: parti dal motivo quando lo aggiorni.
 - I documenti sono file Markdown con frontespizio YAML (GUIDA-FRONT) tra due righe "---", salvati su GitLab.
@@ -102,9 +102,11 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       title: "Dettaglio progetto",
       description:
         "Dati del progetto (con descrizione e date), team con ruoli, repo dei documenti e repo di codice collegate, " +
-        "ruoli dell'utente, next_step (il prossimo passo del percorso, come nella mappa dell'app, con la skill da " +
-        "usare) e behind (passi aperti delle fasi precedenti). Per ogni tipo di documento del framework: fase, " +
-        "cartella, skill, per_feature (un documento per Feature), livello dell'utente (none/view/edit/approve) e " +
+        "ruoli dell'utente, next_step (il prossimo passo consigliato, come nella mappa dell'app, con la skill da " +
+        "usare), parallel_steps (passi di fasi successive avviabili già, in parallelo) e behind (passi aperti delle " +
+        "fasi precedenti, restano da fare); ogni passo ha requires_missing (tipi da preparare prima). Per ogni tipo di " +
+        "documento del framework: fase, cartella, skill, per_feature (un documento per Feature), requires (tipi che " +
+        "devono essere pronti prima), livello dell'utente (none/view/edit/approve) e " +
         "documenti presenti con stato, versione, owner, scadenza, domande D[N] (status, answer: vedi " +
         "le istruzioni del server) e changes_requested (motivo di chi ha chiesto modifiche). setup.missing elenca i passi di preparazione mancanti " +
         "(docs_repository, code_repositories, teams_folder, team, kickoff); setup.teams_folders, se presente, elenca le " +
@@ -125,7 +127,7 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
           .single(),
         supabase.from("project_members").select("user_id, roles, profiles(full_name, email)").eq("project_id", id),
         supabase.from("project_repositories").select("gitlab_path, role, branch").eq("project_id", id),
-        supabase.from("document_types").select("code, name, phase, folder, skill_name, per_feature").order("sort_order"),
+        supabase.from("document_types").select("code, name, phase, folder, skill_name, per_feature, requires").order("sort_order"),
         projectSteps(supabase, id),
         loadSetupState(supabase, id),
         supabase.from("project_file_locations").select("label, web_url").eq("project_id", id).order("created_at"),
@@ -136,7 +138,7 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         return { name: profile?.full_name || profile?.email, email: profile?.email, roles: m.roles };
       });
       const documents = [...steps.mapTypes.flatMap((t) => t.docs), ...steps.otherFiles];
-      const { next, behind } = nextStep(steps.open, info?.current_phase ?? 0);
+      const { next, behind, parallel } = nextStep(steps.open, info?.current_phase ?? 0);
       const step = (s: NonNullable<typeof next>) => ({
         type: s.code,
         name: s.name,
@@ -145,10 +147,12 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         feature: s.feature,
         action: s.doc ? "complete" : "create",
         document: s.doc ? docInfo(s.doc) : null,
+        requires_missing: s.missing.map((m) => m.code),
       });
       return text({
         ...info,
         next_step: next ? step(next) : null,
+        parallel_steps: parallel.map(step),
         behind: behind.map(step),
         team,
         my_roles: (members ?? []).find((m) => m.user_id === userId)?.roles ?? [],

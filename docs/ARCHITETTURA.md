@@ -160,7 +160,7 @@ Già nello schema (`supabase/migrations/`):
 | `project_repositories` | Repo di codice del progetto: percorso GitLab, ruolo (be, fe, altro), branch |
 | `documents` | Indice derivato da GitLab: path, tipo, frontespizio, ultimo commit |
 | `project_members` | Ruoli ASDP della persona nel progetto (`asdp_role[]`: pm, tl, af, designer, developer, qa) |
-| `document_types` | Catalogo dei documenti ASDP con cartella e skill che li produce |
+| `document_types` | Catalogo dei documenti ASDP con cartella, skill che li produce, ordine consigliato (`sort_order`) e prerequisiti (`requires`: tipi che devono essere pronti prima; dicono cosa si può avviare in parallelo e cosa serve prima, calcolati in `src/lib/step-requires.ts`) |
 | `role_permissions` | Livello `none/view/edit/approve` per ruolo e tipo documento; `default_level` dal RACI per "Ripristina default framework" |
 
 Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,

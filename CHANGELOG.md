@@ -25,6 +25,47 @@
 
 ## Storia
 
+## [0.26.0] 2026-11-27 — Percorso: passi in parallelo e prerequisiti
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Database**:
+  - nuova colonna `document_types.requires`, che elenca i tipi da avere pronti prima;
+  - l'ordine consigliato resta `sort_order`;
+  - il Backlog richiede solo l'Analisi Funzionale;
+  - il Risk Register richiede Analisi Funzionale e Architettura;
+  - l'Analisi Tecnica richiede Backlog e Architettura;
+  - Task + Scaffold richiede Piano di lavoro e Contesto Tecnico.
+- **Mappa del Percorso**:
+  - sotto il Prossimo passo, il nuovo riquadro **Puoi già iniziare anche, in parallelo** elenca i passi di fasi successive con i prerequisiti pronti (es. il Backlog subito dopo l'Analisi Funzionale);
+  - un documento che non si può ancora creare mostra **Serve prima** con i documenti mancanti, che aprono la loro fase, e non ha Copia prompt;
+  - l'avviso sui documenti delle fasi precedenti dice che restano nel percorso.
+- **MCP** `get_project`:
+  - `parallel_steps` (passi avviabili in parallelo);
+  - `requires_missing` su ogni passo;
+  - `requires` su ogni tipo;
+  - istruzioni del server: proporre il passo consigliato e citare i paralleli come alternativa.
+- **Guida**:
+  - nuova sezione «Cosa si può fare in parallelo» in *Il percorso in 5 fasi*;
+  - aggiornate *Come si usa questa app*, T1.4, T3.1, T4.1 e Fase 4.
+- Allineato con il plugin `asdp` 0.18.0 (da `main` di `dst-claude-skills`), che usa la stessa regola nei prossimi passi delle skill.
+
+### Migrazioni e configurazione
+- `20261127213601_document_type_requires.sql`.
+
+### Test eseguiti
+- `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm build`: OK.
+- `pnpm test`: 24 test OK, compresi i nuovi su `src/lib/step-requires.ts`.
+- `pnpm exec supabase migration up` in locale: applicata.
+- `pnpm exec supabase test db`: 4 file falliscono sui conteggi di profili e documenti. Il DB locale ha dati oltre il seed; `db reset` non fatto per non cancellarli. Da rifare dopo un reset.
+- Browser su PSW (T1.4 approvata, Fase 1):
+  - Prossimo passo: Crea Architettura;
+  - «Puoi già iniziare anche»: Crea Backlog;
+  - «Serve prima: Architettura» sul Risk Register;
+  - «Serve prima: Backlog, Architettura» sull'Analisi Tecnica;
+  - la guida mostra la nuova sezione.
+
 ## [0.25.0] 2026-11-27 — Punti risolti evidenziati nel documento
 
 **Autore**: Lorenzo Belli con Claude Code

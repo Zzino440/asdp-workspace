@@ -22,7 +22,7 @@ export async function DocumentList({
   isAdmin: boolean;
 }) {
   const { mapTypes, otherFiles, features, open } = await loadProjectSteps(projectId);
-  const { next, behind } = nextStep(open, currentPhase);
+  const { next, behind, parallel } = nextStep(open, currentPhase);
 
   return (
     <ProjectMap
@@ -34,6 +34,7 @@ export async function DocumentList({
       features={features}
       otherFiles={otherFiles}
       next={next}
+      parallel={parallel}
       turn={next ? await stepTurn(projectId, next.code) : null}
       behind={behind.length}
     />
