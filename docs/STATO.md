@@ -8,7 +8,7 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.24.0 unita in `master` e taggata, da pushare)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.24.0 unita in `master`, taggata e pushata)
 
 ## Dove siamo
 
@@ -17,7 +17,7 @@
   pushati il 2026-11-27.
 - **0.24.0** su `master` (da `feedback-azioni`, unito, si può eliminare): punto 1 della UX
   dell'analisi: «Tocca a te» nel prossimo passo, toast di conferma (`sonner`), conflitti con chi e
-  quando. Tag `0.23.0` e `0.24.0` creati il 2026-11-27, non pushati con `master`.
+  quando. Tag `0.23.0` e `0.24.0` creati e pushati con `master` il 2026-11-27.
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
 - **0.23.0** su `master`: editor con menu "/" e menu sulla selezione.
