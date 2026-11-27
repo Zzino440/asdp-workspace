@@ -6,9 +6,15 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (domande D[N] evidenziate nel documento, branch `feat/domande-evidenziate`)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (tag e push di 0.21.1, 0.21.2, 0.22.0, 0.22.1; `feat/domande-evidenziate` già su `master`)
 
-## In corso: editor con la spaziatura della lettura (0.22.1, 2026-11-27, `feat/domande-evidenziate`, committato)
+## Fatto: tag 0.21.1–0.22.1 (2026-11-27)
+
+- `master` = `feat/domande-evidenziate` = `571dfe3`, su `origin`. Tag annotati `0.21.1`
+  (69760be), `0.21.2` (5c1de6b), `0.22.0` (0c04ea9), `0.22.1` (571dfe3) creati e pushati.
+  `0.21.0` senza tag: è nello stesso commit della 0.21.1 (voce nel CHANGELOG).
+
+## Fatto: editor con la spaziatura della lettura (0.22.1, 2026-11-27, `feat/domande-evidenziate`, committato)
 
 - `EDITOR_STYLES`: `[&_li_p]:my-0 leading-normal` (nell'editor ogni voce ha un `<p>`).
 - Da valutare dopo la prova dell'utente: riquadri D[N] e "Da chiarire" anche in modifica (plugin
