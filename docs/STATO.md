@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.17.0, Word/Excel/PowerPoint via MCP, committata su feature/int-mcp, **da provare su PSW**)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.18.0, ripiego sulle skill locali per i file Teams via MCP, non committata su feature/int-mcp; Word provato su PSW, PowerPoint ed Excel da provare)
 
 ## Versione
 
@@ -161,7 +161,15 @@
   Portale Fornitori.docx`: lettura a blocchi ok; `find_replace`, `set_cell` e `insert_after` con
   `track_changes` salvati (etag 2 → 3) e riletti; revisioni da accettare/rifiutare in Word.
   Limiti visti nel codice: la lettura non mostra caselle di testo, intestazioni/piè di pagina e
-  commenti. Restano da provare PowerPoint ed Excel. **Da provare end to end** sul progetto **PSW** e sulla
+  commenti. Restano da provare PowerPoint ed Excel.
+- `0.18.0` (2026-11-27, branch `feature/int-mcp`, **non committata**): ripiego sulle skill locali
+  di Claude per i file Teams, `get_project_file_link` e `create_project_upload_link` (vedi
+  CHANGELOG) più istruzioni del server; regola in AGENTS.md: ogni modifica all'MCP alza la
+  versione. Typecheck, lint, build ok; provato su PSW (download, riga di tabella in revisione con
+  la skill docx, upload con etag, conflitto e nome esistente rifiutati). Il file di prova ha ora
+  revisioni da accettare/rifiutare in Word. `[trash]/*.dat` nel docx: c'erano già, li lascia
+  SharePoint. Per vedere tool nuovi il client va ricollegato al server.
+  **Da provare end to end** sul progetto **PSW** e sulla
   cartella del suo canale Teams (sottocartella `Prova MCP Office`, mai PFS): serve il server MCP
   locale, oggi non registrato in Claude Code (`claude mcp add --transport http asdp-local
   http://localhost:4100/api/mcp`, poi login da `/mcp`), con dev server da `localhost` e account

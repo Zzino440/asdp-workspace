@@ -20,7 +20,9 @@ import {
   listChildren,
   MicrosoftError,
   moveItem,
+  createUploadSession,
   replaceContent,
+  replaceUploadSession,
   searchFolder,
   uploadSmallFile,
   waitForItem,
@@ -308,6 +310,30 @@ export async function projectFiles(supabase: SupabaseClient, projectId: string, 
         const file = await officeFile(path, "xlsx");
         const result = await editExcel(graph, drive, file.id, operations);
         return { ...entry(await item(path), normalized(path)), ...result };
+      }),
+
+    // Ripiego per le skill locali di Claude: i byte vanno e vengono con link temporanei già
+    // autorizzati, senza passare dall'MCP.
+    downloadLink: (path: string) =>
+      guard(async () => {
+        const file = await item(path);
+        if (!file.file) throw new FilesError("invalid_op", "Serve un file, non una cartella.");
+        return { ...entry(file, normalized(path)), download_url: await downloadUrl(graph, drive, file.id) };
+      }),
+
+    // Con etag: nuova versione del file letto (rifiutata se nel frattempo è cambiato). Senza: file
+    // nuovo (rifiutato se il nome esiste già).
+    uploadLink: (path: string, etag?: string) =>
+      guard(async () => {
+        if (etag) {
+          const file = await item(path);
+          if (!file.file) throw new FilesError("invalid_op", "Serve un file, non una cartella.");
+          if (file.eTag !== etag) throw new FilesError("conflict");
+          return { path: normalized(path), upload_url: await replaceUploadSession(graph, drive, file.id, etag) };
+        }
+        const { folder, name } = split(path);
+        const parent = await folderAt(folder);
+        return { path: join(folder, name), upload_url: await createUploadSession(graph, drive, parent.id, name, "fail") };
       }),
 
     // Nel cestino del sito SharePoint.

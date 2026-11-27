@@ -25,6 +25,32 @@
 
 ## Storia
 
+## [0.18.0] 2026-11-27 — Ripiego sulle skill locali per i file Teams
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **MCP, nuovi tool**: `get_project_file_link` (link temporaneo per scaricare il file originale,
+  con etag) e `create_project_upload_link` (link di caricamento: con etag una nuova versione del
+  file, rifiutata se nel frattempo è cambiato; senza etag un file nuovo, rifiutato se il nome
+  esiste). I byte vanno e vengono con `curl` direttamente da SharePoint, senza passare dal modello.
+- **MCP, istruzioni del server**: prima i tool strutturati (`read_project_file`, `edit_*`,
+  `create_office_file`); se non bastano e c'è una shell, scarica, lavora con le skill locali
+  (docx, pptx, xlsx, pdf) e ricarica. Senza shell lo dice all'utente.
+- **AGENTS.md**: ogni modifica al server MCP alza `version` nella stessa modifica.
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- Typecheck, lint, build ok.
+- Su PSW, `Input cliente/T2.2 – Architettura — Portale Fornitori.docx`: download con il link,
+  riga nuova nella tabella §1 in revisione con la skill docx (validazione ok), caricamento con
+  etag (HTTP 200, etag 3 → 4), rilettura con `read_project_file` ok; caricamento con etag vecchio
+  rifiutato (conflitto), file nuovo con nome esistente rifiutato.
+- Stesso file, prima della modifica: `edit_word_file` con `find_replace`, `set_cell`,
+  `insert_after` e `track_changes` (etag 2 → 3) e rilettura ok.
+
 ## [0.17.0] 2026-11-27 — Word, Excel e PowerPoint via MCP nelle cartelle Teams
 
 **Autore**: Lorenzo Belli con Claude Code

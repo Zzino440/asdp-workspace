@@ -78,6 +78,10 @@ sidebar and the MCP `serverInfo` read it through `src/lib/version.ts`.
   required).
 - While `MAJOR` is `0`, a breaking change bumps `MINOR`. `1.0.0` only on an explicit team
   decision. When in doubt pick the lower level and say why in the changelog.
+- Any change to the MCP server (`src/lib/mcp/`: a tool, its parameters or description, the
+  server instructions) bumps `version` in the same change, even before a merge: clients show it
+  in `serverInfo`, so a changed server never keeps the old number. Add or update its
+  `CHANGELOG.md` entry at the same time.
 - Before merging to `master`: bump `version`, add an entry at the top of `CHANGELOG.md` (Italian,
   format in the file, with the tests run), then tag `X.Y.Z` on `master`. A released version is
   never reused.

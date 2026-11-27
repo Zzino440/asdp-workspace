@@ -314,13 +314,13 @@ export const deleteItem = (graph: Graph, driveId: string, itemId: string) =>
 // Sessione di caricamento: il browser manda i byte direttamente a SharePoint (uploadUrl già
 // autorizzato, senza token), quindi il file non passa dall'app. Con un nome già presente:
 // "rename" crea un file nuovo ("nome 1.docx"), "replace" carica una nuova versione di quello
-// esistente (stesso link; SharePoint tiene le precedenti).
+// esistente (stesso link; SharePoint tiene le precedenti), "fail" rifiuta il caricamento.
 export async function createUploadSession(
   graph: Graph,
   driveId: string,
   parentId: string,
   fileName: string,
-  conflict: "rename" | "replace" = "rename",
+  conflict: "rename" | "replace" | "fail" = "rename",
 ) {
   const { uploadUrl } = await graph<{ uploadUrl: string }>(
     `/drives/${driveId}/items/${parentId}:/${encodeURIComponent(fileName)}:/createUploadSession`,
@@ -354,11 +354,17 @@ export async function replaceContent(graph: Graph, driveId: string, itemId: stri
       body: new Blob([bytes.slice()]),
     });
   }
+  return sendChunks(await replaceUploadSession(graph, driveId, itemId, eTag), bytes);
+}
+
+// Sessione di caricamento per una nuova versione di un file esistente, solo se è ancora quello
+// con eTag (altrimenti 412).
+export async function replaceUploadSession(graph: Graph, driveId: string, itemId: string, eTag: string) {
   const { uploadUrl } = await graph<{ uploadUrl: string }>(`/drives/${driveId}/items/${itemId}/createUploadSession`, {
     ...json("POST", { item: { "@microsoft.graph.conflictBehavior": "replace" } }),
     headers: { "Content-Type": "application/json", "If-Match": eTag },
   });
-  return sendChunks(uploadUrl, bytes);
+  return uploadUrl;
 }
 
 // --- Pubblicazione dei documenti approvati (milestone 6) ---

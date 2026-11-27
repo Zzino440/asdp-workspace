@@ -70,6 +70,7 @@ const BASE_INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti de
 const FILES_INSTRUCTIONS = `
 - I file del cliente (offerta, RFP, trascrizioni, verbali) stanno nelle cartelle Teams del progetto (get_project.setup.teams_folders), non su GitLab. Per gli input di una skill elenca con list_project_files la cartella indicata nella richiesta (es. "Input cliente", "Verbali e trascrizioni"), leggi con read_project_file i file utili e dì all'utente quali hai usato. Se la cartella è vuota o manca, chiedi all'utente invece di inventare.
 - I percorsi dei file sono relativi alla cartella collegata (es. "Input cliente/Offerta.docx"). Il server non esce mai da quella cartella.
+- Per i file Office usa prima read_project_file, edit_word_file / edit_powerpoint_file / edit_excel_file e create_office_file. Se non bastano (righe o tabelle nuove, formattazione, immagini, commenti, intestazioni, caselle di testo, PDF scansionati, altri formati) e hai una shell con accesso alla rete: scarica il file con get_project_file_link in una cartella temporanea, lavoralo con le tue skill locali (docx, pptx, xlsx, pdf), poi salvalo con create_project_upload_link (con l'etag per sostituire lo stesso file). Su un documento del cliente usa anche lì le revisioni di Word. Senza shell dillo all'utente invece di ripiegare su altro.
 - Sposta, rinomina, copia ed elimina file solo se l'utente lo chiede in modo esplicito. Non copiare i file del cliente nella repo documenti: i documenti ASDP li citano per nome.
 - Se un tool dei file risponde che l'account Microsoft non è collegato, rimanda l'utente alla scheda File del progetto nell'app.`;
 
@@ -670,6 +671,45 @@ function registerFileTools(server: McpServer, clientFor: ClientFor) {
     },
     withFiles((files, { path, operations }: { project: string; location?: string; path: string; operations: ExcelOperation[] }) =>
       files.editExcel(path, operations),
+    ),
+  );
+
+  server.registerTool(
+    "get_project_file_link",
+    {
+      title: "Link di download file Teams",
+      description:
+        "Ripiego quando read_project_file non basta: link temporaneo (circa 1 ora, senza login) per scaricare il " +
+        "file originale con la shell, es. curl -L -o <file> \"<download_url>\" (curl.exe su Windows), e lavorarlo " +
+        "con le skill locali (docx, pptx, xlsx, pdf). Restituisce anche l'etag, da passare a " +
+        "create_project_upload_link per salvare una nuova versione. Non mostrare il link all'utente.",
+      inputSchema: z.object({ project: projectArg, location: locationArg, path: pathArg("Percorso del file") }),
+      annotations: { readOnlyHint: true },
+    },
+    withFiles((files, { path }: { project: string; location?: string; path: string }) => files.downloadLink(path)),
+  );
+
+  server.registerTool(
+    "create_project_upload_link",
+    {
+      title: "Link di caricamento file Teams",
+      description:
+        "Ripiego quando edit_* e create_office_file non bastano: link di caricamento (senza login) per salvare un " +
+        "file preparato in locale. Con etag (da get_project_file_link o read_project_file) salva una nuova versione " +
+        "di quel file, rifiutata se nel frattempo è cambiato; senza etag crea un file nuovo, rifiutato se il nome " +
+        "esiste. Caricamento: curl -X PUT -H \"Content-Range: bytes 0-<N-1>/<N>\" --data-binary @<file> " +
+        "\"<upload_url>\" con N = dimensione in byte (un solo PUT fino a 60 MB, oltre a pezzi multipli di 320 KB); " +
+        "la risposta JSON è il file salvato. Non mostrare il link all'utente.",
+      inputSchema: z.object({
+        project: projectArg,
+        location: locationArg,
+        path: pathArg("Percorso del file da sostituire o da creare"),
+        etag: z.string().optional().describe("etag del file da sostituire; vuoto = file nuovo"),
+      }),
+      annotations: { destructiveHint: true },
+    },
+    withFiles((files, { path, etag }: { project: string; location?: string; path: string; etag?: string }) =>
+      files.uploadLink(path, etag),
     ),
   );
 
