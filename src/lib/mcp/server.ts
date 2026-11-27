@@ -6,12 +6,13 @@ import {
   createDocument,
   documentLevel,
   DocumentError,
-  listDocuments,
+  listActivity,
   listVersions,
   readDocument,
   saveDocument,
 } from "@/lib/documents";
 import { microsoftEnabled } from "@/lib/microsoft";
+import { type MapDoc, nextStep, projectSteps } from "@/lib/project-steps";
 import { FilesError, projectFiles, type FilesErrorCode } from "@/lib/project-files";
 import { loadSetupState, missingSteps, TEAMS_FOLDERS } from "@/lib/workspace";
 
@@ -32,9 +33,29 @@ async function projectId(supabase: SupabaseClient, code: string) {
 
 const NOT_FOUND = "Progetto non trovato o non accessibile. Usa list_projects per vedere i codici disponibili.";
 
+// Dati di un documento come li mostra la mappa del Percorso.
+const docInfo = (d: MapDoc) => ({
+  path: d.path,
+  type: d.typeCode,
+  title: d.title,
+  state: d.state,
+  version: d.version,
+  feature: d.feature,
+  owner: d.owner,
+  deadline: d.deadline,
+  questions: d.questions,
+  changes_requested: d.changesRequested,
+});
+
+// Commit senza il trailer "Via:" (il canale è già un campo a parte).
+const commitMessage = (message: string) => message.replace(/\n+Via: (app|mcp)\s*$/, "").trim();
+
 // Regole minime che il client riceve alla connessione: valgono per ogni modifica.
 const BASE_INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti del framework ASDP di DST, con gli stessi permessi che l'utente ha nell'app.
 - I progetti si indicano con il codice (es. PFS): usa list_projects, poi get_project per team, repo di codice, tipi di documento e permessi dell'utente.
+- Per "cosa devo fare" o "a che punto siamo" usa get_project: next_step è il prossimo passo come lo mostra l'app (con la skill da lanciare), behind i passi rimasti indietro; per ogni documento ci sono owner, scadenza, domande D[N] e changes_requested. list_activity dice chi ha salvato cosa di recente.
+- Domande D[N]: answered = true vuol dire che la risposta è spuntata ma va ancora applicata rilanciando la skill sul documento. Nella T1.4 le D[N] sono copie di quelle dei Requisiti Consolidati (P1.3): si rispondono lì, poi si aggiorna la T1.4.
+- Se un documento ha changes_requested, chi l'ha approvato ha chiesto modifiche: parti dal motivo quando lo aggiorni.
 - I documenti sono file Markdown con frontespizio YAML (GUIDA-FRONT) tra due righe "---", salvati su GitLab.
 - Prima di modificare un documento leggilo con read_document; poi cambia solo le parti necessarie di content e passalo intero a update_document con il last_commit_id letto. Lascia invariato tutto il resto, commenti del frontespizio compresi.
 - Stati del documento: Da fare, In corso, Completo, Approvato. Lo stato Approvato e i campi approvato_da, approvato_il, versione_approvata, evidenza_approvazione li cambia solo chi approva; non modificare versione_frontespizio. Se cambi il testo di un documento Approvato, il server lo riporta In corso e svuota i dati di approvazione: va riapprovato.
@@ -56,13 +77,14 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
     "list_projects",
     {
       title: "Elenco progetti",
-      description: "Progetti ASDP a cui l'utente ha accesso, con codice, cliente, natura, stato e fase corrente.",
+      description:
+        "Progetti ASDP a cui l'utente ha accesso, con codice, cliente, natura, stato, fase corrente, descrizione e date di inizio e fine.",
       inputSchema: z.object({}),
     },
     async (_args, ctx) => {
       const { data, error } = await clientFor(ctx)
         .supabase.from("projects")
-        .select("code, name, client, nature, status, current_phase")
+        .select("code, name, client, nature, status, current_phase, description, start_date, end_date")
         .order("code");
       if (error) return failure("Impossibile leggere i progetti.");
       return text(data);
@@ -74,9 +96,12 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
     {
       title: "Dettaglio progetto",
       description:
-        "Dati del progetto, team con ruoli, repo dei documenti e repo di codice collegate, ruoli dell'utente e, per " +
-        "ogni tipo di documento del framework, fase, cartella, livello dell'utente (none/view/edit/approve) e " +
-        "documenti già presenti con stato e versione. setup.missing elenca i passi di preparazione mancanti " +
+        "Dati del progetto (con descrizione e date), team con ruoli, repo dei documenti e repo di codice collegate, " +
+        "ruoli dell'utente, next_step (il prossimo passo del percorso, come nella mappa dell'app, con la skill da " +
+        "usare) e behind (passi aperti delle fasi precedenti). Per ogni tipo di documento del framework: fase, " +
+        "cartella, skill, per_feature (un documento per Feature), livello dell'utente (none/view/edit/approve) e " +
+        "documenti presenti con stato, versione, owner, scadenza, domande D[N] (answered: ha una risposta da " +
+        "applicare rilanciando la skill) e changes_requested (motivo di chi ha chiesto modifiche). setup.missing elenca i passi di preparazione mancanti " +
         "(docs_repository, code_repositories, teams_folder, team, kickoff); setup.teams_folders, se presente, elenca le " +
         "cartelle Teams collegate con le sottocartelle base, da usare con i tool *_project_file.",
       inputSchema: z.object({ project: z.string().describe("Codice del progetto, es. PFS") }),
@@ -85,16 +110,18 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       const { supabase, userId } = clientFor(ctx);
       const id = await projectId(supabase, project);
       if (!id) return failure(NOT_FOUND);
-      const [{ data: info }, { data: members }, { data: repositories }, { data: types }, documents, setup, { data: folders }] = await Promise.all([
+      const [{ data: info }, { data: members }, { data: repositories }, { data: types }, steps, setup, { data: folders }] = await Promise.all([
         supabase
           .from("projects")
-          .select("code, name, client, nature, status, current_phase, framework_version, gitlab_project_path, gitlab_branch, docs_root")
+          .select(
+            "code, name, client, nature, status, current_phase, description, start_date, end_date, framework_version, gitlab_project_path, gitlab_branch, docs_root",
+          )
           .eq("id", id)
           .single(),
         supabase.from("project_members").select("user_id, roles, profiles(full_name, email)").eq("project_id", id),
         supabase.from("project_repositories").select("gitlab_path, role, branch").eq("project_id", id),
-        supabase.from("document_types").select("code, name, phase, folder").order("sort_order"),
-        listDocuments(supabase, id),
+        supabase.from("document_types").select("code, name, phase, folder, skill_name, per_feature").order("sort_order"),
+        projectSteps(supabase, id),
         loadSetupState(supabase, id),
         supabase.from("project_file_locations").select("label, web_url").eq("project_id", id).order("created_at"),
       ]);
@@ -103,8 +130,21 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         const profile = m.profiles as unknown as { full_name: string; email: string } | null;
         return { name: profile?.full_name || profile?.email, email: profile?.email, roles: m.roles };
       });
+      const documents = [...steps.mapTypes.flatMap((t) => t.docs), ...steps.otherFiles];
+      const { next, behind } = nextStep(steps.open, info?.current_phase ?? 0);
+      const step = (s: NonNullable<typeof next>) => ({
+        type: s.code,
+        name: s.name,
+        phase: s.phase,
+        skill: s.skill,
+        feature: s.feature,
+        action: s.doc ? "complete" : "create",
+        document: s.doc ? docInfo(s.doc) : null,
+      });
       return text({
         ...info,
+        next_step: next ? step(next) : null,
+        behind: behind.map(step),
         team,
         my_roles: (members ?? []).find((m) => m.user_id === userId)?.roles ?? [],
         code_repositories: repositories ?? [],
@@ -115,15 +155,11 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
           teams_folder: setup.teamsFolder,
           missing: missingSteps(setup),
         },
-        document_types: (types ?? []).map((t, i) => ({
+        document_types: (types ?? []).map(({ skill_name, ...t }, i) => ({
           ...t,
+          skill: skill_name,
           my_level: levels[i],
-          documents: documents
-            .filter((d) => d.document_type === t.code)
-            .map((d) => {
-              const front = d.front_matter as Record<string, unknown>;
-              return { path: d.path, state: front.stato ?? null, version: front.versione ?? null };
-            }),
+          documents: documents.filter((d) => d.typeCode === t.code).map(docInfo),
         })),
       });
     },
@@ -134,19 +170,50 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
     {
       title: "Documenti del progetto",
       description:
-        "Documenti ASDP del progetto visibili all'utente: percorso, tipo (es. T1.4), stato e versione dal frontespizio.",
+        "Documenti ASDP del progetto visibili all'utente: percorso, tipo (es. T1.4), titolo, stato, versione, " +
+        "Feature, owner, scadenza, domande D[N] (answered: ha una risposta da applicare rilanciando la skill) e " +
+        "changes_requested (chi ha chiesto modifiche e perché, se il documento è tornato In corso).",
       inputSchema: z.object({ project: z.string().describe("Codice del progetto, es. PFS") }),
     },
     async ({ project }, ctx) => {
       const { supabase } = clientFor(ctx);
       const id = await projectId(supabase, project);
       if (!id) return failure(NOT_FOUND);
-      const documents = await listDocuments(supabase, id);
+      const { mapTypes, otherFiles } = await projectSteps(supabase, id);
       return text(
-        documents.map((d) => {
-          const front = d.front_matter as Record<string, unknown>;
-          return { path: d.path, type: d.document_type, title: front.titolo ?? null, state: front.stato ?? null, version: front.versione ?? null };
-        }),
+        [...mapTypes.flatMap((t) => t.docs), ...otherFiles].sort((a, b) => a.path.localeCompare(b.path)).map(docInfo),
+      );
+    },
+  );
+
+  server.registerTool(
+    "list_activity",
+    {
+      title: "Attività del progetto",
+      description:
+        "Ultimi salvataggi dei documenti del progetto visibili all'utente, dal più recente: documento, autore, " +
+        "data, canale (app, mcp = Claude, git = push diretto), titolo e dettaglio del commit (es. il motivo di " +
+        "una richiesta di modifiche).",
+      inputSchema: z.object({
+        project: z.string().describe("Codice del progetto, es. PFS"),
+        limit: z.number().int().min(1).max(100).optional().describe("Quanti salvataggi (default 20)"),
+      }),
+    },
+    async ({ project, limit }, ctx) => {
+      const { supabase } = clientFor(ctx);
+      const id = await projectId(supabase, project);
+      if (!id) return failure(NOT_FOUND);
+      const activity = await listActivity(supabase, id, limit ?? 20);
+      return text(
+        activity.map((e) => ({
+          path: e.path,
+          type: e.document_type,
+          author: e.author_name,
+          date: e.created_at,
+          via: e.via,
+          title: e.title,
+          detail: e.detail,
+        })),
       );
     },
   );
@@ -186,7 +253,8 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
     {
       title: "Versioni del documento",
       description:
-        "Storico di un documento: un commit per versione, dal più recente, con autore, data, messaggio e canale (app, mcp, git).",
+        "Storico di un documento: un commit per versione, dal più recente, con autore, data, titolo, messaggio " +
+        "completo (es. il motivo di una richiesta di modifiche) e canale (app, mcp, git).",
       inputSchema: z.object({
         project: z.string().describe("Codice del progetto, es. PFS"),
         path: z.string().describe("Percorso nella repo documenti"),
@@ -199,7 +267,14 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       const versions = await listVersions(supabase, id, path);
       if (!versions) return failure("Documento non trovato o non accessibile. Usa list_documents.");
       return text(
-        versions.map((v) => ({ commit: v.id, title: v.title, author: v.authorName, date: v.authoredDate, via: v.via })),
+        versions.map((v) => ({
+          commit: v.id,
+          title: v.title,
+          message: commitMessage(v.message),
+          author: v.authorName,
+          date: v.authoredDate,
+          via: v.via,
+        })),
       );
     },
   );

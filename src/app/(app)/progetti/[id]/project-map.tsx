@@ -11,39 +11,9 @@ import { PHASES } from "@/lib/labels";
 import { guidaHref, guidaHrefForType } from "@/lib/guida";
 import { isDone, phaseProgress } from "@/lib/phase-progress";
 import { answersPrompt, stepPrompt } from "@/lib/prompts";
-import type { Question } from "@/lib/questions";
+import type { MapDoc, MapType, NextStep } from "@/lib/project-steps";
 import { CopyPromptButton } from "./copy-prompt-button";
 
-export type MapDoc = {
-  path: string;
-  href: string;
-  title: string;
-  state: string | null;
-  version: string | null;
-  typeCode: string | null;
-  feature: string | null;
-  owner: string | null;
-  deadline: string | null;
-  questions: Question[];
-  changesRequested: { by: string; reason: string } | null;
-};
-export type MapType = {
-  code: string;
-  name: string;
-  phase: number;
-  skill: string;
-  perFeature: boolean;
-  docs: MapDoc[];
-};
-export type NextStep = {
-  code: string;
-  name: string;
-  phase: number;
-  skill: string;
-  perFeature: boolean;
-  feature: string | null;
-  doc: MapDoc | null;
-};
 type ProjectInfo = { code: string; nature: string; teams: boolean };
 
 // Colore del pallino di un documento: i token --state-* del frontespizio.

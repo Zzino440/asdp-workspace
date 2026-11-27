@@ -45,6 +45,13 @@
   Ogni commit di app e MCP finisce in `document_events`; il webhook GitLab registra i push diretti
   (commit senza trailer `Via:`).
 - Guida, "Rispondere alle domande D[N]": dice dove si vedono le domande nell'app.
+- **MCP**: `get_project` dà anche descrizione e date, skill e `per_feature` per ogni tipo, `next_step`
+  (il prossimo passo come nella mappa, con la skill) e `behind` (passi arretrati); per ogni documento
+  owner, scadenza, domande D[N] e `changes_requested`. `list_projects` dà descrizione e date.
+  `list_documents` ha gli stessi dati dei documenti. `list_versions` dà il messaggio completo del
+  commit (es. il motivo di una richiesta di modifiche). Nuovo tool `list_activity` (ultimi
+  salvataggi del progetto). Istruzioni del server aggiornate. Il calcolo dei passi è in
+  `src/lib/project-steps.ts`, usato dalla mappa e dall'MCP.
 - **Progetti, colonna Team** (prima "Persone"): PM e TL per nome, numero di persone e i tuoi
   ruoli ("Tu: Designer"); al passaggio del mouse tutto il team con i ruoli. Prima mostrava solo il
   PM e i tuoi ruoli come badge senza etichetta.
@@ -66,6 +73,9 @@
   con dati simulati nell'indice locale (azzerati da Reindicizza).
 - Webhook locale con push simulato: commit diretto registrato come "git", commit con `Via: app`
   saltato.
+- MCP locale (`admin@asdp.test`): `create_document` di un P1.3 di prova con D[N] su PFS (indice e
+  Attività "via mcp" ok); `get_project`, `list_documents`, `list_activity`, `list_versions`: prossimo
+  passo e arretrati uguali alla mappa, motivo della richiesta di modifiche in `list_versions`.
 
 ## [0.13.0] 2026-11-26 — Nuovo progetto a passi, portafoglio progetti e file in blocco
 

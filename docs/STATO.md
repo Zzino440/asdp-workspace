@@ -29,6 +29,11 @@
   di nuovo Completo. Non provati: D[N] su un documento vero (nessuno in sandbox ne ha) e
   l'attività "con Claude" via MCP. Il dev server sulla 4100 ora è quello avviato dal pannello del
   browser di Claude (il vecchio processo appeso è stato chiuso).
+  MCP (stessa versione, non committata): `get_project`/`list_documents` con prossimo passo,
+  arretrati, skill, owner, scadenza, D[N], modifiche richieste; `list_versions` con il messaggio
+  completo; nuovo `list_activity`; calcolo condiviso in `src/lib/project-steps.ts`. Provato sul
+  server MCP locale. Sulla sandbox c'è ora `asdp/requirements/PFS-RequirementsConsolidated-v0.1.md`
+  (P1.3 di prova con D1–D3, commit `49bc8bc`): toglierlo a mano da GitLab quando non serve.
   Stessa versione, non committata: pagina Progetti, colonna "Persone" → "Team" (PM e TL, numero
   di persone, "Tu: <ruoli>", team completo nel tooltip). Typecheck, lint, build e prova nel
   browser ok.
@@ -329,7 +334,7 @@ vengono dopo.
    Guida ↔ plugin in `TODO.md`.
 2. **Ponte passo → Claude**: "Copia prompt per Claude" fatto in 0.12.0 (Prossimo passo e righe da
    creare della mappa, `src/lib/prompts.ts`); `create_document` già fatto (i template li porta la
-   skill del plugin, l'app non ne ha copie). Restano `skill_name`/`per_feature` in `get_project`, tool `next_step`, prompt MCP per passo, istruzioni del server con la mappa
+   skill del plugin, l'app non ne ha copie). Fatti in 0.14.0 skill, `per_feature` e `next_step` in `get_project`; restano prompt MCP per passo, istruzioni del server con la mappa
    fasi → skill → documenti; pagina "Collega Claude".
 3. **Domande aperte D[N]**: estrazione nell'indexer, vista unica di progetto, risposta con un
    clic (scrive la casella nel Markdown), prompt pronto per rilanciare la skill in aggiornamento.

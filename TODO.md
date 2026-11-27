@@ -120,7 +120,7 @@ l'analisi GDPR per l'IT.
   anche sul telefono (a 375 px al contenuto restano circa 100 px). Serve una sidebar a scomparsa
   (menu) sotto `md` e un padding più piccolo.
 - [ ] Descrizione e date del progetto (migrazione `project_details`) da mostrare
-  nell'intestazione del progetto e da esporre in `get_project` dell'MCP.
+  nell'intestazione del progetto (in `get_project` dell'MCP ci sono da 0.14.0).
 
 ## Distribuzione
 
