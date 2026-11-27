@@ -8,19 +8,19 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.24.0 sul branch `feedback-azioni`)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.24.0 unita in `master` e taggata, da pushare)
 
 ## Dove siamo
 
 - **Versione**: `0.22.3` su `master` (blocco 1 dell'analisi del 2026-11-27: errori gestiti,
   frontespizio robusto, Vitest), unita da `consolidamento`. `master` e tag `0.22.2`, `0.22.3`
   pushati il 2026-11-27.
-- **Branch `feedback-azioni`** (0.24.0, da `master` a 0.23.0): punto 1 della UX dell'analisi:
-  «Tocca a te» nel prossimo passo, toast di conferma (`sonner`), conflitti con chi e quando.
-  Da unire in `master` e taggare (anche `0.23.0`, committata su `master` ma senza tag e non pushata).
+- **0.24.0** su `master` (da `feedback-azioni`, unito, si può eliminare): punto 1 della UX
+  dell'analisi: «Tocca a te» nel prossimo passo, toast di conferma (`sonner`), conflitti con chi e
+  quando. Tag `0.23.0` e `0.24.0` creati il 2026-11-27, non pushati con `master`.
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
-- **0.23.0** (committata su `master`, senza tag): editor con menu "/" e menu sulla selezione.
+- **0.23.0** su `master`: editor con menu "/" e menu sulla selezione.
 - **Ultimo lavoro** (0.21–0.22, pagina del documento): domande D[N] con quattro stati e riquadri
   colorati, pannello Domande, salto e lampeggio; punto di lettura che resta fermo tra lettura e
   modifica, doppio clic per modificare; indice sincronizzato con l'editor e pannello destro
