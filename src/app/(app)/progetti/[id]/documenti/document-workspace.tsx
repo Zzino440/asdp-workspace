@@ -42,6 +42,13 @@ const QUESTION_DOT: Record<QuestionStatus, string> = {
   da_applicare: "bg-(--state-progress-border)",
   da_correggere: "bg-destructive",
 };
+// Stesso colore, per il lampeggio della domanda quando ci si salta.
+const QUESTION_COLOR: Record<QuestionStatus, string> = {
+  aperta: "var(--state-complete-border)",
+  rimandata: "var(--state-todo-border)",
+  da_applicare: "var(--state-progress-border)",
+  da_correggere: "var(--destructive)",
+};
 
 // baseline: testo dell'editor da cui è partita la bozza, per ritrovare cosa ha cambiato l'utente.
 type Draft = { baseCommit: string; baseline: string; body: string; savedAt: string };
@@ -336,14 +343,16 @@ export function DocumentWorkspace(props: {
     const note = target.previousElementSibling as HTMLElement | null;
     scrollToElement(isEditing && note?.textContent?.trimStart().startsWith("❓") ? note : target);
     if (!isEditing) history.replaceState(null, "", `#${id}`);
-    // Alone arrotondato attorno alla domanda. In modifica il titolo non ha un riquadro suo: si
-    // colora anche lo sfondo e si arrotonda; in lettura il riquadro tiene i suoi colori.
-    const glow = "color-mix(in srgb, var(--ring) 35%, transparent)";
-    const fill = (color: string) => (isEditing ? { backgroundColor: color, borderRadius: "var(--radius)" } : {});
+    // Velo e bordo sottile nel colore dello stato della domanda, come il suo riquadro e il pallino.
+    const question = questions.find((q) => q.id.toLowerCase() === id);
+    const color = QUESTION_COLOR[question ? statusOf(question) : "aperta"];
+    const tint = (percent: number) => `color-mix(in srgb, ${color} ${percent}%, transparent)`;
+    // Stessa forma dei riquadri (rounded-r-md): squadrato a sinistra, dove c'è la barra colorata.
+    const borderRadius = "0 var(--radius-md) var(--radius-md) 0";
     target.animate(
       [
-        { boxShadow: `0 0 0 6px ${glow}`, ...fill(glow) },
-        { boxShadow: "0 0 0 6px transparent", ...fill("transparent") },
+        { backgroundColor: tint(15), boxShadow: `0 0 0 2px ${tint(70)}`, borderRadius },
+        { backgroundColor: "transparent", boxShadow: "0 0 0 2px transparent", borderRadius },
       ],
       { duration: 1800, delay: 300, easing: "ease-in" },
     );
