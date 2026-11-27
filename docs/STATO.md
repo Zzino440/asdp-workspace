@@ -156,7 +156,12 @@
   provati in locale e i file aperti senza errori con LibreOffice e con Word/PowerPoint/Excel
   desktop (COM). Word e PowerPoint fino a 50 MB. Plugin `asdp` 0.16.1 (`dst-claude-skills`,
   `feature/asdp-mcp`, committato) allinea le skill alla lettura strutturata. Lorenzo ha chiesto
-  di fermarsi prima della prova end to end. **Da provare end to end** sul progetto **PSW** e sulla
+  di fermarsi prima della prova end to end. 2026-11-27: Word provato end to end da Claude Code
+  Desktop (server "ASDP Workspace (sviluppo)") su PSW, `Input cliente/T2.2 – Architettura —
+  Portale Fornitori.docx`: lettura a blocchi ok; `find_replace`, `set_cell` e `insert_after` con
+  `track_changes` salvati (etag 2 → 3) e riletti; revisioni da accettare/rifiutare in Word.
+  Limiti visti nel codice: la lettura non mostra caselle di testo, intestazioni/piè di pagina e
+  commenti. Restano da provare PowerPoint ed Excel. **Da provare end to end** sul progetto **PSW** e sulla
   cartella del suo canale Teams (sottocartella `Prova MCP Office`, mai PFS): serve il server MCP
   locale, oggi non registrato in Claude Code (`claude mcp add --transport http asdp-local
   http://localhost:4100/api/mcp`, poi login da `/mcp`), con dev server da `localhost` e account

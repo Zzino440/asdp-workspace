@@ -44,11 +44,11 @@ export function ExportMenu(props: { projectId: string; path: string }) {
         Esporta
         <ChevronDown />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="w-auto">
         {FORMATS.map((f) => (
           <DropdownMenuItem key={f.id} render={<a href={href(f.id)} download />}>
             <span>{f.label}</span>
-            <span className="ml-auto pl-4 text-xs text-muted-foreground">{f.hint}</span>
+            <span className="ml-auto pl-4 text-xs whitespace-nowrap text-muted-foreground">{f.hint}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
