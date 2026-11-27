@@ -25,6 +25,21 @@
 
 ## Storia
 
+## [0.22.2] 2026-11-27 — Barra laterale: tolte le sottovoci di Progetti
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- UI, barra laterale: «Progetti» torna una voce semplice, evidenziata anche dentro un progetto.
+  Tolte le sottovoci (progetti del team più quello aperto): la regola sembrava casuale e la
+  lista, letta nel layout, restava vecchia fino al ricaricamento della pagina.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint e build; barra laterale controllata nel browser.
+
 ## [0.22.1] 2026-11-27 — Editor: elenchi e caselle come in lettura
 
 **Autore**: Lorenzo Belli con Claude Code

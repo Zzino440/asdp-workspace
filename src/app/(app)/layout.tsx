@@ -34,19 +34,14 @@ async function SidebarForUser() {
   const userId = claimsData?.claims.sub;
   if (!userId) redirect("/login");
 
-  const [{ data: profile }, toApprove, { data: projectRows }, { data: memberships }] = await Promise.all([
+  const [{ data: profile }, toApprove] = await Promise.all([
     supabase.from("profiles").select("full_name, email, is_admin").eq("id", userId).single(),
     listToApprove(supabase),
-    // Solo per la navigazione (l'accesso resta alla RLS): progetti visibili e quelli del proprio team.
-    supabase.from("projects").select("id, name").neq("status", "chiuso").order("name"),
-    supabase.from("project_members").select("project_id").eq("user_id", userId),
   ]);
-  const mine = new Set((memberships ?? []).map((m) => m.project_id));
-  const projects = (projectRows ?? []).map((p) => ({ id: p.id, name: p.name, mine: mine.has(p.id) }));
 
   return (
     <>
-      <AppSidebar isAdmin={profile?.is_admin ?? false} toApprove={toApprove.length} projects={projects} />
+      <AppSidebar isAdmin={profile?.is_admin ?? false} toApprove={toApprove.length} />
       <div className="mt-auto flex flex-col gap-2 px-3 text-sm">
         <span className="truncate font-medium">{profile?.full_name || profile?.email}</span>
         <form action={logout}>

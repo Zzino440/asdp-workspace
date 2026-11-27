@@ -8,12 +8,12 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (riordino di STATO e TODO)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.22.2: barra laterale senza sottovoci)
 
 ## Dove siamo
 
-- **Versione**: `0.22.1` su `master`, pushata su `origin`, tag fatto. Tutto il lavoro è
-  committato; nessun worktree aperto.
+- **Versione**: `0.22.2` su `master` (barra laterale senza sottovoci di Progetti), da
+  committare, pushare e taggare. `0.22.1` è pushata e taggata. Nessun worktree aperto.
 - **Branch**: `master` (principale), `develop` (fermo a `0.19.1`, `c62abf0`),
   `feat/domande-evidenziate` (unita in `master`, si può eliminare).
 - **Ultimo lavoro** (0.21–0.22, pagina del documento): domande D[N] con quattro stati e riquadri
