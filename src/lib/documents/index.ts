@@ -1,6 +1,5 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { parse } from "yaml";
 import {
   branchExists,
   compareFile,
@@ -13,7 +12,7 @@ import {
   readFile,
   updateFile,
 } from "@/lib/gitlab";
-import { type FieldValue, setFrontMatterFields } from "@/lib/front-matter";
+import { type FieldValue, setFrontMatterFields, splitFrontMatter } from "@/lib/front-matter";
 import { gateFor } from "@/lib/gates";
 import { type AsdpRole, ROLE_LABELS } from "@/lib/labels";
 import { questionsOf } from "@/lib/questions";
@@ -30,18 +29,6 @@ type Project = {
   gitlab_branch: string;
   docs_root: string;
 };
-
-// Frontespizio GUIDA-FRONT: blocco YAML tra due righe "---" in testa al file.
-export function splitFrontMatter(content: string) {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(content);
-  if (!match) return { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, body: content };
-  const parsed: unknown = parse(match[1]);
-  return {
-    frontMatter: (parsed && typeof parsed === "object" ? parsed : {}) as Record<string, unknown>,
-    frontMatterSource: match[1],
-    body: content.slice(match[0].length),
-  };
-}
 
 // Tipo del documento: prefisso del nome file (es. "T4.3-INDEX-…"), poi template_origine del
 // frontespizio, infine la cartella se un solo tipo la usa.

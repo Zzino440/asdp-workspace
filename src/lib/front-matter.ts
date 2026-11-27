@@ -1,4 +1,4 @@
-import { parseDocument, stringify } from "yaml";
+import { parse, parseDocument, stringify } from "yaml";
 
 export type FieldValue = string | number | boolean | null | FieldValue[];
 
@@ -26,4 +26,16 @@ export function setFrontMatterFields(source: string, changes: Record<string, Fie
     out = out.slice(0, start) + prefix + text + suffix + out.slice(end);
   }
   return missing.length > 0 ? `${out.replace(/\s*$/, "")}${newline}${missing.join(newline)}` : out;
+}
+
+// Frontespizio GUIDA-FRONT: blocco YAML tra due righe "---" in testa al file.
+export function splitFrontMatter(content: string) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(content);
+  if (!match) return { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, body: content };
+  const parsed: unknown = parse(match[1]);
+  return {
+    frontMatter: (parsed && typeof parsed === "object" ? parsed : {}) as Record<string, unknown>,
+    frontMatterSource: match[1],
+    body: content.slice(match[0].length),
+  };
 }

@@ -28,10 +28,11 @@ items go to `TODO.md`.
 | Build | `pnpm build` |
 | Local Supabase (needs Docker) | `pnpm exec supabase start` / `pnpm exec supabase db reset` |
 | RLS tests (pgTAP, local Supabase) | `pnpm exec supabase test db` |
+| Unit tests (Vitest, pure modules in `src/lib/`) | `pnpm test` |
 | New migration | `pnpm exec supabase migration new <name>` |
 | Pull design system from Stitch (needs `STITCH_API_KEY`) | `pnpm design:sync` |
 
-Run typecheck, lint and build before declaring a change done.
+Run typecheck, lint, unit tests and build before declaring a change done.
 
 ## Stack facts that differ from older defaults
 
