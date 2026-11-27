@@ -276,7 +276,7 @@ async function VersionView(props: {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="sticky top-(--doc-header-h) z-10 flex flex-wrap items-center gap-3 border-b bg-card py-2">
         <span className="font-medium">{selected.title}</span>
         <Badge variant="secondary">{VIA_LABELS[selected.via]}</Badge>
         <div className="ml-auto flex gap-2">
