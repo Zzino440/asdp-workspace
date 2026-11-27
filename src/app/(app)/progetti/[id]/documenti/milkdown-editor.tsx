@@ -1,23 +1,50 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Editor, defaultValueCtx, editorViewCtx, remarkStringifyOptionsCtx, rootCtx } from "@milkdown/kit/core";
+import type { Ctx } from "@milkdown/kit/ctx";
 import { history, redoCommand, undoCommand } from "@milkdown/kit/plugin/history";
 import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
+import { slashFactory } from "@milkdown/kit/plugin/slash";
 import {
   commonmark,
+  createCodeBlockCommand,
+  insertHrCommand,
   listItemSchema,
   toggleEmphasisCommand,
+  toggleInlineCodeCommand,
+  toggleLinkCommand,
   toggleStrongCommand,
+  turnIntoTextCommand,
+  wrapInBlockquoteCommand,
   wrapInBulletListCommand,
   wrapInHeadingCommand,
   wrapInOrderedListCommand,
 } from "@milkdown/kit/preset/commonmark";
-import { gfm } from "@milkdown/kit/preset/gfm";
+import { gfm, insertTableCommand, toggleStrikethroughCommand } from "@milkdown/kit/preset/gfm";
 import { DOMSerializer, type Node } from "@milkdown/kit/prose/model";
 import { TextSelection } from "@milkdown/kit/prose/state";
+import type { EditorView } from "@milkdown/kit/prose/view";
 import { $view, callCommand, getMarkdown, replaceAll } from "@milkdown/kit/utils";
-import { Bold, Heading2, Heading3, Italic, List, ListOrdered, Redo2, Undo2 } from "lucide-react";
+import {
+  Bold,
+  Code,
+  Heading2,
+  Heading3,
+  Heading4,
+  Italic,
+  Link,
+  List,
+  ListOrdered,
+  ListTodo,
+  Minus,
+  Quote,
+  Redo2,
+  Strikethrough,
+  Table,
+  Type,
+  Undo2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Editor visuale Markdown. onReady riceve la baseline (Markdown dell'editor appena aperto sul
@@ -35,6 +62,88 @@ export function MilkdownEditor(props: {
   useEffect(() => {
     callbacks.current = props;
   });
+
+  // Menu "/": si apre scrivendo "/" a inizio riga o dopo uno spazio; il testo che segue filtra le voci.
+  const wrapper = useRef<HTMLDivElement>(null);
+  const [menu, setMenu] = useState<{ query: string; from: number; left: number; top: number } | null>(null);
+  const [active, setActive] = useState(0);
+  const items = menu ? SLASH_ITEMS.filter((item) => item.search.includes(menu.query.toLowerCase())) : [];
+  // Posizione della "/" chiusa con Esc: non si riapre finché non la si cancella.
+  const dismissed = useRef(-1);
+
+  const pick = (item: SlashItem) => {
+    const created = editor.current;
+    if (!menu || !created) return;
+    const view = created.ctx.get(editorViewCtx);
+    view.dispatch(view.state.tr.delete(menu.from, view.state.selection.from));
+    created.action(item.run);
+    setMenu(null);
+    view.focus();
+  };
+
+  const updateSlash = (view: EditorView) => {
+    const { empty, $from } = view.state.selection;
+    const before =
+      empty && $from.parent.type.name === "paragraph"
+        ? $from.parent.textBetween(0, $from.parentOffset, undefined, "￼")
+        : "";
+    const match = /(?:^|\s)\/([\p{L}\d]*)$/u.exec(before);
+    if (!match) dismissed.current = -1;
+    const from = match ? $from.pos - match[1].length - 1 : -1;
+    if (!match || !view.hasFocus() || from === dismissed.current || !wrapper.current) {
+      setMenu(null);
+      return;
+    }
+    const box = wrapper.current.getBoundingClientRect();
+    const at = view.coordsAtPos(from);
+    if (menu?.query !== match[1]) setActive(0);
+    setMenu({ query: match[1], from, left: at.left - box.left, top: at.bottom - box.top + 4 });
+  };
+
+  const slashKeyDown = (event: KeyboardEvent) => {
+    if (!menu || items.length === 0) return false;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      setActive((active + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length);
+    } else if (event.key === "Enter" || event.key === "Tab") {
+      pick(items[active]);
+    } else if (event.key === "Escape") {
+      dismissed.current = menu.from;
+      setMenu(null);
+    } else return false;
+    return true;
+  };
+
+  // Menu sulla selezione: compare sopra il testo selezionato, a mouse rilasciato.
+  const [bubble, setBubble] = useState<{ left: number; top: number } | null>(null);
+  const pointerDown = useRef(false);
+
+  const updateBubble = (view: EditorView) => {
+    const { selection } = view.state;
+    if (selection.empty || !(selection instanceof TextSelection) || !view.hasFocus() || pointerDown.current || !wrapper.current) {
+      setBubble(null);
+      return;
+    }
+    const box = wrapper.current.getBoundingClientRect();
+    const start = view.coordsAtPos(selection.from);
+    setBubble({ left: start.left - box.left, top: start.top - box.top - 6 });
+  };
+
+  // Il plugin è creato una volta sola: legge le funzioni dell'ultimo render da qui.
+  const slashHandlers = useRef({ updateSlash, slashKeyDown, updateBubble });
+  useEffect(() => {
+    slashHandlers.current = { updateSlash, slashKeyDown, updateBubble };
+  });
+
+  useEffect(() => {
+    const release = () => {
+      if (!pointerDown.current) return;
+      pointerDown.current = false;
+      const created = editor.current;
+      if (created) slashHandlers.current.updateBubble(created.ctx.get(editorViewCtx));
+    };
+    document.addEventListener("mouseup", release);
+    return () => document.removeEventListener("mouseup", release);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,12 +164,34 @@ export function MilkdownEditor(props: {
           },
         }));
         ctx.get(listenerCtx).markdownUpdated((_, markdown) => callbacks.current.onChange(markdown));
+        ctx.set(slash.key, {
+          view: () => ({
+            update: (view) => {
+              slashHandlers.current.updateSlash(view);
+              slashHandlers.current.updateBubble(view);
+            },
+          }),
+          props: {
+            handleKeyDown: (_, event) => slashHandlers.current.slashKeyDown(event),
+            handleDOMEvents: {
+              blur: () => {
+                setMenu(null);
+                setBubble(null);
+              },
+              mousedown: () => {
+                pointerDown.current = true;
+                setBubble(null);
+              },
+            },
+          },
+        });
       })
       .use(commonmark)
       .use(gfm)
       .use(taskItemView)
       .use(history)
       .use(listener)
+      .use(slash)
       .create()
       .then((created) => {
         if (cancelled) return created.destroy(true);
@@ -117,10 +248,131 @@ export function MilkdownEditor(props: {
           </Button>
         ))}
       </div>
-      <div ref={root} className={EDITOR_STYLES} />
+      <div ref={wrapper} className="relative">
+        <div ref={root} className={EDITOR_STYLES} />
+        {bubble && (
+          <div
+            role="toolbar"
+            aria-label="Formato del testo selezionato"
+            className="absolute z-20 flex -translate-y-full items-center gap-0.5 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+            style={{ left: bubble.left, top: bubble.top }}
+          >
+            {BUBBLE_TOOLS.map((group, index) => (
+              <div key={index} className="flex gap-0.5 not-first:border-l not-first:pl-0.5">
+                {group.map(({ label, icon: Icon, run }) => (
+                  <Button
+                    key={label}
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    title={label}
+                    aria-label={label}
+                    // mousedown: il clic non toglie la selezione dall'editor.
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      editor.current?.action(run);
+                    }}
+                  >
+                    <Icon />
+                  </Button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+        {menu && items.length > 0 && (
+          <div
+            role="listbox"
+            aria-label="Inserisci blocco"
+            className="absolute z-20 max-h-72 w-64 overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+            style={{ left: menu.left, top: menu.top }}
+          >
+            {items.map((item, index) => (
+              <div
+                key={item.label}
+                role="option"
+                aria-selected={index === active}
+                ref={index === active ? (el) => el?.scrollIntoView({ block: "nearest" }) : undefined}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent [&_svg]:size-4 [&_svg]:text-muted-foreground"
+                onMouseEnter={() => setActive(index)}
+                // mousedown: il clic non toglie il cursore dall'editor.
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  pick(item);
+                }}
+              >
+                <item.icon />
+                <span className="flex-1">{item.label}</span>
+                <span className="font-mono text-xs text-muted-foreground">{item.hint}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+
+const slash = slashFactory("asdp");
+
+// Voci del menu "/". search: testo su cui filtra quello che si scrive dopo la "/".
+type SlashItem = { label: string; hint: string; search: string; icon: typeof List; run: (ctx: Ctx) => unknown };
+const SLASH_ITEMS: SlashItem[] = [
+  { label: "Titolo 2", hint: "##", search: "titolo 2 h2 heading", icon: Heading2, run: callCommand(wrapInHeadingCommand.key, 2) },
+  { label: "Titolo 3", hint: "###", search: "titolo 3 h3 heading", icon: Heading3, run: callCommand(wrapInHeadingCommand.key, 3) },
+  { label: "Titolo 4", hint: "####", search: "titolo 4 h4 heading", icon: Heading4, run: callCommand(wrapInHeadingCommand.key, 4) },
+  { label: "Elenco puntato", hint: "-", search: "elenco puntato lista bullet", icon: List, run: callCommand(wrapInBulletListCommand.key) },
+  { label: "Elenco numerato", hint: "1.", search: "elenco numerato lista numbered", icon: ListOrdered, run: callCommand(wrapInOrderedListCommand.key) },
+  {
+    label: "Elenco di controllo",
+    hint: "[ ]",
+    search: "elenco di controllo lista todo to-do checkbox caselle",
+    icon: ListTodo,
+    // Elenco puntato, poi la voce diventa "- [ ]".
+    run: (ctx) => {
+      callCommand(wrapInBulletListCommand.key)(ctx);
+      const view = ctx.get(editorViewCtx);
+      const { $from } = view.state.selection;
+      for (let depth = $from.depth; depth > 0; depth--) {
+        if ($from.node(depth).type === listItemSchema.type(ctx)) {
+          view.dispatch(view.state.tr.setNodeAttribute($from.before(depth), "checked", false));
+          return;
+        }
+      }
+    },
+  },
+  { label: "Citazione", hint: ">", search: "citazione quote blockquote", icon: Quote, run: callCommand(wrapInBlockquoteCommand.key) },
+  { label: "Blocco di codice", hint: "```", search: "blocco di codice code", icon: Code, run: callCommand(createCodeBlockCommand.key) },
+  { label: "Tabella", hint: "", search: "tabella table", icon: Table, run: callCommand(insertTableCommand.key) },
+  { label: "Separatore", hint: "---", search: "separatore linea divider hr", icon: Minus, run: callCommand(insertHrCommand.key) },
+];
+
+// Menu sulla selezione: a sinistra trasforma il blocco, a destra il formato del testo.
+const BUBBLE_TOOLS: { label: string; icon: typeof List; run: (ctx: Ctx) => unknown }[][] = [
+  [
+    { label: "Testo", icon: Type, run: callCommand(turnIntoTextCommand.key) },
+    { label: "Titolo 2", icon: Heading2, run: callCommand(wrapInHeadingCommand.key, 2) },
+    { label: "Titolo 3", icon: Heading3, run: callCommand(wrapInHeadingCommand.key, 3) },
+    { label: "Titolo 4", icon: Heading4, run: callCommand(wrapInHeadingCommand.key, 4) },
+    { label: "Elenco puntato", icon: List, run: callCommand(wrapInBulletListCommand.key) },
+    { label: "Elenco numerato", icon: ListOrdered, run: callCommand(wrapInOrderedListCommand.key) },
+    { label: "Citazione", icon: Quote, run: callCommand(wrapInBlockquoteCommand.key) },
+  ],
+  [
+    { label: "Grassetto", icon: Bold, run: callCommand(toggleStrongCommand.key) },
+    { label: "Corsivo", icon: Italic, run: callCommand(toggleEmphasisCommand.key) },
+    { label: "Barrato", icon: Strikethrough, run: callCommand(toggleStrikethroughCommand.key) },
+    { label: "Codice", icon: Code, run: callCommand(toggleInlineCodeCommand.key) },
+    {
+      label: "Link",
+      icon: Link,
+      run: (ctx) => {
+        const href = prompt("Indirizzo del link");
+        if (href) callCommand(toggleLinkCommand.key, { href })(ctx);
+      },
+    },
+  ],
+];
 
 // Voci "- [ ]" / "- [x]" (opzioni delle D[N]): il preset gfm le legge e le salva ma non mostra la
 // casella. Questa vista la aggiunge; le altre voci d'elenco restano col DOM del preset.
