@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition } from "react";
 import { ChevronRight, Folder, FolderPlus, MoreHorizontal, MoveRight, Pencil, Trash2, Upload, X } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -23,6 +24,7 @@ import {
   newFolder,
   refreshFiles,
   renameFile,
+  startNewVersion,
   startUpload,
 } from "../file-actions";
 
@@ -49,20 +51,110 @@ async function sendFile(uploadUrl: string, file: File, onProgress: (sent: number
   }
 }
 
-export function FolderToolbar({ projectId, locationId, folder }: Target & { folder: string }) {
+// --- Caricamento: bottone «Carica» e trascinamento dal computer sulla card ---
+
+type Pending = { files: File[]; existing: string[] };
+
+const UploadContext = createContext<{
+  pick: () => void;
+  busy: boolean;
+  status: string | null;
+  error: string | null;
+} | null>(null);
+
+function useUpload() {
+  const context = useContext(UploadContext);
+  if (!context) throw new Error("UploadArea mancante");
+  return context;
+}
+
+// Trascinamento di file dal computer (non di testo o link della pagina).
+const hasFiles = (e: DragEvent | React.DragEvent) => e.dataTransfer?.types.includes("Files") ?? false;
+
+const skippedMessage = (names: string[]) =>
+  `Cartelle non caricate: ${names.map((n) => `«${n}»`).join(", ")}. Trascina i file che contengono.`;
+
+// Avvolge barra e tabella della cartella aperta: con enabled (cartella, non risultati di ricerca)
+// i file trascinati sulla card si caricano lì. Mentre si trascina nella finestra la card mostra
+// dove rilasciare; fuori dalla card il rilascio è bloccato (il browser aprirebbe il file).
+// fileNames: i file (non le cartelle) già presenti, per chiedere se sostituirli.
+export function UploadArea({
+  projectId,
+  locationId,
+  folder,
+  folderLabel,
+  fileNames,
+  enabled,
+  children,
+}: Target & { folder: string; folderLabel: string; fileNames: string[]; enabled: boolean; children: React.ReactNode }) {
   const input = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  // File scelti con nomi già presenti: in attesa di Sostituisci / Mantieni entrambi.
+  const [pending, setPending] = useState<Pending | null>(null);
+  // dragenter/dragleave scattano anche passando sui figli: contatori invece di booleani.
+  const windowDepth = useRef(0);
+  const areaDepth = useRef(0);
+  const [dragging, setDragging] = useState(false);
+  const [over, setOver] = useState(false);
+  const busy = uploading || pending !== null;
 
-  async function upload(files: FileList) {
+  useEffect(() => {
+    if (!enabled) return;
+    const reset = () => {
+      windowDepth.current = 0;
+      areaDepth.current = 0;
+      setDragging(false);
+      setOver(false);
+    };
+    const enter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      windowDepth.current += 1;
+      setDragging(true);
+    };
+    const leave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      windowDepth.current -= 1;
+      if (windowDepth.current <= 0) reset();
+    };
+    // Fuori dalla card: niente rilascio, così il browser non apre il file al posto dell'app.
+    const block = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      if (e.type === "dragover" && e.dataTransfer) e.dataTransfer.dropEffect = "none";
+      if (e.type === "drop") reset();
+    };
+    window.addEventListener("dragenter", enter);
+    window.addEventListener("dragleave", leave);
+    window.addEventListener("dragover", block);
+    window.addEventListener("drop", block);
+    return () => {
+      window.removeEventListener("dragenter", enter);
+      window.removeEventListener("dragleave", leave);
+      window.removeEventListener("dragover", block);
+      window.removeEventListener("drop", block);
+    };
+  }, [enabled]);
+
+  // SharePoint non distingue maiuscole e minuscole nei nomi.
+  function choose(files: File[], skipped: string[] = []) {
+    setError(skipped.length ? skippedMessage(skipped) : null);
+    if (!files.length) return;
+    const names = new Set(fileNames.map((n) => n.toLowerCase()));
+    const existing = files.filter((f) => names.has(f.name.toLowerCase())).map((f) => f.name);
+    if (existing.length) setPending({ files, existing });
+    else upload(files, false);
+  }
+
+  async function upload(files: File[], replace: boolean) {
+    setPending(null);
     setUploading(true);
-    setError(null);
     const failed: string[] = [];
-    for (const [i, file] of [...files].entries()) {
+    for (const [i, file] of files.entries()) {
       const label = files.length > 1 ? `${i + 1}/${files.length} ` : "";
       setStatus(`Caricamento ${label}«${file.name}»…`);
-      const result = await startUpload(projectId, locationId, folder, file.name);
+      const result = await startUpload(projectId, locationId, folder, file.name, replace);
       if (result.error || !result.uploadUrl) {
         failed.push(result.error ?? file.name);
         continue;
@@ -76,22 +168,122 @@ export function FolderToolbar({ projectId, locationId, folder }: Target & { fold
       }
     }
     setStatus(null);
-    setError(failed.length ? failed.join(" ") : null);
+    // Un avviso sulle cartelle saltate resta visibile se non ci sono altri errori.
+    if (failed.length) setError(failed.join(" "));
     setUploading(false);
-    if (input.current) input.current.value = "";
     await refreshFiles();
   }
 
+  function drop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    windowDepth.current = 0;
+    areaDepth.current = 0;
+    setDragging(false);
+    setOver(false);
+    if (busy) return;
+    // Le cartelle arrivano come voci senza contenuto: si riconoscono dall'entry.
+    const files: File[] = [];
+    const skipped: string[] = [];
+    for (const item of [...e.dataTransfer.items]) {
+      if (item.kind !== "file") continue;
+      const file = item.getAsFile();
+      if (item.webkitGetAsEntry()?.isDirectory) skipped.push(file?.name ?? "cartella");
+      else if (file) files.push(file);
+    }
+    choose(files, skipped);
+  }
+
+  const area = enabled
+    ? {
+        onDragEnter: (e: React.DragEvent) => {
+          if (!hasFiles(e)) return;
+          areaDepth.current += 1;
+          setOver(true);
+        },
+        onDragLeave: (e: React.DragEvent) => {
+          if (!hasFiles(e)) return;
+          areaDepth.current -= 1;
+          if (areaDepth.current <= 0) setOver(false);
+        },
+        onDragOver: (e: React.DragEvent) => {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = busy ? "none" : "copy";
+        },
+        onDrop: drop,
+      }
+    : {};
+  const ready = over && !busy;
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <UploadContext.Provider value={{ pick: () => input.current?.click(), busy, status, error }}>
+      <div className="relative flex flex-col gap-4" {...area}>
+        {children}
+        {enabled && dragging && (
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute -inset-2 z-20 flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-center backdrop-blur-[2px] transition-colors",
+              ready ? "border-primary bg-primary/15" : "border-border bg-background/70",
+            )}
+          >
+            <Upload className={cn("size-8", ready ? "text-primary" : "text-muted-foreground")} />
+            <p className="font-medium">
+              {busy ? "Attendi la fine del caricamento in corso" : over ? "Rilascia per caricare" : "Trascina qui per caricare"}
+            </p>
+            {!busy && <p className="text-sm text-muted-foreground">in «{folderLabel}»</p>}
+          </div>
+        )}
+      </div>
       <input
         ref={input}
         type="file"
         multiple
         hidden
-        onChange={(e) => e.currentTarget.files?.length && upload(e.currentTarget.files)}
+        onChange={(e) => {
+          const files = [...(e.currentTarget.files ?? [])];
+          e.currentTarget.value = "";
+          if (files.length) choose(files);
+        }}
       />
-      <Button variant="outline" size="sm" disabled={uploading} onClick={() => input.current?.click()}>
+      <Dialog open={pending !== null} onOpenChange={(open) => !open && setPending(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {pending?.existing.length === 1
+                ? `«${pending.existing[0]}» esiste già`
+                : `${pending?.existing.length} file esistono già`}
+            </DialogTitle>
+          </DialogHeader>
+          {pending && pending.existing.length > 1 && (
+            <p className="text-sm">{pending.existing.map((n) => `«${n}»`).join(", ")}</p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            Sostituisci carica una nuova versione: nome e link restano, SharePoint tiene la versione precedente.
+            Mantieni entrambi crea una copia con un numero nel nome.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPending(null)}>
+              Annulla
+            </Button>
+            <Button variant="outline" onClick={() => pending && upload(pending.files, false)}>
+              Mantieni entrambi
+            </Button>
+            <Button onClick={() => pending && upload(pending.files, true)}>Sostituisci</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </UploadContext.Provider>
+  );
+}
+
+export function FolderToolbar({ projectId, locationId, folder }: Target & { folder: string }) {
+  const { pick, busy, status, error } = useUpload();
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button variant="outline" size="sm" disabled={busy} onClick={pick} title="Oppure trascina i file sulla tabella">
         <Upload /> Carica
       </Button>
       <NameDialog
@@ -115,7 +307,7 @@ export function ItemActions({
   locationId,
   item,
 }: Target & { item: { id: string; name: string; folder: boolean } }) {
-  const [dialog, setDialog] = useState<"rename" | "move" | "delete" | null>(null);
+  const [dialog, setDialog] = useState<"version" | "rename" | "move" | "delete" | null>(null);
   const close = () => setDialog(null);
   const kind = item.folder ? "la cartella" : "il file";
 
@@ -125,7 +317,12 @@ export function ItemActions({
         <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Altre azioni" title="Altre azioni" />}>
           <MoreHorizontal />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuContent align="end" className="w-52">
+          {!item.folder && (
+            <DropdownMenuItem onClick={() => setDialog("version")}>
+              <Upload /> Carica nuova versione
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => setDialog("rename")}>
             <Pencil /> Rinomina
           </DropdownMenuItem>
@@ -139,6 +336,9 @@ export function ItemActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {dialog === "version" && (
+        <NewVersionDialog projectId={projectId} locationId={locationId} item={item} onClose={close} />
+      )}
       <NameDialog
         open={dialog === "rename"}
         onOpenChange={(open) => !open && close()}
@@ -164,6 +364,78 @@ export function ItemActions({
         onConfirm={() => deleteFile(projectId, locationId, item.id)}
       />
     </>
+  );
+}
+
+// Nuova versione di un file: il file scelto ne sostituisce il contenuto, nome e link restano.
+// Stessa estensione obbligatoria, altrimenti per esempio un PDF finirebbe in un .docx.
+function NewVersionDialog({
+  projectId,
+  locationId,
+  item,
+  onClose,
+}: Target & { item: { id: string; name: string }; onClose: () => void }) {
+  const dot = item.name.lastIndexOf(".");
+  const extension = dot > 0 ? item.name.slice(dot).toLowerCase() : "";
+  const [file, setFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function upload() {
+    if (!file) return;
+    if (extension && !file.name.toLowerCase().endsWith(extension)) {
+      return setError(`Scegli un file ${extension}: il nome resta «${item.name}».`);
+    }
+    setUploading(true);
+    setError(null);
+    const result = await startNewVersion(projectId, locationId, item.id);
+    try {
+      if (result.error || !result.uploadUrl) throw new Error(result.error ?? "Caricamento non riuscito.");
+      await sendFile(result.uploadUrl, file, (sent) =>
+        setStatus(`Caricamento ${Math.round((sent / Math.max(file.size, 1)) * 100)}%`),
+      );
+    } catch {
+      setStatus(null);
+      setUploading(false);
+      return setError(result.error ?? "Caricamento interrotto, riprova.");
+    }
+    await refreshFiles();
+    onClose();
+  }
+
+  return (
+    <Dialog open onOpenChange={(value) => !value && !uploading && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Nuova versione di «{item.name}»</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Il file scelto sostituisce il contenuto: nome e link restano, SharePoint tiene la versione precedente nella
+          cronologia delle versioni.
+        </p>
+        <Input
+          type="file"
+          accept={extension || undefined}
+          aria-label="File"
+          disabled={uploading}
+          onChange={(e) => {
+            setError(null);
+            setFile(e.currentTarget.files?.[0] ?? null);
+          }}
+        />
+        {status && <p className="text-sm text-muted-foreground">{status}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" disabled={uploading} onClick={onClose}>
+            Annulla
+          </Button>
+          <Button disabled={!file || uploading} onClick={upload}>
+            {uploading ? "Attendi…" : "Carica"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

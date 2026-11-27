@@ -36,6 +36,7 @@ import {
   RowCheckbox,
   SelectAllCheckbox,
   SelectionBar,
+  UploadArea,
 } from "./file-manager";
 
 export type FilesParams = {
@@ -282,22 +283,33 @@ export async function ProjectFiles({
           key={`${location.id}/${folder}/${query}`}
           items={rows.map(({ item }) => ({ id: item.id, name: item.name, folder: Boolean(item.folder) }))}
         >
+        <UploadArea
+          projectId={projectId}
+          locationId={location.id}
+          folder={folder}
+          folderLabel={segments.at(-1) ?? location.label}
+          fileNames={rows.filter(({ item }) => !item.folder).map(({ item }) => item.name)}
+          enabled={data.kind === "folder"}
+        >
         <SelectionBar projectId={projectId} locationId={location.id}>
           {data.kind === "folder" && <FolderToolbar projectId={projectId} locationId={location.id} folder={folder} />}
         </SelectionBar>
         {/* Altezza massima pari allo spazio sotto l'intestazione: la tabella scorre al suo interno. */}
         <div className="[&>[data-slot=table-container]]:max-h-[max(16rem,calc(100dvh-var(--project-header-h)-18rem))] [&>[data-slot=table-container]]:overflow-y-auto">
-        <Table>
+        {/* Layout fisso: le colonne hanno larghezze fisse, Nome prende il resto e i testi lunghi
+            si troncano, così le azioni restano visibili senza scorrere in orizzontale. Sugli
+            schermi stretti si nascondono le colonne meno importanti. */}
+        <Table className="table-fixed">
           <TableHeader className="sticky top-0 z-10 bg-background shadow-[inset_0_-1px_0_var(--border)]">
             <TableRow>
               <TableHead className="w-8">
                 <SelectAllCheckbox />
               </TableHead>
               {sortHead("nome", "Nome")}
-              {data.kind === "search" && <TableHead>Cartella</TableHead>}
-              <TableHead>Modificato da</TableHead>
-              {sortHead("modificato", "Modificato")}
-              {sortHead("dimensione", "Dimensione", "text-right")}
+              {data.kind === "search" && <TableHead className="hidden w-48 md:table-cell">Cartella</TableHead>}
+              <TableHead className="hidden w-44 lg:table-cell">Modificato da</TableHead>
+              {sortHead("modificato", "Modificato", "hidden w-32 sm:table-cell")}
+              {sortHead("dimensione", "Dimensione", "hidden w-28 text-right md:table-cell")}
               <TableHead className="w-28" />
             </TableRow>
           </TableHeader>
@@ -308,11 +320,12 @@ export async function ProjectFiles({
                   <TableCell className="w-8">
                     <RowCheckbox id={item.id} name={item.name} />
                   </TableCell>
-                  <TableCell className="max-w-96">
+                  <TableCell>
                     {item.folder ? (
                       <Link
                         href={href({ file: location.id, cartella: parent ? `${parent}/${item.name}` : item.name })}
                         scroll={false}
+                        title={item.name}
                         className="flex items-center gap-2 hover:underline"
                       >
                         <FileIcon item={item} />
@@ -323,6 +336,7 @@ export async function ProjectFiles({
                         href={item.webUrl}
                         target="_blank"
                         rel="noreferrer"
+                        title={item.name}
                         className="flex items-center gap-2 hover:underline"
                       >
                         <FileIcon item={item} />
@@ -331,21 +345,24 @@ export async function ProjectFiles({
                     )}
                   </TableCell>
                   {data.kind === "search" && (
-                    <TableCell>
+                    <TableCell className="hidden truncate md:table-cell">
                       <Link
                         href={href({ file: location.id, cartella: parent })}
                         scroll={false}
+                        title={parent || location.label}
                         className="text-muted-foreground hover:underline"
                       >
                         {parent || location.label}
                       </Link>
                     </TableCell>
                   )}
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="hidden truncate text-muted-foreground lg:table-cell">
                     {item.lastModifiedBy?.user?.displayName ?? "—"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(item.lastModifiedDateTime)}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
+                    {formatDate(item.lastModifiedDateTime)}
+                  </TableCell>
+                  <TableCell className="hidden text-right text-muted-foreground md:table-cell">
                     {item.folder ? `${item.folder.childCount} elementi` : formatSize(item.size)}
                   </TableCell>
                   <TableCell>
@@ -381,6 +398,7 @@ export async function ProjectFiles({
           </TableBody>
         </Table>
         </div>
+        </UploadArea>
         </FileSelection>
       )}
 

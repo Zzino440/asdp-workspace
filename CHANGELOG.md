@@ -25,6 +25,36 @@
 
 ## Storia
 
+## [0.15.0] 2026-11-27 — File Teams: sostituire con una nuova versione
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **File del progetto, Carica**: se un file scelto ha lo stesso nome di uno nella cartella, l'app
+  chiede **Sostituisci** (nuova versione dello stesso file: nome e link restano, SharePoint tiene
+  la precedente nella cronologia delle versioni) o **Mantieni entrambi** (copia "nome 1.docx",
+  come prima). Una scelta per tutto il gruppo di file.
+- **Menu ⋯ di un file → Carica nuova versione**: il file scelto dal computer sostituisce il
+  contenuto; serve la stessa estensione.
+- **Trascina per caricare**: i file trascinati dal computer sulla card della cartella aperta si
+  caricano lì, con lo stesso flusso di Carica (avanzamento, Sostituisci / Mantieni entrambi).
+  Mentre si trascina, la card mostra un overlay con la cartella di destinazione ("Trascina qui",
+  poi "Rilascia per caricare"); fuori dalla card il rilascio è bloccato. Le cartelle trascinate
+  sono saltate con un avviso. Non attivo nei risultati di ricerca.
+- Graph: `createUploadSession` con `conflictBehavior` `rename` o `replace`; nuova azione
+  `startNewVersion` (controlla con `itemInFolder` che il file sia nella cartella collegata).
+- Il tool MCP di caricamento non cambia (con un nome già presente fallisce).
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- Typecheck, lint e build ok (il lint globale falliva per i file generati nel worktree
+  `microsoft-registration-integration-6c1a37`, rimosso perché già in `master`).
+- Non provato nel browser con SharePoint: da provare su una cartella di test.
+- Trascinamento: overlay provato nel browser con eventi simulati (entrata nella finestra, sopra la
+  card, uscita); rilascio reale dal computer e caricamento non provati.
+
 ## [0.14.0] 2026-11-26 — Percorso: stati, domande D[N] e attività recente
 
 **Autore**: Lorenzo Belli con Claude Code

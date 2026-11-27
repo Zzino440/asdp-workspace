@@ -271,12 +271,19 @@ export const deleteItem = (graph: Graph, driveId: string, itemId: string) =>
   graph<void>(`/drives/${driveId}/items/${itemId}`, { method: "DELETE" });
 
 // Sessione di caricamento: il browser manda i byte direttamente a SharePoint (uploadUrl già
-// autorizzato, senza token), quindi il file non passa dall'app. Con un nome già presente
-// SharePoint ne crea uno nuovo ("nome 1.docx") invece di sovrascrivere.
-export async function createUploadSession(graph: Graph, driveId: string, parentId: string, fileName: string) {
+// autorizzato, senza token), quindi il file non passa dall'app. Con un nome già presente:
+// "rename" crea un file nuovo ("nome 1.docx"), "replace" carica una nuova versione di quello
+// esistente (stesso link; SharePoint tiene le precedenti).
+export async function createUploadSession(
+  graph: Graph,
+  driveId: string,
+  parentId: string,
+  fileName: string,
+  conflict: "rename" | "replace" = "rename",
+) {
   const { uploadUrl } = await graph<{ uploadUrl: string }>(
     `/drives/${driveId}/items/${parentId}:/${encodeURIComponent(fileName)}:/createUploadSession`,
-    json("POST", { item: { "@microsoft.graph.conflictBehavior": "rename" } }),
+    json("POST", { item: { "@microsoft.graph.conflictBehavior": conflict } }),
   );
   return uploadUrl;
 }

@@ -251,13 +251,32 @@ export async function deleteFiles(projectId: string, locationId: string, itemIds
 }
 
 // Prepara il caricamento: il browser poi manda il file direttamente a SharePoint (uploadUrl).
-export async function startUpload(projectId: string, locationId: string, folder: string, fileName: string) {
+// Con replace un file con lo stesso nome riceve una nuova versione invece di una copia rinominata.
+export async function startUpload(
+  projectId: string,
+  locationId: string,
+  folder: string,
+  fileName: string,
+  replace = false,
+) {
   const parsed = nameSchema.safeParse(fileName);
   if (!parsed.success) return { error: `«${fileName}»: ${parsed.error.issues[0].message}` };
   try {
     const { graph, drive, root } = await location(projectId, locationId);
     const parent = await getItem(graph, drive, root, folder);
-    return { uploadUrl: await createUploadSession(graph, drive, parent.id, parsed.data) };
+    return { uploadUrl: await createUploadSession(graph, drive, parent.id, parsed.data, replace ? "replace" : "rename") };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+// Nuova versione di un file esistente: nome e link restano, SharePoint tiene le versioni precedenti.
+export async function startNewVersion(projectId: string, locationId: string, itemId: string): Promise<FileResult> {
+  try {
+    const { graph, drive, root } = await location(projectId, locationId);
+    const item = await itemInFolder(graph, drive, root, itemId);
+    if (item.folder || !item.parentReference.id) return { error: "Si può caricare una nuova versione solo di un file." };
+    return { uploadUrl: await createUploadSession(graph, drive, item.parentReference.id, item.name, "replace") };
   } catch (e) {
     return failure(e);
   }

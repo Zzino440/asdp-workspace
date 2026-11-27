@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.14.0, scheda Percorso; accesso con Microsoft)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.15.0, file Teams: sostituire con una nuova versione, non committata)
 
 ## Versione
 
@@ -425,7 +425,11 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
    controllato con `itemInFolder`: niente fuori dalla cartella collegata), Graph in
    `src/lib/microsoft.ts`. Permessi: li decide SharePoint. Provati nel browser solo i dialoghi;
    le scritture vanno provate su una cartella di test (la cartella collegata a PFS in locale è
-   un Team reale con colleghi). Da valutare: sostituire un file con una nuova versione.
+   un Team reale con colleghi). Sostituzione con nuova versione fatta in `0.15.0` (dialogo
+   Sostituisci / Mantieni entrambi al caricamento, voce "Carica nuova versione" nel menu ⋯ del
+   file), non provata su SharePoint. Sempre in `0.15.0`: trascinamento dei file dal computer
+   sulla card (`UploadArea` in `file-manager.tsx`, overlay con la cartella di destinazione),
+   overlay provato con eventi simulati, rilascio reale da provare.
 5. [~] **7c**: file Teams come input delle skill, **solo dal connettore ASDP** (decisione di
    Lorenzo del 2026-11-26: non si conta sul connettore M365 di Claude, gli utenti potrebbero non
    averlo). Fatto in `0.12.0`, non committato, solo per Lorenzo in locale (registrato solo con

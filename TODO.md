@@ -84,8 +84,6 @@ Mappa del 2026-11-26 (dettagli in `docs/STATO.md`, "File di progetto da Teams/Sh
 l'integrazione vale solo per Lorenzo in locale: quello che tocca altre persone o l'AI aspetta
 l'analisi GDPR per l'IT.
 
-- [ ] **Sostituisci con una nuova versione**: oggi un caricamento con lo stesso nome crea una
-  copia rinominata; valutare un'azione che sovrascrive (SharePoint tiene le versioni).
 - [ ] **Tracciabilità**: nel documento ASDP (P1.3, T1.4) i link ai file Teams da cui è nato
   (verbali, trascrizioni). Solo file di Lorenzo: si può fare subito.
 - [ ] **Analisi GDPR per l'IT** (condizione per altri utenti e cloud): flussi, trasferimenti extra
@@ -101,7 +99,8 @@ l'analisi GDPR per l'IT.
   nel nome. Come sopra.
 - [ ] **Evidenza dell'approvazione del PO scelta da SharePoint**: un link da solo è debole (il file
   cambia o sparisce); serve una versione fissa del file o una copia in Storage. Da decidere col
-  team.
+  team. Con «Sostituisci» / «Carica nuova versione» (`0.15.0`) succede più spesso: stesso link,
+  contenuto nuovo. Vale anche per la tracciabilità qui sopra.
 - [ ] **7c, file come input delle skill**: opzione economica `get_project` che restituisce le
   cartelle collegate (Claude Desktop le legge col connettore M365); opzione completa tool MCP
   `list_project_files` / `read_project_file`. Bloccata dalla DPIA (dati dei clienti verso
