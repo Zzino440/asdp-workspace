@@ -69,10 +69,9 @@ Funzioni committate ma non provate fino in fondo. Prove con file e Teams **sempr
 - **Desktop Extension di sviluppo** (`mcpb/`): installazione in Claude Desktop, login con un
   utente del seed, tool visibili (server del plugin disattivato).
 - **Editor**: come appaiono i commenti HTML del corpo (in lettura sono nascosti).
-- **Consolidamento (0.22.3)**: su PSW un `.md` con YAML rotto (chiave duplicata) → Reindicizza
-  indicizza gli altri e lo segnala, pagina con l'avviso; conferma del salvataggio non a blocchi;
-  pagina «Qualcosa non ha funzionato» con GitLab irraggiungibile; MCP `update_document` senza
-  frontespizio → errore senza commit.
+- **Consolidamento (0.22.3)**: conferma del salvataggio non a blocchi; pagina «Qualcosa non ha
+  funzionato» con GitLab irraggiungibile. Provati su PSW il 2026-11-27: YAML rotto (Reindicizza,
+  pagina con avviso, MCP `read_document`) e rifiuto MCP senza frontespizio o con YAML rotto.
 - **pgTAP**: rilanciare dopo un `supabase db reset` (con i dati locali in più 7 test falliscono
   per i conteggi, non per le migrazioni).
 
