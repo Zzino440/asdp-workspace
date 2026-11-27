@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Download,
   ExternalLink,
+  FileText,
   Folder,
   FolderPlus,
   History,
@@ -394,9 +395,10 @@ export function ItemRow({
   locationId,
   item,
   openHref,
+  documentHref,
   className,
   children,
-}: Target & { item: RowItem; openHref?: string; className?: string; children: React.ReactNode }) {
+}: Target & { item: RowItem; openHref?: string; documentHref?: string; className?: string; children: React.ReactNode }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<Action | null>(null);
   const close = () => setDialog(null);
@@ -418,6 +420,11 @@ export function ItemRow({
           >
             {item.folder ? <Folder /> : <ExternalLink />} Apri
           </ContextMenuItem>
+          {documentHref && (
+            <ContextMenuItem onClick={() => router.push(documentHref)}>
+              <FileText /> Apri il documento ASDP
+            </ContextMenuItem>
+          )}
           {!item.folder && (
             <>
               <ContextMenuItem onClick={() => window.open(download, "_self")}>

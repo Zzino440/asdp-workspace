@@ -181,7 +181,10 @@
   del progetto" (scheda File dell'app, cartella `ASDP/<fase>`) oltre ad "Apri su SharePoint",
   dialog più largo (`sm:max-w-md`); sotto "Su Teams" nel documento: file con icona ↗ (SharePoint)
   e "Vedi nei File" con icona cartella (scheda File dell'app, tooltip con il percorso);
-  `location_id` ora letto da `document_publications`.
+  `location_id` ora letto da `document_publications`. Percorso inverso: nella scheda File i file
+  pubblicati da un documento hanno il chip "Documento ASDP" e, nel tasto destro, "Apri il
+  documento ASDP" (mappa item_id → documento da `document_publications.items`). Typecheck, lint,
+  build ok; non provato nel browser.
   Typecheck, lint, build ok; non provato nel browser (serve una pubblicazione vera, su PSW).
 
 ## Milestone

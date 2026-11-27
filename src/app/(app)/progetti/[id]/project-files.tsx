@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -101,11 +102,22 @@ export async function ProjectFiles({
   params: FilesParams;
 }) {
   const supabase = await createClient();
-  const { data: locations } = await supabase
-    .from("project_file_locations")
-    .select("id, label, drive_id, item_id, web_url")
-    .eq("project_id", projectId)
-    .order("created_at");
+  const [{ data: locations }, { data: publications }] = await Promise.all([
+    supabase
+      .from("project_file_locations")
+      .select("id, label, drive_id, item_id, web_url")
+      .eq("project_id", projectId)
+      .order("created_at"),
+    supabase.from("document_publications").select("path, document_type, items").eq("project_id", projectId),
+  ]);
+  // File pubblicati da un documento ASDP: dalla riga si torna alla pagina del documento.
+  const documentOf = new Map<string, { href: string; type: string | null }>();
+  for (const p of publications ?? []) {
+    const href = `/progetti/${projectId}/documenti/${p.path.split("/").map(encodeURIComponent).join("/")}`;
+    for (const item of Object.values((p.items ?? {}) as Record<string, { item_id: string }>)) {
+      documentOf.set(item.item_id, { href, type: p.document_type });
+    }
+  }
 
   const base = `/progetti/${projectId}/file`;
   const href = (query: Record<string, string | undefined>) => {
@@ -333,6 +345,7 @@ export async function ProjectFiles({
                       ? href({ file: location.id, cartella: parent ? `${parent}/${item.name}` : item.name })
                       : undefined
                   }
+                  documentHref={documentOf.get(item.id)?.href}
                   className="has-data-checked:bg-muted/50"
                 >
                   <TableCell className="w-8">
@@ -350,16 +363,28 @@ export async function ProjectFiles({
                         <span className="truncate">{item.name}</span>
                       </Link>
                     ) : (
-                      <a
-                        href={item.webUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={item.name}
-                        className="flex items-center gap-2 hover:underline"
-                      >
-                        <FileIcon item={item} />
-                        <span className="truncate">{item.name}</span>
-                      </a>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <a
+                          href={item.webUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={item.name}
+                          className="flex min-w-0 items-center gap-2 hover:underline"
+                        >
+                          <FileIcon item={item} />
+                          <span className="truncate">{item.name}</span>
+                        </a>
+                        {documentOf.has(item.id) && (
+                          <Badge
+                            variant="secondary"
+                            render={<Link href={documentOf.get(item.id)!.href} />}
+                            title={`Copia pubblicata del documento ${documentOf.get(item.id)!.type ?? "ASDP"}: apri la sua pagina nell'app`}
+                          >
+                            <FileText />
+                            Documento ASDP
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </TableCell>
                   {data.kind === "search" && (
