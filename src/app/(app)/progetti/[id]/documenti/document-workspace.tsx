@@ -226,16 +226,28 @@ export function DocumentWorkspace(props: {
     setEditing(false);
   }
 
+  // null: l'utente non conferma il salvataggio del testo riscritto per intero dall'editor.
   function bodyText() {
     if (!bodyDirty || !editor.current) return props.body ?? "";
     const current = editor.current.read();
-    const spliced = spliceMarkdown(originalBody, editor.current.baseline, current) ?? current;
-    return crlf ? spliced.replace(/\n/g, "\r\n") : spliced;
+    const spliced = spliceMarkdown(originalBody, editor.current.baseline, current);
+    if (
+      spliced === null &&
+      !confirm(
+        "Questo documento non si salva solo nelle parti cambiate: l'editor riscriverà tutto il testo e " +
+          "potrebbe cambiarne la formattazione (tabelle, link, HTML). Dopo il salvataggio controlla le differenze " +
+          "nella cronologia. Salvare comunque?",
+      )
+    )
+      return null;
+    const text = spliced ?? current;
+    return crlf ? text.replace(/\n/g, "\r\n") : text;
   }
 
   function save() {
     const anchor = captureAnchor(editorBlocks(editorRootRef.current), visibleLine(true));
     const body = bodyText();
+    if (body === null) return;
     const yamlText = props.frontMatterSource;
     const content = yamlText === null ? body : `---${newline}${yamlText}${newline}---${newline}${body}`;
     startTransition(async () => {
