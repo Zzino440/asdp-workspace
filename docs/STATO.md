@@ -8,7 +8,7 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.22.3 unita in `master`, taggata e pushata)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.23.0 su `master`, non committata)
 
 ## Dove siamo
 
@@ -17,6 +17,8 @@
   pushati il 2026-11-27.
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
+- **In corso** (0.23.0, non committata): editor con menu "/" e menu sulla selezione stile Notion
+  (`milkdown-editor.tsx`, versione e CHANGELOG aggiornati). Da committare e taggare.
 - **Ultimo lavoro** (0.21–0.22, pagina del documento): domande D[N] con quattro stati e riquadri
   colorati, pannello Domande, salto e lampeggio; punto di lettura che resta fermo tra lettura e
   modifica, doppio clic per modificare; indice sincronizzato con l'editor e pannello destro

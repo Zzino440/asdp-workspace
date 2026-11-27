@@ -25,6 +25,28 @@
 
 ## Storia
 
+## [0.23.0] 2026-11-27 — Editor: menu "/" e menu sulla selezione
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- Editor dei documenti: scrivendo "/" a inizio riga o dopo uno spazio si apre un menu per
+  inserire titoli (2, 3, 4), elenco puntato, numerato, di controllo, citazione, blocco di
+  codice, tabella e separatore. Il testo dopo la "/" filtra le voci; frecce, Invio/Tab per
+  scegliere, Esc per chiudere. Plugin `slash` di Milkdown, già nel pacchetto `@milkdown/kit`.
+- Editor dei documenti: selezionando del testo compare un menu sopra la selezione per
+  trasformare il blocco (testo, titoli, elenchi, citazione) e per grassetto, corsivo, barrato,
+  codice e link.
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- `tsc --noEmit`, `pnpm lint`, `pnpm test` (18 test), `pnpm build`: ok.
+- Browser, documento di PSW in modifica (bozza annullata, niente salvato): menu "/" con filtro,
+  frecce, Invio ed Esc; elenco di controllo e titolo 4 creati; menu sulla selezione con
+  grassetto, barrato, corsivo, codice, titolo 3 e ritorno a testo; nessun errore in console.
+
 ## [0.22.3] 2026-11-27 — Consolidamento: errori gestiti, frontespizio robusto, test
 
 **Autore**: Lorenzo Belli con Claude Code

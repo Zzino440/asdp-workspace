@@ -316,13 +316,14 @@ export function MilkdownEditor(props: {
 const slash = slashFactory("asdp");
 
 // Voci del menu "/". search: testo su cui filtra quello che si scrive dopo la "/".
+// run legge .key al clic: Milkdown la assegna solo quando l'editor parte.
 type SlashItem = { label: string; hint: string; search: string; icon: typeof List; run: (ctx: Ctx) => unknown };
 const SLASH_ITEMS: SlashItem[] = [
-  { label: "Titolo 2", hint: "##", search: "titolo 2 h2 heading", icon: Heading2, run: callCommand(wrapInHeadingCommand.key, 2) },
-  { label: "Titolo 3", hint: "###", search: "titolo 3 h3 heading", icon: Heading3, run: callCommand(wrapInHeadingCommand.key, 3) },
-  { label: "Titolo 4", hint: "####", search: "titolo 4 h4 heading", icon: Heading4, run: callCommand(wrapInHeadingCommand.key, 4) },
-  { label: "Elenco puntato", hint: "-", search: "elenco puntato lista bullet", icon: List, run: callCommand(wrapInBulletListCommand.key) },
-  { label: "Elenco numerato", hint: "1.", search: "elenco numerato lista numbered", icon: ListOrdered, run: callCommand(wrapInOrderedListCommand.key) },
+  { label: "Titolo 2", hint: "##", search: "titolo 2 h2 heading", icon: Heading2, run: (ctx) => callCommand(wrapInHeadingCommand.key, 2)(ctx) },
+  { label: "Titolo 3", hint: "###", search: "titolo 3 h3 heading", icon: Heading3, run: (ctx) => callCommand(wrapInHeadingCommand.key, 3)(ctx) },
+  { label: "Titolo 4", hint: "####", search: "titolo 4 h4 heading", icon: Heading4, run: (ctx) => callCommand(wrapInHeadingCommand.key, 4)(ctx) },
+  { label: "Elenco puntato", hint: "-", search: "elenco puntato lista bullet", icon: List, run: (ctx) => callCommand(wrapInBulletListCommand.key)(ctx) },
+  { label: "Elenco numerato", hint: "1.", search: "elenco numerato lista numbered", icon: ListOrdered, run: (ctx) => callCommand(wrapInOrderedListCommand.key)(ctx) },
   {
     label: "Elenco di controllo",
     hint: "[ ]",
@@ -341,28 +342,28 @@ const SLASH_ITEMS: SlashItem[] = [
       }
     },
   },
-  { label: "Citazione", hint: ">", search: "citazione quote blockquote", icon: Quote, run: callCommand(wrapInBlockquoteCommand.key) },
-  { label: "Blocco di codice", hint: "```", search: "blocco di codice code", icon: Code, run: callCommand(createCodeBlockCommand.key) },
-  { label: "Tabella", hint: "", search: "tabella table", icon: Table, run: callCommand(insertTableCommand.key) },
-  { label: "Separatore", hint: "---", search: "separatore linea divider hr", icon: Minus, run: callCommand(insertHrCommand.key) },
+  { label: "Citazione", hint: ">", search: "citazione quote blockquote", icon: Quote, run: (ctx) => callCommand(wrapInBlockquoteCommand.key)(ctx) },
+  { label: "Blocco di codice", hint: "```", search: "blocco di codice code", icon: Code, run: (ctx) => callCommand(createCodeBlockCommand.key)(ctx) },
+  { label: "Tabella", hint: "", search: "tabella table", icon: Table, run: (ctx) => callCommand(insertTableCommand.key)(ctx) },
+  { label: "Separatore", hint: "---", search: "separatore linea divider hr", icon: Minus, run: (ctx) => callCommand(insertHrCommand.key)(ctx) },
 ];
 
 // Menu sulla selezione: a sinistra trasforma il blocco, a destra il formato del testo.
 const BUBBLE_TOOLS: { label: string; icon: typeof List; run: (ctx: Ctx) => unknown }[][] = [
   [
-    { label: "Testo", icon: Type, run: callCommand(turnIntoTextCommand.key) },
-    { label: "Titolo 2", icon: Heading2, run: callCommand(wrapInHeadingCommand.key, 2) },
-    { label: "Titolo 3", icon: Heading3, run: callCommand(wrapInHeadingCommand.key, 3) },
-    { label: "Titolo 4", icon: Heading4, run: callCommand(wrapInHeadingCommand.key, 4) },
-    { label: "Elenco puntato", icon: List, run: callCommand(wrapInBulletListCommand.key) },
-    { label: "Elenco numerato", icon: ListOrdered, run: callCommand(wrapInOrderedListCommand.key) },
-    { label: "Citazione", icon: Quote, run: callCommand(wrapInBlockquoteCommand.key) },
+    { label: "Testo", icon: Type, run: (ctx) => callCommand(turnIntoTextCommand.key)(ctx) },
+    { label: "Titolo 2", icon: Heading2, run: (ctx) => callCommand(wrapInHeadingCommand.key, 2)(ctx) },
+    { label: "Titolo 3", icon: Heading3, run: (ctx) => callCommand(wrapInHeadingCommand.key, 3)(ctx) },
+    { label: "Titolo 4", icon: Heading4, run: (ctx) => callCommand(wrapInHeadingCommand.key, 4)(ctx) },
+    { label: "Elenco puntato", icon: List, run: (ctx) => callCommand(wrapInBulletListCommand.key)(ctx) },
+    { label: "Elenco numerato", icon: ListOrdered, run: (ctx) => callCommand(wrapInOrderedListCommand.key)(ctx) },
+    { label: "Citazione", icon: Quote, run: (ctx) => callCommand(wrapInBlockquoteCommand.key)(ctx) },
   ],
   [
-    { label: "Grassetto", icon: Bold, run: callCommand(toggleStrongCommand.key) },
-    { label: "Corsivo", icon: Italic, run: callCommand(toggleEmphasisCommand.key) },
-    { label: "Barrato", icon: Strikethrough, run: callCommand(toggleStrikethroughCommand.key) },
-    { label: "Codice", icon: Code, run: callCommand(toggleInlineCodeCommand.key) },
+    { label: "Grassetto", icon: Bold, run: (ctx) => callCommand(toggleStrongCommand.key)(ctx) },
+    { label: "Corsivo", icon: Italic, run: (ctx) => callCommand(toggleEmphasisCommand.key)(ctx) },
+    { label: "Barrato", icon: Strikethrough, run: (ctx) => callCommand(toggleStrikethroughCommand.key)(ctx) },
+    { label: "Codice", icon: Code, run: (ctx) => callCommand(toggleInlineCodeCommand.key)(ctx) },
     {
       label: "Link",
       icon: Link,
