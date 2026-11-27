@@ -6,7 +6,47 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.20.0, cambio di fase con conferma e ritorno indietro solo admin, su master)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (domande D[N] evidenziate nel documento, branch `feat/domande-evidenziate`)
+
+## In corso: aggiornamento dei documenti sullo stesso file (0.21.1, 2026-11-27, non committato)
+
+- Istruzioni del server MCP (`src/lib/mcp/server.ts`): una skill che aggiorna un documento lo
+  salva sullo stesso file con `update_document` e versione vX.Y+1, senza chiedere la modalità;
+  `revision_save_mode` solo per il salvataggio locale. Versione 0.21.1 e CHANGELOG scritti.
+- Stessa regola nelle skill `p1-3` e `t1-4` di `dst-claude-skills` (plugin `asdp` 0.16.2, branch
+  `feature/asdp-mcp`, non committato). `t4-x` hanno modalità proprie su file canonici: non toccate.
+- Typecheck e lint ok; build non eseguita.
+
+## In corso: domande D[N] evidenziate nel documento e nell'MCP (0.21.0, 2026-11-27, branch `feat/domande-evidenziate`, non committato)
+
+- In lettura ogni blocco D[N] è un riquadro (giallo "Aperta", blu "Risposta da applicare") e le
+  note `> ❓ Da chiarire` sono evidenziate: plugin remark in `src/components/markdown.tsx` che
+  riusa `QUESTION`/`questionsOf` di `src/lib/questions.ts` (vale ovunque, anche nella guida).
+- `document-workspace.tsx`: "Domande: N aperte · M da applicare" in testata (link alla prima
+  aperta) e sezione "Domande" nel pannello a destra (da xl in su), link `#dN`. Colori: token
+  `--state-complete*` / `--state-progress*`, nessun token nuovo.
+- Il clic (pannello o testata) scorre sotto l'intestazione fissa misurandone l'altezza e fa
+  lampeggiare il blocco (outline che svanisce, Web Animations). Il `❓ Da chiarire` subito prima
+  di una D[N] fa parte del blocco `#dN`, così si vede insieme alla domanda (richiesta dell'utente).
+- Scelte dell'utente: solo lettura per ora; risposta da una vista separata e "punti di
+  attenzione" generici (Assunzione, Anomalia...) da valutare dopo la prova.
+- Typecheck, lint, build ok; browser (locale, PFS P1.3 a 800px e 1440px, PSW P1.3 salto e lampeggio, T2.2 senza D[N]) ok.
+- MCP: `read_document` restituisce `questions` (id, title, answered, answer = opzione spuntata);
+  `answer` è nuovo anche in `questionsOf`, quindi nell'indice `documents.questions` dopo il
+  prossimo salvataggio di ogni documento. Istruzioni del server aggiornate. Provato con l'MCP di
+  sviluppo su PSW P1.3 (D1 con answer, D2-D5 aperte).
+- Versione 0.21.0 e voce CHANGELOG già scritte (regola MCP). Tag solo dopo il merge su master.
+- Stati delle D[N] (scelta dell'utente, come la skill P1.3): `status` in `questionsOf` =
+  aperta | rimandata | da_applicare | da_correggere; `statusOf()` ricade su `answered` per le
+  righe indicizzate prima. Colori: giallo, grigio (`--state-todo*`), blu, rosso (`destructive`).
+  Usati in documento, Percorso e MCP (istruzioni del server con l'azione per ogni stato).
+- Corretto: un "Da chiarire" tra due D[N] senza titolo in mezzo finiva nel blocco della domanda
+  precedente.
+- Etichetta "Risposta da applicare · copia prompt" (button con data-copy-prompt, generato da
+  `Markdown` con la prop `answersPrompt` solo nella pagina del documento): il clic, gestito in
+  `document-workspace.tsx`, copia `answersPrompt()` di `src/lib/prompts.ts`.
+- Attenzione: un'altra sessione nella stessa cartella ha aggiunto, su questa branch, la 0.21.1
+  (riga delle istruzioni MCP sul salvataggio sullo stesso file, voce CHANGELOG, package.json).
 
 ## Fatto: cambio di fase con conferma e ritorno indietro (0.20.0, 2026-11-27, committato 3272ac6, tag e push fatti)
 

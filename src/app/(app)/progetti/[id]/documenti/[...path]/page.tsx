@@ -14,6 +14,7 @@ import { gateFor } from "@/lib/gates";
 import { guidaHrefForType } from "@/lib/guida";
 import { PHASES } from "@/lib/labels";
 import { microsoftEnabled } from "@/lib/microsoft";
+import { answersPrompt } from "@/lib/prompts";
 import { createClient } from "@/lib/supabase/server";
 
 export default function DocumentoPage({ params, searchParams }: PageProps<"/progetti/[id]/documenti/[...path]">) {
@@ -35,7 +36,14 @@ const STATE_DOT: Record<string, string> = {
   Approvato: "bg-(--state-approved-border)",
 };
 
-type DocType = { code: string; name: string; phase: number | null; sort_order: number; per_feature: boolean };
+type DocType = {
+  code: string;
+  name: string;
+  phase: number | null;
+  sort_order: number;
+  per_feature: boolean;
+  skill_name: string | null;
+};
 
 async function DocumentView({
   params,
@@ -51,8 +59,8 @@ async function DocumentView({
     readDocument(supabase, id, filePath),
     listVersions(supabase, id, filePath),
     listDocuments(supabase, id),
-    supabase.from("document_types").select("code, name, phase, sort_order, per_feature").order("sort_order"),
-    supabase.from("projects").select("name").eq("id", id).maybeSingle(),
+    supabase.from("document_types").select("code, name, phase, sort_order, per_feature, skill_name").order("sort_order"),
+    supabase.from("projects").select("name, code").eq("id", id).maybeSingle(),
   ]);
   if (!document) notFound();
   const [level, publication, { data: locations }] = await Promise.all([
@@ -125,7 +133,15 @@ async function DocumentView({
         document.body === null ? (
           <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>
         ) : (
-          <Markdown>{document.body}</Markdown>
+          <Markdown
+            answersPrompt={
+              project && type?.skill_name
+                ? answersPrompt(project, { name: type.name, skill: type.skill_name, docPath: document.path })
+                : undefined
+            }
+          >
+            {document.body}
+          </Markdown>
         )
       }
       versionView={versionView}

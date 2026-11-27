@@ -11,6 +11,7 @@ import { PHASES } from "@/lib/labels";
 import { guidaHref, guidaHrefForType } from "@/lib/guida";
 import { isDone, phaseProgress } from "@/lib/phase-progress";
 import { answersPrompt, stepPrompt } from "@/lib/prompts";
+import { QUESTION_STATUS_LABEL, statusOf, type QuestionStatus } from "@/lib/questions";
 import type { MapDoc, MapType, NextStep } from "@/lib/project-steps";
 import { PhaseChangeButton } from "./advance-phase";
 import { CopyPromptButton } from "./copy-prompt-button";
@@ -340,8 +341,11 @@ function TypeItems({
 
 function DocRow({ doc, name }: { doc: MapDoc; name: string }) {
   const overdue = doc.deadline !== null && doc.deadline < today() && !isDone(doc);
-  const open = doc.questions.filter((q) => !q.answered).length;
-  const answered = doc.questions.length - open;
+  const count = (status: QuestionStatus) => doc.questions.filter((q) => statusOf(q) === status).length;
+  const open = count("aperta");
+  const answered = count("da_applicare");
+  const deferred = count("rimandata");
+  const wrong = count("da_correggere");
   return (
     <Link href={doc.href} title={doc.path} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent">
       <div className="flex min-w-0 flex-1 flex-col">
@@ -363,6 +367,8 @@ function DocRow({ doc, name }: { doc: MapDoc; name: string }) {
               <>
                 {open > 0 && <span>{open === 1 ? "1 domanda aperta" : `${open} domande aperte`}</span>}
                 {answered > 0 && <span className="text-primary">{answered} con risposta da applicare</span>}
+                {wrong > 0 && <span className="text-destructive">{wrong} da correggere</span>}
+                {deferred > 0 && <span>{deferred === 1 ? "1 rimandata" : `${deferred} rimandate`} all&apos;analisi</span>}
               </>
             )}
           </span>
@@ -425,8 +431,17 @@ function DocQuestions({ project, type, doc }: { project: ProjectInfo; type: MapT
               <span className="w-8 shrink-0 font-mono text-xs leading-5 text-muted-foreground">{q.id}</span>
               <span className="min-w-0 flex-1">{q.title}</span>
               {!inherited(doc) && (
-                <span className={cn("shrink-0 text-xs", q.answered ? "text-primary" : "text-muted-foreground")}>
-                  {q.answered ? "con risposta" : "aperta"}
+                <span
+                  className={cn(
+                    "shrink-0 text-xs",
+                    statusOf(q) === "da_applicare"
+                      ? "text-primary"
+                      : statusOf(q) === "da_correggere"
+                        ? "text-destructive"
+                        : "text-muted-foreground",
+                  )}
+                >
+                  {QUESTION_STATUS_LABEL[statusOf(q)]}
                 </span>
               )}
             </li>

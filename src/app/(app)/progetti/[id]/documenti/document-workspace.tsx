@@ -18,9 +18,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { Gate } from "@/lib/gates";
 import { changedBlocks, spliceMarkdown } from "@/lib/markdown-splice";
+import { QUESTION_STATUS_LABEL, questionsOf, statusOf, type QuestionStatus } from "@/lib/questions";
 import { Markdown } from "@/components/markdown";
 
 const CONTENT_ID = "contenuto-documento";
+
+// Pallino dello stato di una D[N] nel pannello, con i colori dei riquadri nel testo.
+const QUESTION_DOT: Record<QuestionStatus, string> = {
+  aperta: "bg-(--state-complete-border)",
+  rimandata: "bg-(--state-todo-border)",
+  da_applicare: "bg-(--state-progress-border)",
+  da_correggere: "bg-destructive",
+};
 
 // baseline: testo dell'editor da cui è partita la bozza, per ritrovare cosa ha cambiato l'utente.
 type Draft = { baseCommit: string; baseline: string; body: string; savedAt: string };
@@ -210,6 +219,54 @@ export function DocumentWorkspace(props: {
   const meta = [front.versione ? `v${toText(front.versione).replace(/^v/, "")}` : null, props.updated].filter(Boolean);
 
   const showHistory = historyOpen;
+  // Domande D[N] del testo corrente (non di una versione aperta dalla cronologia).
+  const questions = useMemo(() => (props.versionView ? [] : questionsOf(props.body ?? "")), [props.body, props.versionView]);
+  const count = (status: QuestionStatus) => questions.filter((q) => statusOf(q) === status).length;
+  const questionSummary = [
+    [count("da_correggere"), "da correggere", "da correggere"],
+    [count("aperta"), "aperta", "aperte"],
+    [count("da_applicare"), "da applicare", "da applicare"],
+    [count("rimandata"), "rimandata", "rimandate"],
+  ]
+    .filter(([n]) => n)
+    .map(([n, one, many]) => `${n} ${n === 1 ? one : many}`)
+    .join(" · ");
+  // Il link della testata porta alla prima domanda che chiede un intervento.
+  const firstQuestion = (
+    questions.find((q) => ["da_correggere", "aperta"].includes(statusOf(q))) ?? questions[0]
+  )?.id.toLowerCase();
+  // Clic su "Risposta da applicare · copia prompt" nel testo: copia la richiesta per Claude.
+  const copyAnswersPrompt = async (event: React.MouseEvent) => {
+    const button = (event.target as HTMLElement).closest<HTMLElement>("[data-copy-prompt]");
+    if (!button) return;
+    const prompt = button.dataset.copyPrompt!;
+    // Senza permesso sugli appunti (browser o pagina non sicura) il testo si copia a mano.
+    const ok = await navigator.clipboard.writeText(prompt).then(
+      () => true,
+      () => false,
+    );
+    if (!ok) return window.prompt("Copia il prompt e incollalo in Claude:", prompt);
+    const label = button.textContent;
+    button.textContent = "Prompt copiato";
+    setTimeout(() => (button.textContent = label), 1500);
+  };
+  // Porta alla domanda appena sotto l'intestazione fissa (alta quanto il titolo va a capo) e la
+  // fa lampeggiare per un attimo.
+  const goToQuestion = (event: React.MouseEvent, id: string) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    event.preventDefault();
+    const top = target.getBoundingClientRect().top + window.scrollY - (headerRef.current?.offsetHeight ?? 0) - 16;
+    window.scrollTo({ top, behavior: "smooth" });
+    history.replaceState(null, "", `#${id}`);
+    target.animate(
+      [
+        { outline: "2px solid var(--state-complete-border)", outlineOffset: "6px" },
+        { outline: "2px solid transparent", outlineOffset: "6px" },
+      ],
+      { duration: 1800, delay: 300, easing: "ease-in" },
+    );
+  };
 
   // Altezza dell'intestazione fissa in --doc-header-h: la barra dell'editor si ancora subito sotto.
   useEffect(() => {
@@ -301,6 +358,17 @@ export function DocumentWorkspace(props: {
                       </span>
                     )}
                   </Property>
+                  {questions.length > 0 && !isEditing && (
+                    <Property label="Domande">
+                      <a
+                        href={`#${firstQuestion}`}
+                        onClick={(e) => goToQuestion(e, firstQuestion)}
+                        className="hover:underline"
+                      >
+                        {questionSummary}
+                      </a>
+                    </Property>
+                  )}
                 </dl>
               )}
               {meta.length > 0 && <p className="text-xs text-muted-foreground">{meta.join(" · ")}</p>}
@@ -453,7 +521,11 @@ export function DocumentWorkspace(props: {
                   }}
                 />
               ) : (
-                <div id={CONTENT_ID} className={cn(props.hideFirstHeading && "[&>h1:first-child]:hidden")}>
+                <div
+                  id={CONTENT_ID}
+                  className={cn(props.hideFirstHeading && "[&>h1:first-child]:hidden")}
+                  onClick={copyAnswersPrompt}
+                >
                   {props.readView}
                 </div>
               ))}
@@ -475,6 +547,31 @@ export function DocumentWorkspace(props: {
       {/* A destra: l'indice delle sezioni o la cronologia. In modifica l'indice non c'è. */}
       <aside className={cn("w-full shrink-0 lg:w-72", showHistory ? "block" : isEditing ? "hidden" : "hidden xl:block")}>
         <div className="sticky top-8 flex max-h-[calc(100vh-4rem)] flex-col gap-3 overflow-y-auto">
+          {!showHistory && !isEditing && questions.length > 0 && (
+            <>
+              <h2 className="text-sm font-semibold">Domande</h2>
+              <ul className="flex flex-col gap-0.5 text-sm">
+                {questions.map((q) => (
+                  <li key={q.id}>
+                    <a
+                      href={`#${q.id.toLowerCase()}`}
+                      onClick={(e) => goToQuestion(e, q.id.toLowerCase())}
+                      title={QUESTION_STATUS_LABEL[statusOf(q)]}
+                      className="flex items-center gap-2 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <span
+                        aria-hidden
+                        className={cn("size-2 shrink-0 rounded-full", QUESTION_DOT[statusOf(q)])}
+                      />
+                      <span className="truncate">
+                        {q.id} · {q.title}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">{showHistory ? "Cronologia" : "In questa pagina"}</h2>
             {historyOpen && (

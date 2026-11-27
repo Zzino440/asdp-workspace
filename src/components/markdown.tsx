@@ -1,5 +1,107 @@
+import type { Nodes, Root, RootContent } from "mdast";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { QUESTION, QUESTION_STATUS_LABEL, questionsOf, type QuestionStatus } from "@/lib/questions";
+
+const textOf = (node: Nodes): string =>
+  "value" in node ? node.value : "children" in node ? node.children.map(textOf).join("") : "";
+
+// Colori dello stato di una D[N]: etichetta accanto al titolo e bordo del riquadro.
+const BADGE: Record<QuestionStatus, string> = {
+  aperta: "bg-(--state-complete) text-(--state-complete-foreground)",
+  rimandata: "bg-(--state-todo) text-(--state-todo-foreground)",
+  da_applicare: "bg-(--state-progress) text-(--state-progress-foreground)",
+  da_correggere: "bg-destructive/20 text-destructive",
+};
+const BORDER: Record<QuestionStatus, string> = {
+  aperta: "border-(--state-complete-border)",
+  rimandata: "border-(--state-todo-border)",
+  da_applicare: "border-(--state-progress-border)",
+  da_correggere: "border-destructive",
+};
+
+// Domande D[N] in riquadri con il loro stato e note "❓ Da chiarire" evidenziate. Il blocco di una
+// D[N] va dal suo titolo al titolo successivo, come in questionsOf.
+// answersPrompt: se c'è, l'etichetta "Risposta da applicare" è un pulsante che lo copia (il clic lo
+// gestisce la pagina del documento, tramite data-copy-prompt).
+function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?: string) {
+  return () => (tree: Root) => {
+    const out: RootContent[] = [];
+    let section: { children: RootContent[] } | null = null;
+    for (const node of tree.children) {
+      if (node.type === "blockquote" && textOf(node).trimStart().startsWith("❓")) {
+        node.data = {
+          hProperties: {
+            className: [
+              "my-3 rounded-r-md border-l-4 border-(--state-complete-border) bg-(--state-complete) px-4 py-1 text-(--state-complete-foreground)",
+            ],
+          },
+        };
+      }
+      const match = node.type === "heading" ? QUESTION.exec(`${"#".repeat(node.depth)} ${textOf(node)}`) : null;
+      if (match && node.type === "heading") {
+        const status = statuses.get(match[1]) ?? "aperta";
+        node.children.push({ type: "text", value: " " }, {
+          type: "text",
+          value: "",
+          data:
+            status === "da_applicare" && answersPrompt
+              ? {
+                  hName: "button",
+                  hProperties: {
+                    type: "button",
+                    dataCopyPrompt: answersPrompt,
+                    title: "Copia il prompt per Claude che applica le risposte",
+                    className: [
+                      `ml-2 cursor-pointer rounded px-1.5 py-0.5 align-middle text-xs font-medium hover:underline ${BADGE[status]}`,
+                    ],
+                  },
+                  hChildren: [{ type: "text", value: `${QUESTION_STATUS_LABEL[status]} · copia prompt` }],
+                }
+              : {
+                  hName: "span",
+                  hProperties: {
+                    className: [`ml-2 rounded px-1.5 py-0.5 align-middle text-xs font-medium ${BADGE[status]}`],
+                  },
+                  hChildren: [{ type: "text", value: QUESTION_STATUS_LABEL[status] }],
+                },
+        });
+        // Il "❓ Da chiarire" subito prima fa parte della domanda: stesso punto di arrivo dei link.
+        // Se la domanda precedente non è chiusa da un titolo, la nota è in coda al suo blocco.
+        const pool = section?.children ?? out;
+        const previous = pool.at(-1);
+        const note = previous?.type === "blockquote" && textOf(previous).trimStart().startsWith("❓") ? [pool.pop()!] : [];
+        section = { children: [node] };
+        const box = {
+          type: "questionBox",
+          children: section.children,
+          data: {
+            hName: "div",
+            hProperties: {
+              className: [`rounded-r-md border-l-4 bg-muted/40 px-4 py-1 ${BORDER[status]}`],
+            },
+          },
+        };
+        out.push({
+          type: "questionBlock",
+          children: [...note, box],
+          data: {
+            hName: "section",
+            hProperties: {
+              id: match[1].toLowerCase(),
+              className: ["my-4 flex scroll-mt-44 flex-col gap-3 rounded-md [&>blockquote]:my-0"],
+            },
+          },
+        } as unknown as RootContent);
+        continue;
+      }
+      if (node.type === "heading") section = null;
+      if (section) section.children.push(node);
+      else out.push(node);
+    }
+    tree.children = out;
+  };
+}
 
 // Stili del Markdown con i token del tema (niente plugin typography).
 const components: Components = {
@@ -25,9 +127,10 @@ const components: Components = {
   td: (props) => <td className="border border-border px-2 py-1 align-top" {...props} />,
 };
 
-export function Markdown({ children }: { children: string }) {
+export function Markdown({ children, answersPrompt }: { children: string; answersPrompt?: string }) {
+  const statuses = new Map(questionsOf(children).map((q) => [q.id, q.status ?? "aperta"]));
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkOpenPoints(statuses, answersPrompt)]} components={components}>
       {children}
     </ReactMarkdown>
   );

@@ -25,6 +25,56 @@
 
 ## Storia
 
+## [0.21.1] 2026-11-27 — MCP: aggiornamento dei documenti sullo stesso file
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- MCP, istruzioni del server: quando una skill aggiorna un documento esistente lo salva sullo
+  stesso file con `update_document` e porta `versione` da vX.Y a vX.Y+1, senza chiedere la
+  modalità di salvataggio; `revision_save_mode` vale solo per il salvataggio locale. Allineato
+  alle skill `p1-3` e `t1-4` del plugin `asdp` 0.16.2.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck e lint.
+
+## [0.21.0] 2026-11-27 — Domande D[N] evidenziate nel documento e nell'MCP
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- Domande D[N] con quattro stati, gli stessi della skill P1.3: Aperta (nessuna spunta),
+  Rimandata all'analisi ("Da decidere in fase di analisi"), Risposta da applicare, Da correggere
+  (più spunte o "Altro:" senza testo).
+- UI, lettura del documento: ogni domanda D[N] è un riquadro colorato con il suo stato (giallo,
+  grigio, blu, rosso) e le note "❓ Da chiarire" sono evidenziate e unite alla domanda che segue.
+  Vale per ogni documento con D[N], anche nella guida.
+- UI, intestazione del documento: riepilogo delle domande per stato, con link alla prima da
+  correggere o aperta.
+- UI, Percorso: conteggi e stato di ogni domanda con i quattro stati.
+- UI, documento: l'etichetta "Risposta da applicare · copia prompt" copia la richiesta per Claude
+  che applica le risposte, la stessa di "Applica N risposte" del Percorso.
+- UI, pannello a destra: sezione "Domande" con lo stato di ognuna. Il clic porta alla domanda
+  (con il suo "Da chiarire") appena sotto l'intestazione e la fa lampeggiare.
+- MCP: `read_document` restituisce `questions`; ogni domanda ha `status` (aperta, rimandata,
+  da_applicare, da_correggere) e, se da applicare, `answer` con l'opzione spuntata. Le istruzioni
+  del server dicono cosa fare in ogni stato. `status` e `answer` compaiono anche in `get_project`
+  e `list_documents`, per ogni documento dal suo prossimo salvataggio. `answered` resta com'era.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint e build.
+- Browser in locale: Requisiti Consolidati di PFS e PSW (riquadri, contatore, pannello, salto e
+  lampeggio a 800px e 1440px), Architettura di PFS senza D[N] invariata.
+- Parser sui quattro stati (sei casi, compreso "Altro:" con e senza testo).
+- MCP di sviluppo: `read_document` su PSW e PFS restituisce stato e risposta corretti.
+- Browser: clic su "copia prompt" in D4 dei Requisiti di PSW, etichetta "Prompt copiato".
+
 ## [0.20.0] 2026-11-27 — Cambio di fase con conferma e ritorno indietro (admin)
 
 **Autore**: Lorenzo Belli con Claude Code

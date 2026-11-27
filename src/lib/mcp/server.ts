@@ -12,6 +12,7 @@ import {
   saveDocument,
 } from "@/lib/documents";
 import { microsoftEnabled } from "@/lib/microsoft";
+import { questionsOf } from "@/lib/questions";
 import { type MapDoc, nextStep, projectSteps } from "@/lib/project-steps";
 import type { ExcelOperation } from "@/lib/office/excel";
 import type { PowerPointOperation } from "@/lib/office/powerpoint";
@@ -57,12 +58,12 @@ const commitMessage = (message: string) => message.replace(/\n+Via: (app|mcp)\s*
 const BASE_INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti del framework ASDP di DST, con gli stessi permessi che l'utente ha nell'app.
 - I progetti si indicano con il codice (es. PFS): usa list_projects, poi get_project per team, repo di codice, tipi di documento e permessi dell'utente.
 - Per "cosa devo fare" o "a che punto siamo" usa get_project: next_step è il prossimo passo come lo mostra l'app (con la skill da lanciare), behind i passi rimasti indietro; per ogni documento ci sono owner, scadenza, domande D[N] e changes_requested. list_activity dice chi ha salvato cosa di recente.
-- Domande D[N]: answered = true vuol dire che la risposta è spuntata ma va ancora applicata rilanciando la skill sul documento. Nella T1.4 le D[N] sono copie di quelle dei Requisiti Consolidati (P1.3): si rispondono lì, poi si aggiorna la T1.4.
+- Domande D[N] (in get_project, list_documents e read_document), campo status: aperta = nessuna risposta, lascia il blocco; rimandata = spuntato "Da decidere in fase di analisi", lascia il blocco, passa all'analisi; da_applicare = answer è l'opzione spuntata, va applicata rilanciando la skill sul documento; da_correggere = più opzioni spuntate o "Altro:" senza testo, non applicare nulla e chiedi all'utente di correggere. answered = true solo per da_applicare. Nella T1.4 le D[N] sono copie di quelle dei Requisiti Consolidati (P1.3): si rispondono lì, poi si aggiorna la T1.4.
 - Se un documento ha changes_requested, chi l'ha approvato ha chiesto modifiche: parti dal motivo quando lo aggiorni.
 - I documenti sono file Markdown con frontespizio YAML (GUIDA-FRONT) tra due righe "---", salvati su GitLab.
 - Prima di modificare un documento leggilo con read_document; poi cambia solo le parti necessarie di content e passalo intero a update_document con il last_commit_id letto. Lascia invariato tutto il resto, commenti del frontespizio compresi.
 - Stati del documento: Da fare, In corso, Completo, Approvato. Lo stato Approvato e i campi approvato_da, approvato_il, versione_approvata, evidenza_approvazione li cambia solo chi approva; non modificare versione_frontespizio. Se cambi il testo di un documento Approvato, il server lo riporta In corso e svuota i dati di approvazione: va riapprovato.
-- Quando una skill ASDP legge o scrive un file asdp/..., di norma usa questo server: read_document per gli input, create_document per un file nuovo, update_document per uno esistente, con lo stesso percorso. Salva su file locale solo se l'utente lo chiede o se la cartella di lavoro è un clone della repo documenti (il push lo porta nell'app). Il server non cancella file.
+- Quando una skill ASDP legge o scrive un file asdp/..., di norma usa questo server: read_document per gli input, create_document per un file nuovo, update_document per uno esistente, con lo stesso percorso. Quando una skill aggiorna un documento esistente lo salva sullo stesso file con update_document e porta versione da vX.Y a vX.Y+1, senza chiedere la modalità di salvataggio: revision_save_mode vale solo per il salvataggio locale. Salva su file locale solo se l'utente lo chiede o se la cartella di lavoro è un clone della repo documenti (il push lo porta nell'app). Il server non cancella file.
 - Ogni salvataggio è un commit a nome dell'utente: scrivi messaggi di commit brevi e chiari in italiano.
 - Se get_project.setup.missing contiene docs_repository il progetto non ha una repo documenti e non si può salvare: dillo all'utente e rimandalo alla scheda "Prepara l'area di lavoro" del progetto nell'app. Gli altri passi di setup.missing citali solo se servono a ciò che l'utente chiede. Il server non crea repo, canali o team.`;
 
@@ -104,8 +105,8 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         "ruoli dell'utente, next_step (il prossimo passo del percorso, come nella mappa dell'app, con la skill da " +
         "usare) e behind (passi aperti delle fasi precedenti). Per ogni tipo di documento del framework: fase, " +
         "cartella, skill, per_feature (un documento per Feature), livello dell'utente (none/view/edit/approve) e " +
-        "documenti presenti con stato, versione, owner, scadenza, domande D[N] (answered: ha una risposta da " +
-        "applicare rilanciando la skill) e changes_requested (motivo di chi ha chiesto modifiche). setup.missing elenca i passi di preparazione mancanti " +
+        "documenti presenti con stato, versione, owner, scadenza, domande D[N] (status, answer: vedi " +
+        "le istruzioni del server) e changes_requested (motivo di chi ha chiesto modifiche). setup.missing elenca i passi di preparazione mancanti " +
         "(docs_repository, code_repositories, teams_folder, team, kickoff); setup.teams_folders, se presente, elenca le " +
         "cartelle Teams collegate con le sottocartelle base, da usare con i tool *_project_file.",
       inputSchema: z.object({ project: z.string().describe("Codice del progetto, es. PFS") }),
@@ -175,7 +176,7 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       title: "Documenti del progetto",
       description:
         "Documenti ASDP del progetto visibili all'utente: percorso, tipo (es. T1.4), titolo, stato, versione, " +
-        "Feature, owner, scadenza, domande D[N] (answered: ha una risposta da applicare rilanciando la skill) e " +
+        "Feature, owner, scadenza, domande D[N] (status, answer: vedi le istruzioni del server) e " +
         "changes_requested (chi ha chiesto modifiche e perché, se il documento è tornato In corso).",
       inputSchema: z.object({ project: z.string().describe("Codice del progetto, es. PFS") }),
     },
@@ -230,7 +231,8 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         "Legge un documento ASDP. content è il testo esatto del file (frontespizio YAML + Markdown): per " +
         "modificarlo cambia solo le parti necessarie di content e passalo intero a update_document con " +
         "last_commit_id, così il resto del file resta identico. front_matter è il frontespizio già letto, " +
-        "solo per consultazione.",
+        "solo per consultazione. questions sono le domande D[N] del testo con il loro status (vedi le istruzioni del " +
+        "server): guardalo prima di toccare un blocco D[N].",
       inputSchema: z.object({
         project: z.string().describe("Codice del progetto, es. PFS"),
         path: z.string().describe("Percorso nella repo documenti, come restituito da list_documents"),
@@ -247,6 +249,7 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         type: document.documentType,
         last_commit_id: document.lastCommitId,
         front_matter: document.frontMatter,
+        questions: questionsOf(document.body ?? ""),
         content: document.content,
       });
     },
