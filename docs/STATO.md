@@ -138,6 +138,17 @@
   breadcrumb (ritorno al Percorso), separatori a chevron. Barra laterale: «I miei progetti» sotto
   «Progetti» (progetti non chiusi del team dell'utente più quello aperto, evidenziato).
 
+- Plugin `asdp` **0.16.0** (2026-11-27, repo `dst-claude-skills`, branch `feature/asdp-mcp`,
+  committato, non pushato): nelle 10 skill "Where to read and save" legge gli input dalla cartella
+  Teams del progetto (`search_project_files`/`list_project_files`/`read_project_file`), avvisa
+  se il testo estratto da Office perde parti o è troncato, senza tool chiede di allegare il file;
+  README e CHANGELOG. `claude plugin validate --strict` ok; da provare su una cartella Teams di
+  test. Analisi in chat: oggi l'MCP non crea né modifica Word/Excel/PPT (lettura solo come testo
+  da PDF, upload solo testo senza sovrascrittura). Proposta in attesa di ok di Lorenzo: tool lato
+  server con Excel via API Workbook, Word a blocchi (OOXML), PPT slide per slide, copia con nome
+  nuovo, controllo eTag; ordine Excel → Word → PPT. In `TODO.md`: «Importa da link via MCP»
+  (`publish_document` c'era già).
+
 ## Milestone
 
 | # | Stato |

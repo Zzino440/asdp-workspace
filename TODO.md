@@ -124,6 +124,10 @@ l'analisi GDPR per l'IT.
   cartelle collegate (Claude Desktop le legge col connettore M365); opzione completa tool MCP
   `list_project_files` / `read_project_file`. Bloccata dalla DPIA (dati dei clienti verso
   Anthropic).
+- [ ] **Importa da link via MCP**: tool che risolve un link di condivisione OneDrive/SharePoint
+  incollato in chat (Graph `/shares/{id}/driveItem`) e copia il file in una cartella collegata al
+  progetto, così poi si legge con `read_project_file`. Risolve i colleghi che passano link
+  OneDrive. Stessi vincoli GDPR.
 - [ ] **Creazione del progetto da Teams**: scegliere Team e canale e proporre il team dai membri
   del Team (`TeamMember.Read.All`, già concesso).
 - [ ] **Dashboard «Tocca a me»**: file modificati di recente nei miei progetti.
