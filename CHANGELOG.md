@@ -33,8 +33,10 @@
 - **Scheda Percorso, righe dei documenti**: owner e scadenza (rossa se passata e il documento non è
   pronto), numero di domande D[N] aperte e con risposta da applicare, badge "Modifiche richieste"
   (motivo al passaggio del mouse).
-- **Domande aperte D[N]**: riquadro con le domande di tutti i documenti, aperte o con risposta, e
-  "Applica le risposte" che copia la richiesta per rilanciare la skill in aggiornamento.
+- **Domande D[N]** sotto la riga del documento ("Vedi le domande"): aperte o con risposta, e
+  "Applica le risposte" che copia la richiesta per rilanciare la skill in aggiornamento. Nella T1.4
+  le D[N] copiate dal consolidato si mostrano come "punti aperti dal consolidato", senza pulsante:
+  si rispondono nei Requisiti Consolidati.
 - **Modifiche richieste**: se il documento del Prossimo passo è stato rimandato, il motivo del
   revisore compare nella card.
 - **Attività recente** nella colonna destra: ultimi salvataggi dei documenti (chi, cosa, quando,

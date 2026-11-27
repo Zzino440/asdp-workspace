@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, ChevronRight, CircleHelp, Search } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { cn } from "cn";
 import { DocumentStateBadge } from "@/components/document-state-badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -115,7 +115,6 @@ export function ProjectMap({
   return (
     <div className="flex flex-col gap-5">
       {next && <NextStepCard project={project} next={next} />}
-      <OpenQuestions project={project} types={types} />
       {behind > 0 && (
         <button
           type="button"
@@ -354,6 +353,7 @@ function TypeItems({
   return docs.map((d) => (
     <li key={d.path}>
       <DocRow doc={d} name={type.name} />
+      <DocQuestions project={project} type={type} doc={d} />
     </li>
   ));
 }
@@ -375,8 +375,16 @@ function DocRow({ doc, name }: { doc: MapDoc; name: string }) {
                 {overdue ? "Scaduto il" : "Scadenza"} {formatDate(doc.deadline)}
               </span>
             )}
-            {open > 0 && <span>{open === 1 ? "1 domanda aperta" : `${open} domande aperte`}</span>}
-            {answered > 0 && <span className="text-primary">{answered} con risposta da applicare</span>}
+            {inherited(doc) ? (
+              <span>
+                {doc.questions.length === 1 ? "1 punto aperto" : `${doc.questions.length} punti aperti`} dal consolidato
+              </span>
+            ) : (
+              <>
+                {open > 0 && <span>{open === 1 ? "1 domanda aperta" : `${open} domande aperte`}</span>}
+                {answered > 0 && <span className="text-primary">{answered} con risposta da applicare</span>}
+              </>
+            )}
           </span>
         )}
       </div>
@@ -418,52 +426,48 @@ function SearchResults({ types, otherFiles, q }: { types: MapType[]; otherFiles:
   );
 }
 
-// Domande D[N] ancora nei documenti: aperte, oppure con risposta da applicare rilanciando la skill.
-function OpenQuestions({ project, types }: { project: ProjectInfo; types: MapType[] }) {
-  const docs = types.flatMap((t) => t.docs.filter((d) => d.questions.length > 0).map((d) => ({ doc: d, type: t })));
-  const total = docs.reduce((n, { doc }) => n + doc.questions.length, 0);
-  if (total === 0) return null;
+// La T1.4 copia invariate le D[N] dei Requisiti Consolidati nei punti aperti: si rispondono lì.
+const inherited = (doc: MapDoc) => doc.typeCode === "T1.4";
+
+// Domande D[N] del documento, sotto la sua riga: aperte o con risposta da applicare rilanciando la skill.
+function DocQuestions({ project, type, doc }: { project: ProjectInfo; type: MapType; doc: MapDoc }) {
+  if (doc.questions.length === 0) return null;
+  const answered = doc.questions.filter((q) => q.answered).length;
   return (
-    <details className="rounded-lg border border-border">
-      <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm">
-        <CircleHelp className="size-4 text-muted-foreground" />
-        Domande aperte D[N] ({total})
-        <Link href={guidaHref("domande-aperte")} className="ml-auto text-xs text-primary hover:underline">
-          Come si risponde
-        </Link>
+    <details className="px-4 pb-2.5 text-sm">
+      <summary className="w-fit cursor-pointer text-xs text-primary">
+        {inherited(doc) ? "Vedi i punti aperti" : "Vedi le domande"}
       </summary>
-      <div className="divide-y divide-border border-t border-border">
-        {docs.map(({ doc, type }) => {
-          const answered = doc.questions.filter((q) => q.answered).length;
-          return (
-            <div key={doc.path} className="flex flex-col gap-2 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link href={doc.href} className="font-medium hover:underline">
-                  {type.name}
-                  {doc.feature ? ` · Feature ${doc.feature}` : ""}
-                </Link>
-                {answered > 0 && (
-                  <CopyPromptButton
-                    variant="ghost"
-                    label={answered === 1 ? "Applica la risposta" : `Applica ${answered} risposte`}
-                    prompt={answersPrompt(project, { name: type.name, skill: type.skill, docPath: doc.path })}
-                  />
-                )}
-              </div>
-              <ul className="flex flex-col gap-1 text-sm">
-                {doc.questions.map((q) => (
-                  <li key={q.id} className="flex gap-2">
-                    <span className="w-8 shrink-0 font-mono text-xs leading-5 text-muted-foreground">{q.id}</span>
-                    <span className="min-w-0 flex-1">{q.title}</span>
-                    <span className={cn("shrink-0 text-xs", q.answered ? "text-primary" : "text-muted-foreground")}>
-                      {q.answered ? "con risposta" : "aperta"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
+      <div className="mt-2 flex flex-col gap-2 rounded-md border border-border p-3">
+        <ul className="flex flex-col gap-1">
+          {doc.questions.map((q) => (
+            <li key={q.id} className="flex gap-2">
+              <span className="w-8 shrink-0 font-mono text-xs leading-5 text-muted-foreground">{q.id}</span>
+              <span className="min-w-0 flex-1">{q.title}</span>
+              {!inherited(doc) && (
+                <span className={cn("shrink-0 text-xs", q.answered ? "text-primary" : "text-muted-foreground")}>
+                  {q.answered ? "con risposta" : "aperta"}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          {inherited(doc) ? (
+            <span>Si rispondono nei Requisiti Consolidati, poi si aggiorna questo documento.</span>
+          ) : (
+            answered > 0 && (
+              <CopyPromptButton
+                variant="ghost"
+                label={answered === 1 ? "Applica la risposta" : `Applica ${answered} risposte`}
+                prompt={answersPrompt(project, { name: type.name, skill: type.skill, docPath: doc.path })}
+              />
+            )
+          )}
+          <Link href={guidaHref("domande-aperte")} className="text-primary hover:underline">
+            Come si risponde
+          </Link>
+        </div>
       </div>
     </details>
   );

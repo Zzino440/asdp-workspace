@@ -20,7 +20,8 @@
   da applicare sul cloud.
 - `0.14.0` (branch `feature/miglioramenti-ui-ux`, 2026-11-26, **non committata**): scheda
   Percorso con owner/scadenza nelle righe, badge e motivo "Modifiche
-  richieste", riquadro "Domande aperte D[N]" con "Applica le risposte", "Attività recente" nella
+  richieste", domande D[N] sotto la riga del documento con "Applica le risposte" (T1.4: punti aperti ereditati
+  dal consolidato, senza pulsante), "Attività recente" nella
   colonna destra (vedi CHANGELOG). Migrazione `20261126224116_percorso_activity.sql`
   (`documents.questions`, tabella `document_events`) applicata in locale con `migration up`; da
   applicare sul cloud, poi "Reindicizza". Typecheck, lint, build, pgTAP nuovi e prova nel browser
