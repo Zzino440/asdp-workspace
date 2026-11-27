@@ -45,6 +45,10 @@
   SharePoint (numero, autore, ora, dimensione), raggruppate per giorno; l'attuale si apre in
   Office web, le precedenti si scaricano. Solo consultazione. Graph: `listVersions`, `downloadUrl`
   con la versione, azione `fileVersions` (controlla con `itemInFolder`); componente shadcn `Sheet`.
+- **Tasto destro su un file o una cartella**: menu come su SharePoint con Apri (file in Office web,
+  cartella nella card), Scarica e Copia link (solo file) e le stesse azioni del ⋯. Le voci sono
+  definite una volta e condivise tra i due menu (`ItemRow` in `file-manager.tsx`); componente
+  shadcn `ContextMenu`. Agisce sull'elemento cliccato, non sulla selezione.
 - Graph: `createUploadSession` con `conflictBehavior` `rename` o `replace`; nuova azione
   `startNewVersion` (controlla con `itemInFolder` che il file sia nella cartella collegata).
 - Il tool MCP di caricamento non cambia (con un nome già presente fallisce).
@@ -60,6 +64,8 @@
   card, uscita); rilascio reale dal computer e caricamento non provati.
 - Cronologia versioni: provata nel browser su un .docx reale di PFS (10 versioni, confrontabili
   con SharePoint); "Scarica" di una versione vecchia risponde col redirect di Graph.
+- Tasto destro: provato nel browser su file e cartella di PFS (menu, Cronologia versioni, Apri
+  cartella) e il ⋯ ancora funzionante; Rinomina, Sposta, Elimina dal menu non eseguiti (Team reale).
 
 ## [0.14.0] 2026-11-26 — Percorso: stati, domande D[N] e attività recente
 

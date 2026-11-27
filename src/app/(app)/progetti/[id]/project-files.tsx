@@ -33,6 +33,7 @@ import {
   FileSelection,
   FolderToolbar,
   ItemActions,
+  ItemRow,
   RowCheckbox,
   SelectAllCheckbox,
   SelectionBar,
@@ -316,7 +317,24 @@ export async function ProjectFiles({
           <TableBody>
             {rows.map(
               ({ item, folder: parent }) => (
-                <TableRow key={item.id} className="has-data-checked:bg-muted/50">
+                <ItemRow
+                  key={item.id}
+                  projectId={projectId}
+                  locationId={location.id}
+                  item={{
+                    id: item.id,
+                    name: item.name,
+                    folder: Boolean(item.folder),
+                    driveId: location.drive_id,
+                    webUrl: item.webUrl,
+                  }}
+                  openHref={
+                    item.folder
+                      ? href({ file: location.id, cartella: parent ? `${parent}/${item.name}` : item.name })
+                      : undefined
+                  }
+                  className="has-data-checked:bg-muted/50"
+                >
                   <TableCell className="w-8">
                     <RowCheckbox id={item.id} name={item.name} />
                   </TableCell>
@@ -378,20 +396,10 @@ export async function ProjectFiles({
                       </a>
                         <CopyLinkButton url={item.webUrl} />
                       </div>
-                      <ItemActions
-                        projectId={projectId}
-                        locationId={location.id}
-                        item={{
-                          id: item.id,
-                          name: item.name,
-                          folder: Boolean(item.folder),
-                          driveId: location.drive_id,
-                          webUrl: item.webUrl,
-                        }}
-                      />
+                      <ItemActions />
                     </div>
                   </TableCell>
-                </TableRow>
+                </ItemRow>
               ),
             )}
             {rows.length === 0 && (

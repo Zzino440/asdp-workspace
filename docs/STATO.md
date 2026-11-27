@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.15.0, file Teams: nuova versione, trascinamento, cronologia versioni; cronologia non committata)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.15.0, file Teams: nuova versione, trascinamento, cronologia versioni, tasto destro; tasto destro non committato)
 
 ## Versione
 
@@ -431,7 +431,7 @@ Decisioni del 2026-11-26 (richiesta di Lorenzo: meno dispersione per PM, TL e AF
    sulla card (`UploadArea` in `file-manager.tsx`, overlay con la cartella di destinazione),
    overlay provato con eventi simulati, rilascio reale da provare. Ancora `0.15.0`: "Cronologia
    versioni" nel menu ⋯ del file (pannello `Sheet` in `file-versions.tsx`, solo consultazione:
-   attuale in Office web, precedenti da scaricare), provata su un .docx di PFS. Seguiti in TODO.
+   attuale in Office web, precedenti da scaricare), provata su un .docx di PFS. Seguiti in TODO. Menu col tasto destro su file e cartelle (`ItemRow`, stesse voci del ⋯ più Apri, Scarica, Copia link), provato nel browser.
 5. [~] **7c**: file Teams come input delle skill, **solo dal connettore ASDP** (decisione di
    Lorenzo del 2026-11-26: non si conta sul connettore M365 di Claude, gli utenti potrebbero non
    averlo). Fatto in `0.12.0`, non committato, solo per Lorenzo in locale (registrato solo con

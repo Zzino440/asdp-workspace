@@ -1,10 +1,32 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition } from "react";
-import { ChevronRight, Folder, FolderPlus, History, MoreHorizontal, MoveRight, Pencil, Trash2, Upload, X } from "lucide-react";
+import {
+  ChevronRight,
+  Download,
+  ExternalLink,
+  Folder,
+  FolderPlus,
+  History,
+  Link2,
+  MoreHorizontal,
+  MoveRight,
+  Pencil,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -14,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { TableRow } from "@/components/ui/table";
 import {
   deleteFile,
   deleteFiles,
@@ -303,44 +326,112 @@ export function FolderToolbar({ projectId, locationId, folder }: Target & { fold
   );
 }
 
-export function ItemActions({
+type RowItem = { id: string; name: string; folder: boolean; driveId: string; webUrl: string };
+type Action = "versions" | "version" | "rename" | "move" | "delete";
+
+// Il ⋯ della riga apre le stesse azioni del tasto destro: le legge da ItemRow.
+const ItemContext = createContext<{ item: RowItem; open: (action: Action) => void } | null>(null);
+
+type MenuItemProps = { onClick: () => void; variant?: "default" | "destructive"; children: React.ReactNode };
+
+// Voci comuni a ⋯ e tasto destro, con i componenti del menu che le mostra.
+function ActionItems({
+  item,
+  open,
+  Item,
+  Separator,
+}: {
+  item: RowItem;
+  open: (action: Action) => void;
+  Item: React.ComponentType<MenuItemProps>;
+  Separator: React.ComponentType;
+}) {
+  return (
+    <>
+      {!item.folder && (
+        <>
+          <Item onClick={() => open("versions")}>
+            <History /> Cronologia versioni
+          </Item>
+          <Item onClick={() => open("version")}>
+            <Upload /> Carica nuova versione
+          </Item>
+        </>
+      )}
+      <Item onClick={() => open("rename")}>
+        <Pencil /> Rinomina
+      </Item>
+      <Item onClick={() => open("move")}>
+        <MoveRight /> Sposta
+      </Item>
+      <Separator />
+      <Item variant="destructive" onClick={() => open("delete")}>
+        <Trash2 /> Elimina
+      </Item>
+    </>
+  );
+}
+
+export function ItemActions() {
+  const context = useContext(ItemContext);
+  if (!context) throw new Error("ItemRow mancante");
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Altre azioni" title="Altre azioni" />}>
+        <MoreHorizontal />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <ActionItems {...context} Item={DropdownMenuItem} Separator={DropdownMenuSeparator} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// Riga di un file o di una cartella: tasto destro come su SharePoint (Apri, Scarica, Copia link
+// e le azioni del ⋯). openHref: la cartella nella card; i file si aprono in Office web.
+export function ItemRow({
   projectId,
   locationId,
   item,
-}: Target & { item: { id: string; name: string; folder: boolean; driveId: string; webUrl: string } }) {
-  const [dialog, setDialog] = useState<"versions" | "version" | "rename" | "move" | "delete" | null>(null);
+  openHref,
+  className,
+  children,
+}: Target & { item: RowItem; openHref?: string; className?: string; children: React.ReactNode }) {
+  const router = useRouter();
+  const [dialog, setDialog] = useState<Action | null>(null);
   const close = () => setDialog(null);
   const kind = item.folder ? "la cartella" : "il file";
+  const download = `/api/microsoft/download?drive=${encodeURIComponent(item.driveId)}&item=${encodeURIComponent(item.id)}`;
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Altre azioni" title="Altre azioni" />}>
-          <MoreHorizontal />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
+    <ItemContext.Provider value={{ item, open: setDialog }}>
+      {/* I dialoghi stanno fuori dal trigger: il tasto destro dentro un dialogo non riapre il menu. */}
+      <ContextMenu>
+        <ContextMenuTrigger render={<TableRow />} className={cn("data-popup-open:bg-muted", className)}>
+          {children}
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-52">
+          <ContextMenuItem
+            onClick={() =>
+              item.folder && openHref ? router.push(openHref, { scroll: false }) : window.open(item.webUrl, "_blank", "noreferrer")
+            }
+          >
+            {item.folder ? <Folder /> : <ExternalLink />} Apri
+          </ContextMenuItem>
           {!item.folder && (
             <>
-              <DropdownMenuItem onClick={() => setDialog("versions")}>
-                <History /> Cronologia versioni
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDialog("version")}>
-                <Upload /> Carica nuova versione
-              </DropdownMenuItem>
+              <ContextMenuItem onClick={() => window.open(download, "_self")}>
+                <Download /> Scarica
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => navigator.clipboard.writeText(item.webUrl)}>
+                <Link2 /> Copia link
+              </ContextMenuItem>
             </>
           )}
-          <DropdownMenuItem onClick={() => setDialog("rename")}>
-            <Pencil /> Rinomina
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setDialog("move")}>
-            <MoveRight /> Sposta
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" onClick={() => setDialog("delete")}>
-            <Trash2 /> Elimina
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <ContextMenuSeparator />
+          <ActionItems item={item} open={setDialog} Item={ContextMenuItem} Separator={ContextMenuSeparator} />
+        </ContextMenuContent>
+      </ContextMenu>
 
       {dialog === "versions" && (
         <VersionsSheet projectId={projectId} locationId={locationId} item={item} onClose={close} />
@@ -372,7 +463,7 @@ export function ItemActions({
         description={`Va nel cestino del sito SharePoint del Team, da dove si può recuperare.${item.folder ? " Con la cartella si eliminano anche i file che contiene." : ""}`}
         onConfirm={() => deleteFile(projectId, locationId, item.id)}
       />
-    </>
+    </ItemContext.Provider>
   );
 }
 
