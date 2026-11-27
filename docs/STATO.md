@@ -8,6 +8,15 @@
 
 **Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (domande D[N] evidenziate nel documento, branch `feat/domande-evidenziate`)
 
+## Fatto: stesso punto tra lettura e modifica (0.21.2, 2026-11-27, committato su `feat/domande-evidenziate`)
+
+- `scroll-anchor.ts`: il blocco in cima all'area visibile (data-block in lettura, figli di
+  `.ProseMirror` in modifica) torna nello stesso punto entrando/uscendo dalla modifica.
+- Doppio clic su un blocco apre la modifica col cursore lì (`focusAt` di `MilkdownEditor`).
+- Pannello destro (domande + indice) visibile anche in modifica; l'indice legge i titoli
+  dell'editor solo quando l'editor è pronto (non segue ancora le modifiche al testo).
+- Typecheck, lint, build ok. Prossimo: indice sincronizzato mentre si scrive e pannello riducibile.
+
 ## In corso: aggiornamento dei documenti sullo stesso file (0.21.1, 2026-11-27, non committato)
 
 - Istruzioni del server MCP (`src/lib/mcp/server.ts`): una skill che aggiorna un documento lo

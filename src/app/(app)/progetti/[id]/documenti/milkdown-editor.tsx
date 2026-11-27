@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Editor, defaultValueCtx, remarkStringifyOptionsCtx, rootCtx } from "@milkdown/kit/core";
+import { Editor, defaultValueCtx, editorViewCtx, remarkStringifyOptionsCtx, rootCtx } from "@milkdown/kit/core";
 import { history, redoCommand, undoCommand } from "@milkdown/kit/plugin/history";
 import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
 import {
@@ -15,17 +15,18 @@ import {
 } from "@milkdown/kit/preset/commonmark";
 import { gfm } from "@milkdown/kit/preset/gfm";
 import { DOMSerializer, type Node } from "@milkdown/kit/prose/model";
+import { TextSelection } from "@milkdown/kit/prose/state";
 import { $view, callCommand, getMarkdown, replaceAll } from "@milkdown/kit/utils";
 import { Bold, Heading2, Heading3, Italic, List, ListOrdered, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Editor visuale Markdown. onReady riceve la baseline (Markdown dell'editor appena aperto sul
 // testo originale, prima di applicare l'eventuale bozza): serve a spliceMarkdown per lasciare
-// identici i blocchi non toccati.
+// identici i blocchi non toccati. focusAt mette il cursore nel punto dello schermo indicato.
 export function MilkdownEditor(props: {
   initial: string;
   draft: string | null;
-  onReady: (baseline: string, read: () => string) => void;
+  onReady: (baseline: string, read: () => string, focusAt: (x: number, y: number) => void) => void;
   onChange: (markdown: string) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -66,7 +67,16 @@ export function MilkdownEditor(props: {
         editor.current = created;
         const baseline = created.action(getMarkdown());
         if (callbacks.current.draft !== null) created.action(replaceAll(callbacks.current.draft));
-        callbacks.current.onReady(baseline, () => created.action(getMarkdown()));
+        const view = created.ctx.get(editorViewCtx);
+        callbacks.current.onReady(
+          baseline,
+          () => created.action(getMarkdown()),
+          (x, y) => {
+            const hit = view.posAtCoords({ left: x, top: y });
+            if (hit) view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(hit.pos))));
+            view.focus();
+          },
+        );
       });
     return () => {
       cancelled = true;
@@ -88,7 +98,7 @@ export function MilkdownEditor(props: {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="sticky top-(--doc-header-h) z-10 flex flex-wrap gap-1 rounded-lg border bg-card p-1">
+      <div data-editor-toolbar className="sticky top-(--doc-header-h) z-10 flex flex-wrap gap-1 rounded-lg border bg-card p-1">
         {tools.map(({ label, icon: Icon, run }) => (
           <Button
             key={label}

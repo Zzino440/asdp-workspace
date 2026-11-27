@@ -28,10 +28,14 @@ function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?:
   return () => (tree: Root) => {
     const out: RootContent[] = [];
     let section: { children: RootContent[] } | null = null;
-    for (const node of tree.children) {
+    for (const [index, node] of tree.children.entries()) {
+      // data-block: posizione del blocco nel testo, uguale al blocco n-esimo dell'editor. Serve a
+      // tenere fermo il punto di lettura passando da lettura a modifica e ritorno.
+      node.data = { ...node.data, hProperties: { ...node.data?.hProperties, dataBlock: index } };
       if (node.type === "blockquote" && textOf(node).trimStart().startsWith("❓")) {
         node.data = {
           hProperties: {
+            dataBlock: index,
             className: [
               "my-3 rounded-r-md border-l-4 border-(--state-complete-border) bg-(--state-complete) px-4 py-1 text-(--state-complete-foreground)",
             ],

@@ -3,23 +3,27 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "cn";
 
-// "In questa pagina": i titoli H2/H3 del testo mostrato in #containerId, con la sezione corrente
-// evidenziata mentre si scorre.
-export function DocumentOutline({ containerId }: { containerId: string }) {
-  const [items, setItems] = useState<{ id: string; text: string; level: number }[]>([]);
-  const [active, setActive] = useState<string | null>(null);
+// "In questa pagina": i titoli H2/H3 del testo mostrato in #containerId (lettura o editor), con la
+// sezione corrente evidenziata mentre si scorre. Non tocca il DOM dei titoli (nell'editor lo
+// gestisce ProseMirror): il clic scorre con scrollTo, di base fino a 11rem dal bordo in alto.
+export function DocumentOutline({
+  containerId,
+  scrollTo = (element) =>
+    window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - 176, behavior: "smooth" }),
+}: {
+  containerId: string;
+  scrollTo?: (element: HTMLElement) => void;
+}) {
+  const [items, setItems] = useState<{ element: HTMLElement; text: string; level: number }[]>([]);
+  const [active, setActive] = useState<HTMLElement | null>(null);
   const pinned = useRef(false);
 
   useEffect(() => {
     const root = document.getElementById(containerId);
     if (!root) return;
     const headings = [...root.querySelectorAll<HTMLElement>("h2, h3")];
-    headings.forEach((h, i) => {
-      if (!h.id) h.id = `sezione-${i + 1}`;
-      h.style.scrollMarginTop = "11rem"; // sotto l'intestazione fissa
-    });
     // eslint-disable-next-line react-hooks/set-state-in-effect -- i titoli si leggono dal DOM
-    setItems(headings.map((h) => ({ id: h.id, text: h.textContent ?? "", level: h.tagName === "H2" ? 2 : 3 })));
+    setItems(headings.map((h) => ({ element: h, text: h.textContent ?? "", level: h.tagName === "H2" ? 2 : 3 })));
     if (headings.length === 0) return;
     // Attivo l'ultimo titolo sopra una linea a 200px (sotto l'intestazione). Negli ultimi pixel di
     // scorrimento la linea scende fino al fondo dello schermo: gli ultimi titoli, che non possono
@@ -32,7 +36,7 @@ export function DocumentOutline({ containerId }: { containerId: string }) {
       const remaining = maxScroll - window.scrollY;
       const line = range > 0 && remaining < range ? top + (window.innerHeight - top) * (1 - remaining / range) : top;
       const passed = headings.filter((h) => h.getBoundingClientRect().top <= line);
-      setActive((passed.at(-1) ?? headings[0]).id);
+      setActive(passed.at(-1) ?? headings[0]);
     };
     // Dopo un clic sull'indice resta la voce cliccata finché l'utente non scorre di nuovo.
     const unpin = () => {
@@ -53,22 +57,23 @@ export function DocumentOutline({ containerId }: { containerId: string }) {
   if (items.length === 0) return <p className="text-sm text-muted-foreground">Nessuna sezione.</p>;
   return (
     <ul className="flex flex-col gap-0.5 text-sm">
-      {items.map((item) => (
-        <li key={item.id}>
-          <a
-            href={`#${item.id}`}
+      {items.map((item, i) => (
+        <li key={i}>
+          <button
+            type="button"
             onClick={() => {
               pinned.current = true;
-              setActive(item.id);
+              setActive(item.element);
+              scrollTo(item.element);
             }}
             className={cn(
-              "block truncate rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground",
+              "block w-full truncate rounded-md px-2 py-1 text-left text-muted-foreground hover:bg-muted hover:text-foreground",
               item.level === 3 && "pl-5",
-              active === item.id && "bg-accent text-foreground",
+              active === item.element && "bg-accent text-foreground",
             )}
           >
             {item.text}
-          </a>
+          </button>
         </li>
       ))}
     </ul>

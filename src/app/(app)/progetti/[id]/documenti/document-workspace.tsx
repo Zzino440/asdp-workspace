@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { History, Pencil, SlidersHorizontal, X } from "lucide-react";
@@ -11,6 +11,7 @@ import { ApprovalActions } from "./approval-actions";
 import { DocumentDetails, toText } from "./document-details";
 import { DocumentOutline } from "./document-outline";
 import { MilkdownEditor } from "./milkdown-editor";
+import { type Anchor, anchorOf, captureAnchor, editorBlocks, readBlocks, restoreAnchor } from "./scroll-anchor";
 import { DocumentStateBadge } from "@/components/document-state-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,10 @@ import { QUESTION_STATUS_LABEL, questionsOf, statusOf, type QuestionStatus } fro
 import { Markdown } from "@/components/markdown";
 
 const CONTENT_ID = "contenuto-documento";
+const EDITOR_ID = "editor-documento";
+
+// Punto di lettura da ritrovare in lettura dopo Salva: il salvataggio rimonta la pagina (key).
+let savedAnchor: { path: string; anchor: Anchor } | null = null;
 
 // Pallino dello stato di una D[N] nel pannello, con i colori dei riquadri nel testo.
 const QUESTION_DOT: Record<QuestionStatus, string> = {
@@ -103,6 +108,11 @@ export function DocumentWorkspace(props: {
   const editor = useRef<{ baseline: string; read: () => string } | null>(null);
   const leaving = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
+  // Entrando in modifica: il punto di lettura da ritrovare nell'editor e, col doppio clic, dove
+  // mettere il cursore. editorReady cambia quando l'editor è pronto (l'indice rilegge i titoli).
+  const enterAnchor = useRef<Anchor | null>(null);
+  const caret = useRef<{ x: number; y: number } | null>(null);
+  const [editorReady, setEditorReady] = useState(0);
 
   // Aprendo una versione dalla cronologia l'editor si chiude.
   const isEditing = editing && !props.versionView;
@@ -152,7 +162,19 @@ export function DocumentWorkspace(props: {
     };
   }, [dirty]);
 
-  function startEditing(fromDraft: Draft | null) {
+  // Linea sotto cui comincia il testo visibile: intestazione fissa e, in modifica, barra dell'editor.
+  function visibleLine(editingNow: boolean) {
+    const header = headerRef.current?.getBoundingClientRect().bottom ?? 0;
+    const toolbar = document.querySelector<HTMLElement>("[data-editor-toolbar]")?.offsetHeight ?? 0;
+    return header + (editingNow ? toolbar + 12 : 0);
+  }
+
+  // at: doppio clic su un blocco del testo (punto del cursore e blocco da tenere fermo).
+  function startEditing(fromDraft: Draft | null, at?: { x: number; y: number; block: HTMLElement }) {
+    enterAnchor.current = at
+      ? anchorOf({ element: at.block, index: Number(at.block.dataset.block) }, visibleLine(false))
+      : captureAnchor(readBlocks(CONTENT_ID), visibleLine(false));
+    caret.current = at ? { x: at.x, y: at.y } : null;
     setResume(fromDraft?.body ?? null);
     setBodyDirty(false);
     setResult(null);
@@ -168,6 +190,8 @@ export function DocumentWorkspace(props: {
 
   function cancel() {
     if (dirty && !confirm("Annullare le modifiche non salvate?")) return;
+    const anchor = captureAnchor(editorBlocks(EDITOR_ID), visibleLine(true));
+    if (anchor) savedAnchor = { path: props.path, anchor };
     clearDraft();
     editor.current = null;
     setMine(null);
@@ -182,6 +206,7 @@ export function DocumentWorkspace(props: {
   }
 
   function save() {
+    const anchor = captureAnchor(editorBlocks(EDITOR_ID), visibleLine(true));
     const body = bodyText();
     const yamlText = props.frontMatterSource;
     const content = yamlText === null ? body : `---${newline}${yamlText}${newline}---${newline}${body}`;
@@ -198,6 +223,7 @@ export function DocumentWorkspace(props: {
         return;
       }
       clearDraft();
+      if (anchor) savedAnchor = { path: props.path, anchor };
       leaving.current = true;
       router.refresh();
     });
@@ -250,15 +276,24 @@ export function DocumentWorkspace(props: {
     button.textContent = "Prompt copiato";
     setTimeout(() => (button.textContent = label), 1500);
   };
-  // Porta alla domanda appena sotto l'intestazione fissa (alta quanto il titolo va a capo) e la
-  // fa lampeggiare per un attimo.
+  // Porta un elemento del testo appena sotto l'intestazione fissa (alta quanto il titolo va a capo)
+  // e, in modifica, sotto la barra dell'editor.
+  const scrollToElement = (element: HTMLElement) => {
+    const toolbar = document.querySelector<HTMLElement>("[data-editor-toolbar]")?.offsetHeight ?? 0;
+    const line = (headerRef.current?.offsetHeight ?? 0) + (isEditing ? toolbar + 12 : 0);
+    window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - line - 16, behavior: "smooth" });
+  };
+  // Porta alla domanda e la fa lampeggiare per un attimo. Nell'editor è il suo titolo "D3 · …".
   const goToQuestion = (event: React.MouseEvent, id: string) => {
-    const target = document.getElementById(id);
+    const target =
+      document.getElementById(id) ??
+      [...document.querySelectorAll<HTMLElement>(`#${EDITOR_ID} :is(h2, h3, h4, h5, h6)`)].find((h) =>
+        (h.textContent ?? "").toLowerCase().startsWith(`${id} ·`),
+      );
     if (!target) return;
     event.preventDefault();
-    const top = target.getBoundingClientRect().top + window.scrollY - (headerRef.current?.offsetHeight ?? 0) - 16;
-    window.scrollTo({ top, behavior: "smooth" });
-    history.replaceState(null, "", `#${id}`);
+    scrollToElement(target);
+    if (!isEditing) history.replaceState(null, "", `#${id}`);
     target.animate(
       [
         { outline: "2px solid var(--state-complete-border)", outlineOffset: "6px" },
@@ -267,6 +302,13 @@ export function DocumentWorkspace(props: {
       { duration: 1800, delay: 300, easing: "ease-in" },
     );
   };
+
+  // Tornando in lettura (Annulla, o pagina rimontata dopo Salva): stesso blocco nello stesso punto.
+  useLayoutEffect(() => {
+    if (isEditing || savedAnchor?.path !== props.path) return;
+    restoreAnchor(readBlocks(CONTENT_ID), savedAnchor.anchor, visibleLine(false));
+    savedAnchor = null;
+  }, [isEditing, props.path]);
 
   // Altezza dell'intestazione fissa in --doc-header-h: la barra dell'editor si ancora subito sotto.
   useEffect(() => {
@@ -507,24 +549,41 @@ export function DocumentWorkspace(props: {
           <CardContent>
             {props.versionView ??
               (isEditing && props.body !== null ? (
-                <MilkdownEditor
-                  initial={originalBody}
-                  draft={resume}
-                  onReady={(baseline, read) => {
-                    editor.current = { baseline, read };
-                    setBodyDirty(read() !== baseline);
-                  }}
-                  onChange={(markdown) => {
-                    if (!editor.current) return;
-                    setBodyDirty(markdown !== editor.current.baseline);
-                    storeDraft(markdown);
-                  }}
-                />
+                <div id={EDITOR_ID}>
+                  <MilkdownEditor
+                    initial={originalBody}
+                    draft={resume}
+                    onReady={(baseline, read, focusAt) => {
+                      editor.current = { baseline, read };
+                      setBodyDirty(read() !== baseline);
+                      setEditorReady((n) => n + 1);
+                      // Dopo il primo disegno dell'editor: stesso blocco nello stesso punto, poi il cursore.
+                      requestAnimationFrame(() => {
+                        if (enterAnchor.current) restoreAnchor(editorBlocks(EDITOR_ID), enterAnchor.current, visibleLine(true));
+                        if (caret.current) focusAt(caret.current.x, caret.current.y);
+                        enterAnchor.current = null;
+                        caret.current = null;
+                      });
+                    }}
+                    onChange={(markdown) => {
+                      if (!editor.current) return;
+                      setBodyDirty(markdown !== editor.current.baseline);
+                      storeDraft(markdown);
+                    }}
+                  />
+                </div>
               ) : (
                 <div
                   id={CONTENT_ID}
                   className={cn(props.hideFirstHeading && "[&>h1:first-child]:hidden")}
                   onClick={copyAnswersPrompt}
+                  onDoubleClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    const block = target.closest<HTMLElement>("[data-block]");
+                    if (!props.canEdit || !block || target.closest("[data-copy-prompt]")) return;
+                    window.getSelection()?.removeAllRanges();
+                    startEditing(null, { x: e.clientX, y: e.clientY, block });
+                  }}
                 >
                   {props.readView}
                 </div>
@@ -544,10 +603,11 @@ export function DocumentWorkspace(props: {
         )}
       </div>
 
-      {/* A destra: l'indice delle sezioni o la cronologia. In modifica l'indice non c'è. */}
-      <aside className={cn("w-full shrink-0 lg:w-72", showHistory ? "block" : isEditing ? "hidden" : "hidden xl:block")}>
+      {/* A destra: domande e indice delle sezioni (anche in modifica, così il testo non cambia
+          larghezza) o la cronologia. */}
+      <aside className={cn("w-full shrink-0 lg:w-72", showHistory ? "block" : "hidden xl:block")}>
         <div className="sticky top-8 flex max-h-[calc(100vh-4rem)] flex-col gap-3 overflow-y-auto">
-          {!showHistory && !isEditing && questions.length > 0 && (
+          {!showHistory && questions.length > 0 && (
             <>
               <h2 className="text-sm font-semibold">Domande</h2>
               <ul className="flex flex-col gap-0.5 text-sm">
@@ -580,7 +640,15 @@ export function DocumentWorkspace(props: {
               </Button>
             )}
           </div>
-          {showHistory ? props.history : !isEditing && <DocumentOutline containerId={CONTENT_ID} />}
+          {showHistory ? (
+            props.history
+          ) : (
+            <DocumentOutline
+              key={isEditing ? `editor-${editorReady}` : "lettura"}
+              containerId={isEditing ? EDITOR_ID : CONTENT_ID}
+              scrollTo={scrollToElement}
+            />
+          )}
         </div>
       </aside>
     </div>

@@ -25,6 +25,23 @@
 
 ## Storia
 
+## [0.21.2] 2026-11-27 — Documento: stesso punto tra lettura e modifica
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- UI, documento: passando da lettura a modifica (e ritorno con Annulla o Salva) il blocco in cima
+  allo schermo resta nello stesso punto, anche sotto la barra dell'editor.
+- UI, documento: doppio clic su un blocco del testo apre la modifica con il cursore in quel punto.
+- UI, pannello a destra: domande e "In questa pagina" restano anche in modifica (il testo non
+  cambia larghezza); il clic porta al titolo o alla domanda nell'editor, sotto la barra.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint e build.
+
 ## [0.21.1] 2026-11-27 — MCP: aggiornamento dei documenti sullo stesso file
 
 **Autore**: Lorenzo Belli con Claude Code
