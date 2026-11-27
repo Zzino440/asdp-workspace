@@ -25,6 +25,35 @@
 
 ## Storia
 
+## [0.22.3] 2026-11-27 — Consolidamento: errori gestiti, frontespizio robusto, test
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- Documenti: un frontespizio YAML non valido (es. chiave duplicata) o un file con BOM non
+  bloccano più l'indice di tutto il progetto. Il file si indicizza senza frontespizio,
+  «Reindicizza da GitLab» lo elenca, la pagina del documento mostra l'errore e non permette la
+  modifica. Salvataggio e creazione rifiutano un YAML non valido.
+- Documenti: rifiutato il salvataggio che toglie il frontespizio a un documento che lo aveva
+  (es. testo troncato passato da Claude).
+- Editor: se il testo non si può salvare solo nelle parti cambiate, si chiede conferma prima di
+  salvarlo riscritto per intero (prima avveniva in silenzio).
+- UI: pagine «Pagina non trovata» e «Qualcosa non ha funzionato» (con Riprova) in italiano al
+  posto di quelle inglesi di Next; errore del layout principale gestito.
+- GitLab: timeout di 30 s su ogni chiamata, così una pagina non resta in caricamento all'infinito.
+- MCP: `read_document` aggiunge `front_matter_error` quando il YAML non è valido;
+  `update_document` e `create_document` hanno i nuovi errori `invalid_front_matter` e
+  `missing_front_matter`.
+- Sviluppo: test unitari con Vitest (`pnpm test`) su salvataggio a blocchi, frontespizio, D[N] e
+  gate; `splitFrontMatter` spostato in `src/lib/front-matter.ts`.
+
+### Migrazioni e configurazione
+- Nessuna. Nuova dipendenza di sviluppo `vitest`.
+
+### Test eseguiti
+- `pnpm test` (18 test), typecheck, lint e build; nel browser pagina 404 su un progetto
+  inesistente e pagina documento di PSW che si apre come prima.
+
 ## [0.22.2] 2026-11-27 — Barra laterale: tolte le sottovoci di Progetti
 
 **Autore**: Lorenzo Belli con Claude Code

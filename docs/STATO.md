@@ -8,14 +8,15 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.22.2: barra laterale senza sottovoci)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.22.3 sul branch `consolidamento`)
 
 ## Dove siamo
 
-- **Versione**: `0.22.2` su `master` (barra laterale senza sottovoci di Progetti), da
-  committare, pushare e taggare. `0.22.1` è pushata e taggata. Nessun worktree aperto.
-- **Branch**: `master` (principale), `develop` (fermo a `0.19.1`, `c62abf0`),
-  `feat/domande-evidenziate` (unita in `master`, si può eliminare).
+- **Versione**: `0.22.3` sul branch `consolidamento` (blocco 1 dell'analisi del 2026-11-27:
+  errori gestiti, frontespizio robusto, Vitest), committato, non pushato, da unire in `master`
+  e taggare. `0.22.2` committata su `master`, da pushare e taggare. `0.22.1` pushata e taggata.
+- **Branch**: `master` (principale), `consolidamento` (lavoro in corso), `develop` (fermo a
+  `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
 - **Ultimo lavoro** (0.21–0.22, pagina del documento): domande D[N] con quattro stati e riquadri
   colorati, pannello Domande, salto e lampeggio; punto di lettura che resta fermo tra lettura e
   modifica, doppio clic per modificare; indice sincronizzato con l'editor e pannello destro
@@ -25,6 +26,12 @@
 
 ## Prossimi passi
 
+0. **Consolidamento** (analisi indipendente del codice del 2026-11-27). Blocco 1 fatto in 0.22.3.
+   Poi da valutare insieme: notifiche (approvatore e autore), dashboard "Tocca a me", prossimo
+   passo per persona, feedback delle azioni, mobile; tipi Supabase generati; reindex più leggero.
+   Prima di dare l'app al team: chiudere in RLS le colonne `gitlab_*`/`docs_root` di `projects`
+   per il PM e le righe di `documents` scritte a mano dagli editor; redirect `next` al login che
+   accetta `/` seguito da backslash; immagini remote nell'export PDF.
 1. Provare a mano la pagina del documento 0.21–0.22 (pannello ridotto, editor) e decidere se fare
    i riquadri D[N] e "Da chiarire" anche in modifica (plugin di decorazioni ProseMirror, senza
    toccare il Markdown salvato).
@@ -62,6 +69,10 @@ Funzioni committate ma non provate fino in fondo. Prove con file e Teams **sempr
 - **Desktop Extension di sviluppo** (`mcpb/`): installazione in Claude Desktop, login con un
   utente del seed, tool visibili (server del plugin disattivato).
 - **Editor**: come appaiono i commenti HTML del corpo (in lettura sono nascosti).
+- **Consolidamento (0.22.3)**: su PSW un `.md` con YAML rotto (chiave duplicata) → Reindicizza
+  indicizza gli altri e lo segnala, pagina con l'avviso; conferma del salvataggio non a blocchi;
+  pagina «Qualcosa non ha funzionato» con GitLab irraggiungibile; MCP `update_document` senza
+  frontespizio → errore senza commit.
 - **pgTAP**: rilanciare dopo un `supabase db reset` (con i dati locali in più 7 test falliscono
   per i conteggi, non per le migrazioni).
 
