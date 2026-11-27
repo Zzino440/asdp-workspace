@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/documents/export": ["./node_modules/@sparticuz/chromium/bin/**/*"],
     "/progetti/**/*": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+    // Testi della Guida letti dal tool MCP read_guide.
+    "/api/mcp": ["./src/content/guida/**/*"],
   },
   turbopack: {
     rules: {

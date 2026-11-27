@@ -2,7 +2,7 @@ import { isDone } from "./phase-progress";
 import type { MapType, NextStep } from "./project-steps";
 
 // Prerequisiti dei passi (document_types.requires). L'ordine consigliato resta sort_order:
-// i prerequisiti dicono solo cosa serve prima e cosa si può già avviare in parallelo.
+// i prerequisiti dicono solo cosa serve prima e cosa si può anticipare.
 
 export type MissingType = { code: string; name: string; phase: number };
 

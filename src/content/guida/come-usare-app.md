@@ -41,7 +41,7 @@ In alto c'è il riquadro **Prossimo passo**: il primo documento non ancora pront
 - **Crea** un documento che non esiste ancora: **Copia prompt per Claude** copia una richiesta pronta (progetto, skill, documenti da leggere dal connettore) da incollare in Claude con il plugin `asdp`.
 - **Completa** un documento che esiste ma non è ancora Completo: **Apri documento**, oppure **Copia prompt** per farlo completare a Claude.
 
-Il Prossimo passo segue l'ordine consigliato del percorso. Se un passo di una fase successiva ha già tutto quello che gli serve, sotto compare **Puoi già iniziare anche**: per esempio il Backlog, appena l'Analisi Funzionale è pronta. Puoi avviarlo in parallelo, ma i documenti delle fasi intermedie restano da fare (vedi [Cosa si può fare in parallelo](/guida/percorso)).
+Il Prossimo passo segue l'ordine consigliato del percorso. Se un passo di una fase successiva ha già tutto quello che gli serve, sotto compare **Puoi anticipare**: per esempio il Backlog, appena l'Analisi Funzionale è pronta. Anticiparlo non cambia la fase del progetto, che avanza solo con **Passa alla Fase N**; i documenti delle fasi intermedie restano da fare (vedi [Cosa si può anticipare](/guida/percorso)).
 
 Se documenti di fasi precedenti non sono pronti, sotto il riquadro compare un avviso: restano nel percorso, cliccalo per aprire la prima fase con documenti da finire.
 

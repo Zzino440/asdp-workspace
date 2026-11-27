@@ -25,6 +25,44 @@
 
 ## Storia
 
+## [0.27.0] 2026-11-27 — Claude legge la Guida
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **MCP**: nuovo tool `read_guide`. Senza slug restituisce l'indice della Guida, con slug il testo Markdown della pagina, il suo indirizzo e, per le pagine dei documenti, chi scrive, chi approva, input e skill. Le istruzioni del server dicono di usarlo per le domande sul framework invece di rispondere a memoria.
+- **Guida**: *Collegare Claude* cita la nuova funzione.
+- **Configurazione build**: i testi in `src/content/guida/` vengono inclusi nella route `/api/mcp`.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm test` (24 test), `pnpm build`: OK.
+- Build: i 27 file della Guida sono tracciati nella route `/api/mcp`; ogni pagina di `GUIDA` ha il suo file.
+- Claude Code col connettore di sviluppo: `read_guide` senza slug → indice di 27 pagine; `slug: "t1-4"` → testo e «approva: PO del cliente, dopo una revisione interna del TL»; slug inesistente → errore che rimanda all'indice.
+
+## [0.26.1] 2026-11-27 — «Puoi anticipare»
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Mappa del Percorso**:
+  - il riquadro dei passi in parallelo si chiama **Puoi anticipare**;
+  - la riga sotto ogni passo dice solo cosa serve (già pronto) e che la fase del progetto non cambia;
+  - toglie l'ambiguità con «Passa alla Fase N», che resta l'unico modo di avanzare di fase.
+- **Guida**:
+  - stesso nome e stessa frase in *Il percorso in 5 fasi* e *Come si usa questa app*;
+  - la sezione diventa «Cosa si può anticipare» e così i link da T1.4, T4.1 e Fase 4.
+- **MCP**: `parallel_steps` è descritto come «passi che si possono anticipare, senza cambiare la fase del progetto», nelle istruzioni del server e nella descrizione di `get_project`. Nessun campo cambia.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm test` (24 test): OK.
+- Browser su PSW: il riquadro mostra «Puoi anticipare · Crea Backlog · Fase 4 · Preparazione delivery. Serve solo un documento già pronto: Analisi Funzionale. La fase del progetto non cambia.». La guida mostra «Cosa si può anticipare».
+
 ## [0.26.0] 2026-11-27 — Percorso: passi in parallelo e prerequisiti
 
 **Autore**: Lorenzo Belli con Claude Code

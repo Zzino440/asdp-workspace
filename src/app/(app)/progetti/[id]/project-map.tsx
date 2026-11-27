@@ -299,13 +299,13 @@ function NextStepCard({ project, next, turn }: { project: ProjectInfo; next: Nex
   );
 }
 
-// Passi di fasi successive che si possono già avviare: i loro prerequisiti sono pronti. Il
-// prossimo passo resta quello consigliato; le fasi intermedie restano nel percorso.
+// Passi di fasi successive che si possono anticipare: i loro prerequisiti sono pronti. Non cambiano
+// la fase del progetto; il prossimo passo resta quello consigliato.
 function ParallelSteps({ project, types, steps }: { project: ProjectInfo; types: MapType[]; steps: NextStep[] }) {
   const nameOf = (code: string) => types.find((t) => t.code === code)?.name ?? code;
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border px-5 py-4">
-      <span className="text-xs font-medium text-muted-foreground">Puoi già iniziare anche, in parallelo</span>
+      <span className="text-xs font-medium text-muted-foreground">Puoi anticipare</span>
       <ul className="flex flex-col gap-2">
         {steps.map((s) => {
           const requires = types.find((t) => t.code === s.code)?.requires ?? [];
@@ -319,8 +319,8 @@ function ParallelSteps({ project, types, steps }: { project: ProjectInfo; types:
                 <span className="text-sm text-muted-foreground">
                   Fase {s.phase} · {PHASES[s.phase].name}.{" "}
                   {requires.length > 0 &&
-                    `Richiede solo ${requires.length === 1 ? "un documento già pronto" : "documenti già pronti"}: ${requires.map(nameOf).join(" e ")}. `}
-                  Il prossimo passo resta quello consigliato: i documenti delle fasi intermedie restano da fare.{" "}
+                    `${requires.length === 1 ? "Serve solo un documento già pronto" : "Servono solo documenti già pronti"}: ${requires.map(nameOf).join(" e ")}. `}
+                  La fase del progetto non cambia.{" "}
                   <Link href={guidaHref("percorso")} className="text-primary hover:underline">
                     Perché
                   </Link>

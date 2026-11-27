@@ -1,4 +1,6 @@
 import "server-only";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import type { McpServer } from "@modelcontextprotocol/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -11,6 +13,7 @@ import {
   readDocument,
   saveDocument,
 } from "@/lib/documents";
+import { GUIDA, guidaHref } from "@/lib/guida";
 import { microsoftEnabled } from "@/lib/microsoft";
 import { questionsOf } from "@/lib/questions";
 import { type MapDoc, nextStep, projectSteps } from "@/lib/project-steps";
@@ -56,8 +59,9 @@ const commitMessage = (message: string) => message.replace(/\n+Via: (app|mcp)\s*
 
 // Regole minime che il client riceve alla connessione: valgono per ogni modifica.
 const BASE_INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti del framework ASDP di DST, con gli stessi permessi che l'utente ha nell'app.
+- Per domande su come funziona il framework o l'app (fasi, documenti, chi scrive e chi approva, gate, stati, domande D[N], glossario) leggi la Guida con read_guide (senza slug per l'indice) e rispondi da lì, citando la pagina; non rispondere a memoria.
 - I progetti si indicano con il codice (es. PFS): usa list_projects, poi get_project per team, repo di codice, tipi di documento e permessi dell'utente.
-- Per "cosa devo fare" o "a che punto siamo" usa get_project: next_step è il prossimo passo consigliato come lo mostra l'app (con la skill da lanciare), parallel_steps i passi di fasi successive che si possono già avviare in parallelo (es. il Backlog subito dopo l'Analisi Funzionale), behind i passi rimasti indietro, che restano da fare. requires_missing dice quali documenti servono prima di un passo: un passo con requires_missing non vuoto non si avvia (es. l'Analisi Tecnica senza Architettura). Proponi sempre il passo consigliato e cita i paralleli come alternativa; per ogni documento ci sono owner, scadenza, domande D[N] e changes_requested. list_activity dice chi ha salvato cosa di recente.
+- Per "cosa devo fare" o "a che punto siamo" usa get_project: next_step è il prossimo passo consigliato come lo mostra l'app (con la skill da lanciare), parallel_steps i passi di fasi successive che si possono anticipare (es. il Backlog subito dopo l'Analisi Funzionale): anticiparli non cambia la fase del progetto, behind i passi rimasti indietro, che restano da fare. requires_missing dice quali documenti servono prima di un passo: un passo con requires_missing non vuoto non si avvia (es. l'Analisi Tecnica senza Architettura). Proponi sempre il passo consigliato e cita i paralleli come alternativa; per ogni documento ci sono owner, scadenza, domande D[N] e changes_requested. list_activity dice chi ha salvato cosa di recente.
 - Domande D[N] (in get_project, list_documents e read_document), campo status: aperta = nessuna risposta, lascia il blocco; rimandata = spuntato "Da decidere in fase di analisi", lascia il blocco, passa all'analisi; da_applicare = answer è l'opzione spuntata, va applicata rilanciando la skill sul documento; da_correggere = più opzioni spuntate o "Altro:" senza testo, non applicare nulla e chiedi all'utente di correggere. answered = true solo per da_applicare. Nella T1.4 le D[N] sono copie di quelle dei Requisiti Consolidati (P1.3): si rispondono lì, poi si aggiorna la T1.4.
 - Se un documento ha changes_requested, chi l'ha approvato ha chiesto modifiche: parti dal motivo quando lo aggiorni.
 - I documenti sono file Markdown con frontespizio YAML (GUIDA-FRONT) tra due righe "---", salvati su GitLab.
@@ -96,6 +100,39 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
     },
   );
 
+  // Contenuto statico, uguale per tutti: non serve il client dell'utente.
+  server.registerTool(
+    "read_guide",
+    {
+      title: "Leggi la Guida",
+      description:
+        "Guida al framework ASDP mostrata nell'app (/guida): fasi, documenti, ruoli e approvazioni, gate, stati, " +
+        "domande D[N], glossario, uso dell'app e di Claude. Senza slug restituisce l'indice delle pagine " +
+        '(slug "" è la pagina iniziale); con slug il testo Markdown della pagina e, per i documenti, chi scrive, ' +
+        "chi approva, input e skill.",
+      inputSchema: z.object({
+        slug: z.string().optional().describe('Pagina, es. "gate" o "t1-4"; omesso = indice'),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ slug }) => {
+      if (slug === undefined)
+        return text(
+          GUIDA.map((p) => ({ slug: p.slug, sezione: p.sezione, titolo: p.titolo, sottotitolo: p.sottotitolo })),
+        );
+      const page = GUIDA.find((p) => p.slug === slug);
+      if (!page) return failure("Pagina della Guida non trovata. Chiama read_guide senza slug per l'indice.");
+      const body = readFileSync(path.join(process.cwd(), "src/content/guida", `${page.file}.md`), "utf-8");
+      return text({
+        url: guidaHref(page.slug),
+        titolo: page.titolo,
+        sottotitolo: page.sottotitolo,
+        documento: page.documento,
+        testo: body,
+      });
+    },
+  );
+
   server.registerTool(
     "get_project",
     {
@@ -103,7 +140,7 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       description:
         "Dati del progetto (con descrizione e date), team con ruoli, repo dei documenti e repo di codice collegate, " +
         "ruoli dell'utente, next_step (il prossimo passo consigliato, come nella mappa dell'app, con la skill da " +
-        "usare), parallel_steps (passi di fasi successive avviabili già, in parallelo) e behind (passi aperti delle " +
+        "usare), parallel_steps (passi di fasi successive che si possono anticipare, senza cambiare la fase del progetto) e behind (passi aperti delle " +
         "fasi precedenti, restano da fare); ogni passo ha requires_missing (tipi da preparare prima). Per ogni tipo di " +
         "documento del framework: fase, cartella, skill, per_feature (un documento per Feature), requires (tipi che " +
         "devono essere pronti prima), livello dell'utente (none/view/edit/approve) e " +

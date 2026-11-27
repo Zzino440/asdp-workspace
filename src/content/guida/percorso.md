@@ -37,7 +37,7 @@ Ogni documento si produce con una skill dedicata: la trovi nella pagina del docu
 
 Questo è l'**ordine consigliato**: è quello che l'app propone come Prossimo passo. I [gate](/guida/gate) sono spiegati nella pagina dedicata.
 
-## Cosa si può fare in parallelo
+## Cosa si può anticipare
 
 Alcuni documenti non dipendono da quelli della fase prima. Il caso più comune è il **Backlog**: richiede solo l'Analisi Funzionale, quindi si può avviare appena è pronta, senza aspettare Architettura, Contesto Tecnico e Risk Register.
 
@@ -51,7 +51,7 @@ Le Fasi 2 e 3 però **non si saltano**: restano nel percorso e prima o poi vanno
 | [Piano di lavoro (T4.3-INDEX)](/guida/t4-3-index) | Analisi Tecnica della stessa Feature |
 | [Task + Scaffold (T4.3-part)](/guida/t4-3-part) | Piano di lavoro e [Contesto Tecnico](/guida/t2-4) |
 
-Nella mappa del progetto il passo consigliato resta in alto. Sotto, **Puoi già iniziare anche** elenca i passi che si possono avviare in parallelo. Accanto a un documento che non si può ancora fare compare **Serve prima**, con i documenti mancanti.
+Nella mappa del progetto il passo consigliato resta in alto. Sotto, **Puoi anticipare** elenca i passi che si possono fare già adesso. Anticipare un documento non cambia la fase del progetto: la fase avanza solo con **Passa alla Fase N**, quando quella attuale è completa. Accanto a un documento che non si può ancora fare compare **Serve prima**, con i documenti mancanti.
 
 > **Nota:** se il backlog nasce prima del Risk Register, le User Story non sono ancora collegate ai rischi. Quando il registro è pronto, rilancia la skill del backlog sul backlog esistente, prima del gate G1: collega le storie ai rischi senza cambiare gli ID. Dopo il G1 il CSV non si tocca più e Claude elenca i collegamenti da fare a mano.
 

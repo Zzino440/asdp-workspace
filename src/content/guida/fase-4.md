@@ -25,7 +25,7 @@ User Story pianificate, Feature analizzate e scomposte, codice di partenza (scaf
 
 L'AF lancia `/asdp:t4-1-user-story-backlog` sull'[Analisi Funzionale](/guida/t1-4), con il [Risk Register](/guida/t3-1) se c'è. Ne escono il documento del backlog e un CSV pronto per l'import in iceScrum. Le stime le mette il team. Il PM pianifica, riconcilia con l'offerta e approva al **gate G1**; poi il backlog si congela.
 
-Il backlog può partire anche prima che Fasi 2 e 3 siano finite, appena l'Analisi Funzionale è pronta. Quelle fasi restano da completare: servono ai passi successivi (vedi [Cosa si può fare in parallelo](/guida/percorso)).
+Il backlog può partire anche prima che Fasi 2 e 3 siano finite, appena l'Analisi Funzionale è pronta. Quelle fasi restano da completare: servono ai passi successivi (vedi [Cosa si può anticipare](/guida/percorso)).
 
 > **Nota:** nella Guida del framework la priorità finale la chiude il PM nel backlog. Con le skill la priorità MoSCoW si decide solo nell'Analisi Funzionale, per Feature, con l'approvazione del PO; il backlog la copia. Per cambiarla si cambia l'Analisi Funzionale.
 

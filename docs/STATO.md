@@ -8,18 +8,19 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.26.0 su `feat/percorso-parallelo`)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.27.0 su `feat/percorso-parallelo`)
 
 ## Dove siamo
 
 - **0.26.0** su `feat/percorso-parallelo` (da `master` `ae90628`), committata, non unita né pushata: percorso ibrido.
   - Colonna `document_types.requires`.
-  - Mappa con «Puoi già iniziare anche» e «Serve prima».
+  - Mappa con «Puoi anticipare» (0.26.1, testo: non cambia la fase) e «Serve prima».
   - MCP `parallel_steps` / `requires_missing`.
   - Guida «Cosa si può fare in parallelo».
   - Va insieme al plugin `asdp` 0.18.0 (`dst-claude-skills`, branch `feature/percorso-parallelo` da `main` `b81ba4d`, separato da `feature/asdp-mcp`, commit `07905d0`, unito in `main` con `183b2a2`, pushato con tag marketplace `0.15.0`). `feature/asdp-mcp` usa già 0.18.0 in locale: quando unirà `main` passerà a una versione sopra.
   - Migration applicata solo al DB locale (`migration up`), non al cloud.
   - Da fare: `supabase test db` dopo un `db reset` (oggi 4 file falliscono per dati locali oltre il seed); merge e tag su indicazione.
+- **0.26.1** e **0.27.0** su `feat/percorso-parallelo`, committate, non unite né pushate. 0.26.1: testi «Puoi anticipare». 0.27.0: tool MCP `read_guide` (Claude legge la Guida, istruzione del server per usarlo sulle domande sul framework), testi della Guida inclusi nella route `/api/mcp` (`next.config.ts`). Check, build e prova dal connettore di sviluppo OK.
 
 - **Versione**: `0.22.3` su `master` (blocco 1 dell'analisi del 2026-11-27: errori gestiti,
   frontespizio robusto, Vitest), unita da `consolidamento`. `master` e tag `0.22.2`, `0.22.3`

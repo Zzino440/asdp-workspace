@@ -62,6 +62,7 @@ Se vedi l'elenco, sei collegato.
 - Elencare i tuoi progetti e mostrare team, ruoli, documenti e il tuo livello di permesso su ogni tipo di documento.
 - Leggere un documento e il suo storico delle versioni.
 - Creare un documento nuovo e salvare le modifiche a uno esistente.
+- Leggere questa Guida, per rispondere a domande sul framework (fasi, documenti, ruoli, gate, glossario) con le stesse regole che trovi qui.
 - Se il progetto ha una cartella Teams collegata e hai collegato il tuo account Microsoft nella scheda **File** del progetto: elencare, cercare e leggere i file del cliente (testo, PDF, Word, PowerPoint, Excel), creare cartelle, caricare file di testo, spostare, rinominare, copiare ed eliminare (nel cestino di SharePoint). Claude resta sempre dentro le cartelle collegate al progetto e sposta o elimina solo se glielo chiedi.
 
 Claude agisce **sempre come te**: vede e modifica solo quello che puoi vedere e modificare nell'app. Ogni salvataggio è un commit a tuo nome, visibile nella **Cronologia** del documento con il canale "MCP".
