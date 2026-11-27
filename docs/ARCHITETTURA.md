@@ -216,15 +216,15 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 2a | **Fatto**: lettura e indice: repo collegate, indexer (webhook + Reindicizza), elenco e vista documenti |
 | 2b | **Fatto**: modifica e commit: editor visuale (Milkdown) nella stessa pagina della lettura, salvataggio a blocchi che lascia identico il Markdown non toccato (`src/lib/markdown-splice.ts`), frontespizio come form, concorrenza ottimistica con bozza locale |
 | 2c | **Fatto**: versioni (commit del file con autore e canale App/MCP/Git) e diff rispetto alla versione precedente |
-| 2d | **In corso**: server MCP con login OAuth, tool di lettura e scrittura e `create_document` (fatto); skill del plugin `asdp` che salvano dall'MCP (sul branch); verifica da Cowork e chat di Claude Desktop (sul cloud di prova) |
-| 2e | **In corso**: Guida al framework nell'app (`/guida`): fasi, documenti, ruoli, stati, gate, lavoro con Claude; link dalla mappa e dal documento |
-| 2f | Ponte passo → Claude: prompt pronto per ogni passo, `next_step`, prompt MCP, pagina "Collega Claude" |
+| 2d | **In corso**: server MCP con login OAuth, tool di lettura e scrittura, `create_document`, file Teams e Office (fatto); skill del plugin `asdp` che salvano dall'MCP (sul branch `feature/asdp-mcp`); verifica da Cowork e chat di Claude Desktop (sul cloud di prova) |
+| 2e | **Fatto** (0.3.0): Guida al framework nell'app (`/guida`): fasi, documenti, ruoli, stati, gate, lavoro con Claude; link dalla mappa e dal documento. Manca la rilettura del team |
+| 2f | **In parte**: ponte passo → Claude. Fatti "Copia prompt" (0.12.0) e `next_step` in `get_project` (0.14.0); mancano prompt MCP per passo e pagina "Collega Claude" |
 | 3 | **In corso**: gate e approvazioni. Fatto il flusso manuale nella pagina del documento (Completo = in approvazione, checklist del gate da `src/lib/gates.ts`, `changeApproval`) e coda `/approvazioni` (`listToApprove`); mancano AI/MCP, evidenza esterna in Storage |
-| 3b | Dashboard "Tocca a me" (panoramica personale: miei documenti in attesa di altri, rimandati a me, scadenze, avanzamento; per le approvazioni solo un contatore verso `/approvazioni`); profilo progetto (Nuovo/Evolutiva/BugFix) e fase modificabile |
+| 3b | Fase modificabile **fatta** (0.20.0: avanti con conferma, indietro solo admin). Da fare: dashboard "Tocca a me" (panoramica personale: miei documenti in attesa di altri, rimandati a me, scadenze, avanzamento; per le approvazioni solo un contatore verso `/approvazioni`); profilo progetto (Nuovo/Evolutiva/BugFix) |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
-| 5 | Modifica con AI, Domande aperte di progetto (anticipabili dopo 2f: risposta alle D[N] con un clic) |
+| 5 | Modifica con AI, Domande aperte di progetto. **Fatto** (0.21.0): D[N] con quattro stati nel documento, nel Percorso e nell'MCP. Da fare: risposta alle D[N] con un clic |
 | 6 | Riservati, login Microsoft Entra, deploy Vercel. **Fatto** (0.16.0): Esporta (PDF, Word, .md; motore in `src/lib/documents/export/`) e Pubblica su Teams degli approvati (`src/lib/documents/publish.ts`) |
-| 7 | **In corso**, solo in locale per Lorenzo finché l'IT non vede l'analisi GDPR. 7a fatta (0.10.0): card "File di progetto" e pagina di collegamento. 7b fatta (0.11.0): carica, nuova cartella, rinomina, sposta, elimina, solo dentro la cartella collegata. File di progetto da Teams/SharePoint (Graph, account Microsoft dell'utente): 7a sfoglia e apri in Office per il web; 7b carica, cartelle, sposta, rinomina; 7c file come input delle skill; la pubblicazione degli approvati (6) scrive nella stessa cartella. La prova `/file-microsoft` (0.8.1) è stata tolta in 0.10.1 |
+| 7 | **In corso**, solo in locale per Lorenzo finché l'IT non vede l'analisi GDPR. 7a fatta (0.10.0): card "File di progetto" e pagina di collegamento. 7b fatta (0.11.0): carica, nuova cartella, rinomina, sposta, elimina, solo dentro la cartella collegata. 7c fatta (0.12.0, 0.17.0, 0.18.0): tool MCP dei file e di Word, Excel, PowerPoint. File di progetto da Teams/SharePoint (Graph, account Microsoft dell'utente): 7a sfoglia e apri in Office per il web; 7b carica, cartelle, sposta, rinomina; 7c file come input delle skill; la pubblicazione degli approvati (6) scrive nella stessa cartella. La prova `/file-microsoft` (0.8.1) è stata tolta in 0.10.1 |
 
 ## 8. Punti aperti
 
@@ -235,7 +235,8 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
   riprovare con un URL `https` (tunnel o deploy di prova); ripiego: token come header.
 - Server OAuth di Supabase in beta; la registrazione dinamica è aperta a chiunque (mitigata dalla
   lista di ritorni ammessi nella pagina di consenso).
-- Adattare le skill del plugin `asdp` a salvare via MCP invece che su file locali.
+- Skill del plugin `asdp` che salvano via MCP: fatte sul branch `feature/asdp-mcp` di
+  `dst-claude-skills`, da portare su `main` quando ci sarà l'URL di produzione.
 - Teams esce dal giro dei documenti ASDP (diverge dalla Guida §18.4.3, va deciso con il team);
   rientra per i file non ASDP (milestone 7, decisione di Lorenzo del 2026-11-26).
 - File di progetto: clienti esterni (guest SharePoint, ruolo nell'app) da decidere.

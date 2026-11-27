@@ -9,8 +9,6 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   documenti ASDP (titolo, codice, percorso) e file Teams delle cartelle collegate.
 - [ ] **"Documenti ASDP" nella scheda File**, accanto alle cartelle Teams, con l'albero per fase
   (si sovrappone in parte al Percorso: da valutare).
-- [ ] **Link tra le due parti**: dal PDF pubblicato nella scheda File al documento nell'app e
-  viceversa (oggi solo app → Teams, da "Su Teams").
 - [ ] **Pubblica via MCP** (`publish_document`) e **Rimuovi da Teams**.
 - [ ] **GDPR**: la cartella del canale la vedono anche gli ospiti del cliente; inserire la
   pubblicazione nell'analisi per l'IT prima di aprirla ad altri utenti.
@@ -53,8 +51,6 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   crea solo un canale in un Team esistente.
 - [ ] **Restyling generale dell'app** (richiesta di Lorenzo del 2026-11-26), dopo le priorità
   funzionali.
-- [ ] Gruppo di test `asdp-sandbox/psw` (progetto PSW nel DB locale) creato nelle prove di
-  0.12.0: eliminarlo da GitLab quando non serve più.
 
 ## Framework e permessi
 
@@ -109,8 +105,6 @@ l'analisi GDPR per l'IT.
   Team di test, poi solo dopo l'analisi GDPR.
 - [ ] **Domande aperte D[N] nel canale** (milestone 5): pubblicarle per il cliente e raccogliere
   lì le risposte. Come sopra.
-- [ ] **Pubblica approvati** nella cartella collegata (milestone 6), copia DOCX/PDF con la versione
-  nel nome. Come sopra.
 - [ ] **Evidenza dell'approvazione del PO scelta da SharePoint**: un link da solo è debole (il file
   cambia o sparisce); serve una versione fissa del file o una copia in Storage. Da decidere col
   team. Con «Sostituisci» / «Carica nuova versione» (`0.15.0`) succede più spesso: stesso link,
@@ -120,10 +114,9 @@ l'analisi GDPR per l'IT.
   ("Inviata al cliente", "Approvata dal PO") in una tabella Supabase, con filtro per nascondere i
   salvataggi automatici: base per l'evidenza del PO qui sopra; **cosa è cambiato** tra due
   versioni (diff del testo; verificare se `?format=pdf` funziona anche sulle versioni).
-- [ ] **7c, file come input delle skill**: opzione economica `get_project` che restituisce le
-  cartelle collegate (Claude Desktop le legge col connettore M365); opzione completa tool MCP
-  `list_project_files` / `read_project_file`. Bloccata dalla DPIA (dati dei clienti verso
-  Anthropic).
+- [ ] **7c per altri utenti**: i tool MCP dei file e degli Office ci sono (0.12.0, 0.17.0, 0.18.0)
+  ma valgono solo per Lorenzo in locale. Aprirli ad altri dopo la DPIA (il contenuto dei file del
+  cliente va ad Anthropic).
 - [ ] **Importa da link via MCP**: tool che risolve un link di condivisione OneDrive/SharePoint
   incollato in chat (Graph `/shares/{id}/driveItem`) e copia il file in una cartella collegata al
   progetto, così poi si legge con `read_project_file`. Risolve i colleghi che passano link
@@ -141,6 +134,9 @@ l'analisi GDPR per l'IT.
 - [ ] **Guscio dell'app responsive**: in `src/app/(app)/layout.tsx` la sidebar resta larga 240 px
   anche sul telefono (a 375 px al contenuto restano circa 100 px). Serve una sidebar a scomparsa
   (menu) sotto `md` e un padding più piccolo.
+- [ ] **Riquadri D[N] e "Da chiarire" anche nell'editor** (dopo 0.22.1 la spaziatura è uguale
+  alla lettura, i colori no): plugin di decorazioni ProseMirror che riusa `questionsOf`, senza
+  toccare il Markdown salvato. Da decidere dopo la prova della pagina del documento.
 - [ ] Descrizione e date del progetto (migrazione `project_details`) da mostrare
   nell'intestazione del progetto (in `get_project` dell'MCP ci sono da 0.14.0).
 
@@ -156,3 +152,12 @@ l'analisi GDPR per l'IT.
   - Ripensare a un guscio Electron sottile (progetto separato che carica l'URL dell'app, mai
     Next.js impacchettato: segreti e MCP restano sul server) solo se emerge un caso concreto
     che richiede programmi locali (es. aprire file in VS Code, lanciare `git` sul PC).
+
+## Codice da sistemare
+
+- [ ] **File T4.3 per US non riconosciuti**: `detectType` in `src/lib/documents/` non riconosce i
+  file `T4.3-F{nn}-US{nn}.md` (non iniziano con `T4.3-part`, cartella condivisa da 3 tipi) se il
+  frontespizio non ha `template_origine: T4.3-part`: finiscono in "Altri file".
+- [ ] **Blocco di Word per il web su elimina/sposta/rinomina**: oggi `Prefer: bypass-shared-lock`
+  scavalca il blocco anche con il file aperto, senza avviso. Fare prima la chiamata senza
+  intestazione e, sul 423, chiedere conferma e riprovare (`force` nell'MCP, dialog nell'app).

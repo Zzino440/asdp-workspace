@@ -3,6 +3,8 @@
 App web per gestire i progetti DST con il framework ASDP: progetti, documenti per ruolo, gate e
 approvazioni, esecuzione delle skill `asdp`. Architettura e milestone in
 [`docs/ARCHITETTURA.md`](docs/ARCHITETTURA.md); regole per gli agenti AI in [`AGENTS.md`](AGENTS.md).
+Dove siamo e cosa viene dopo in [`docs/STATO.md`](docs/STATO.md); novità di ogni versione in
+[`CHANGELOG.md`](CHANGELOG.md); lavori non pianificati in [`TODO.md`](TODO.md).
 
 Stack: Next.js 16 · Supabase · Tailwind + shadcn/ui · Vercel.
 
