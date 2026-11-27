@@ -20,15 +20,19 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   type DriveItem,
+  type FileActivity,
   getItem,
   graphClient,
   listChildren,
   MicrosoftError,
+  recentActivity,
   searchFolder,
 } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
+import { fullDateTime, modifiedLabel } from "@/lib/time";
 import { disconnectMicrosoft } from "../file-actions";
 import { CopyLinkButton } from "./copy-link-button";
+import { FileActivityList } from "./file-activity";
 import { FileSearch } from "./file-search";
 import {
   FileSelection,
@@ -48,6 +52,7 @@ export type FilesParams = {
   errore?: string;
   ordina?: string;
   verso?: string;
+  vista?: string;
 };
 
 type SortKey = "nome" | "modificato" | "dimensione";
@@ -86,8 +91,23 @@ export function FileIcon({ item }: { item: DriveItem }) {
 
 const formatSize = (bytes = 0) =>
   bytes < 1024 ? `${bytes} B` : bytes < 1024 ** 2 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 ** 2).toFixed(1)} MB`;
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+// Attività caricata (ultimi 30 giorni) e finestra delle novità segnate nella tabella.
+const ACTIVITY_DAYS = 30;
+// Pallino: solo le novità dell'ultima ora. Contatore della vista Attività: ultimi 7 giorni.
+const DOT_MS = 60 * 60 * 1000;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const within = (ms: number, iso?: string) => Boolean(iso) && Date.now() - Date.parse(iso!) < ms;
+const isRecent = (iso?: string) => within(DOT_MS, iso);
+
+// Pallino delle novità accanto al nome; il testo per gli screen reader è nel title e in sr-only.
+function RecentDot({ title }: { title: string }) {
+  return (
+    <span title={title} className="size-1.5 shrink-0 rounded-full bg-primary">
+      <span className="sr-only">{title}</span>
+    </span>
+  );
+}
 
 // Scheda "File": le cartelle Teams/SharePoint collegate al progetto, lette con l'account
 // Microsoft dell'utente. Mostra solo quelle cartelle (non tutto Teams). Un errore di Microsoft
@@ -152,6 +172,7 @@ export async function ProjectFiles({
   const location = locations.find((l) => l.id === params.file) ?? locations[0];
   const folder = params.cartella ?? "";
   const query = params.cerca?.trim() ?? "";
+  const activityView = params.vista === "attivita";
 
   // Dati da Graph; gli errori diventano un messaggio nella card.
   let data:
@@ -159,6 +180,8 @@ export async function ProjectFiles({
     | { kind: "search"; results: { item: DriveItem; folder: string }[] };
   let error: string | null = null;
   let account: string | null = null;
+  // null: attività non disponibile; nella vista File manca solo il segno delle novità.
+  let activity: FileActivity[] | null = null;
   try {
     const graph = await graphClient(supabase);
     if (!graph) {
@@ -169,19 +192,31 @@ export async function ProjectFiles({
     }
     // Nome dell'account in parallelo ai file: serve alla riga "Microsoft: … · Scollega".
     const me = graph<{ displayName: string }>("/me?$select=displayName");
-    if (query) {
-      const [results, { displayName }] = await Promise.all([
+    const activityRequest = recentActivity(graph, location.drive_id, location.item_id, ACTIVITY_DAYS).catch((e) => {
+      // Collegamento scaduto: lo gestisce il catch sotto. Ogni altro errore toglie solo l'attività.
+      if (e instanceof MicrosoftError && e.reconnect) throw e;
+      return null;
+    });
+    if (activityView) {
+      [activity, { displayName: account }] = await Promise.all([activityRequest, me]);
+      data = { kind: "search", results: [] };
+    } else if (query) {
+      const [results, { displayName }, recent] = await Promise.all([
         searchFolder(graph, location.drive_id, location.item_id, query),
         me,
+        activityRequest,
       ]);
+      activity = recent;
       data = { kind: "search", results };
       account = displayName;
     } else {
-      const [current, items, { displayName }] = await Promise.all([
+      const [current, items, { displayName }, recent] = await Promise.all([
         getItem(graph, location.drive_id, location.item_id, folder),
         listChildren(graph, location.drive_id, location.item_id, folder),
         me,
+        activityRequest,
       ]);
+      activity = recent;
       data = { kind: "folder", current, items };
       account = displayName;
     }
@@ -194,6 +229,12 @@ export async function ProjectFiles({
       : "Microsoft non risponde: riprova tra poco.";
   }
 
+  // Contatore della vista Attività (7 giorni) e pallino sulle cartelle con novità dell'ultima ora
+  // (la data di una cartella non cambia quando cambia un file al suo interno).
+  const recent = activity?.filter((a) => within(WEEK_MS, a.at)) ?? [];
+  const latest = recent.filter((a) => isRecent(a.at));
+  const changesUnder = (path: string) => latest.filter((a) => a.folder === path || a.folder.startsWith(`${path}/`)).length;
+
   const segments = folder.split("/").filter(Boolean);
   const openUrl = data.kind === "folder" ? data.current.webUrl : location.web_url;
 
@@ -201,8 +242,24 @@ export async function ProjectFiles({
   const sortKey: SortKey | null =
     params.ordina === "nome" || params.ordina === "modificato" || params.ordina === "dimensione" ? params.ordina : null;
   const desc = sortKey !== null && params.verso === "desc";
+  // Cartelle: data e autore dell'ultima modifica al loro contenuto (sottocartelle comprese),
+  // presi dall'attività degli ultimi 30 giorni; changed è l'elemento modificato, per il tooltip.
+  const withContent = (item: DriveItem, parent: string) => {
+    const path = parent ? `${parent}/${item.name}` : item.name;
+    const last = item.folder
+      ? activity?.find((a) => a.folder === path || a.folder.startsWith(`${path}/`))
+      : undefined;
+    if (!last || Date.parse(last.at) <= Date.parse(item.lastModifiedDateTime)) return { item, folder: parent };
+    return {
+      item: { ...item, lastModifiedDateTime: last.at, lastModifiedBy: { user: { displayName: last.actor } } },
+      folder: parent,
+      changed: last.name,
+    };
+  };
   const rows = sortRows(
-    data.kind === "folder" ? data.items.map((item) => ({ item, folder })) : data.results,
+    data.kind === "folder"
+      ? data.items.map((item) => withContent(item, folder))
+      : data.results.map((r) => withContent(r.item, r.folder)),
     sortKey ?? "nome",
     desc,
   );
@@ -248,7 +305,7 @@ export async function ProjectFiles({
         {locations.map((l) => (
           <Link
             key={l.id}
-            href={href({ file: l.id })}
+            href={href({ file: l.id, vista: params.vista })}
             scroll={false}
             aria-current={l.id === location.id ? "page" : undefined}
             className={buttonVariants({ variant: l.id === location.id ? "secondary" : "ghost", size: "sm" })}
@@ -256,8 +313,43 @@ export async function ProjectFiles({
             {l.label}
           </Link>
         ))}
+        {/* File | Attività della cartella scelta */}
+        <div className="ml-auto flex items-center gap-1">
+          <Link
+            href={href({ file: location.id })}
+            scroll={false}
+            aria-current={!activityView ? "page" : undefined}
+            className={buttonVariants({ variant: activityView ? "ghost" : "secondary", size: "sm" })}
+          >
+            File
+          </Link>
+          <Link
+            href={href({ file: location.id, vista: "attivita" })}
+            scroll={false}
+            aria-current={activityView ? "page" : undefined}
+            title="Chi ha aggiunto, modificato, spostato o eliminato cosa, anche da Teams"
+            className={buttonVariants({ variant: activityView ? "secondary" : "ghost", size: "sm" })}
+          >
+            Attività
+            {recent.length > 0 && (
+              <Badge variant="outline" title={`${recent.length} negli ultimi 7 giorni`}>
+                {recent.length}
+              </Badge>
+            )}
+          </Link>
+        </div>
       </div>
 
+      {activityView ? (
+        error ? (
+          message(error)
+        ) : activity ? (
+          <FileActivityList activities={activity} base={base} locationId={location.id} />
+        ) : (
+          message("L'attività di questa cartella non è disponibile ora: riprova tra poco.")
+        )
+      ) : (
+      <>
       {/* Percorso, ricerca, apertura in SharePoint */}
       <div className="flex flex-wrap items-center gap-2">
         <nav aria-label="Percorso" className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-sm">
@@ -321,14 +413,14 @@ export async function ProjectFiles({
               {sortHead("nome", "Nome")}
               {data.kind === "search" && <TableHead className="hidden w-48 md:table-cell">Cartella</TableHead>}
               <TableHead className="hidden w-44 lg:table-cell">Modificato da</TableHead>
-              {sortHead("modificato", "Modificato", "hidden w-32 sm:table-cell")}
+              {sortHead("modificato", "Modificato", "hidden w-36 sm:table-cell")}
               {sortHead("dimensione", "Dimensione", "hidden w-28 text-right md:table-cell")}
               <TableHead className="w-28" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map(
-              ({ item, folder: parent }) => (
+              ({ item, folder: parent, changed }) => (
                 <ItemRow
                   key={item.id}
                   projectId={projectId}
@@ -361,6 +453,11 @@ export async function ProjectFiles({
                       >
                         <FileIcon item={item} />
                         <span className="truncate">{item.name}</span>
+                        {changesUnder(parent ? `${parent}/${item.name}` : item.name) > 0 && (
+                          <RecentDot
+                            title={`${changesUnder(parent ? `${parent}/${item.name}` : item.name)} novità nell'ultima ora`}
+                          />
+                        )}
                       </Link>
                     ) : (
                       <div className="flex min-w-0 items-center gap-2">
@@ -374,6 +471,11 @@ export async function ProjectFiles({
                           <FileIcon item={item} />
                           <span className="truncate">{item.name}</span>
                         </a>
+                        {isRecent(item.createdDateTime) ? (
+                          <RecentDot title="Aggiunto nell'ultima ora" />
+                        ) : (
+                          isRecent(item.lastModifiedDateTime) && <RecentDot title="Modificato nell'ultima ora" />
+                        )}
                         {documentOf.has(item.id) && (
                           <Badge
                             variant="secondary"
@@ -402,8 +504,11 @@ export async function ProjectFiles({
                   <TableCell className="hidden truncate text-muted-foreground lg:table-cell">
                     {item.lastModifiedBy?.user?.displayName ?? "—"}
                   </TableCell>
-                  <TableCell className="hidden text-muted-foreground sm:table-cell">
-                    {formatDate(item.lastModifiedDateTime)}
+                  <TableCell
+                    className="hidden truncate text-muted-foreground sm:table-cell"
+                    title={`${fullDateTime(item.lastModifiedDateTime)}${changed ? ` · ultima modifica: ${changed}` : ""}`}
+                  >
+                    {modifiedLabel(item.lastModifiedDateTime)}
                   </TableCell>
                   <TableCell className="hidden text-right text-muted-foreground md:table-cell">
                     {item.folder ? `${item.folder.childCount} elementi` : formatSize(item.size)}
@@ -439,6 +544,8 @@ export async function ProjectFiles({
         </div>
         </UploadArea>
         </FileSelection>
+      )}
+      </>
       )}
 
       {/* Account Microsoft: visibile anche con un errore, quando serve poterlo scollegare. */}

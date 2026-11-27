@@ -7,6 +7,7 @@ import { guidaHref } from "@/lib/guida";
 import { ASDP_ROLES, ROLE_LABELS } from "@/lib/labels";
 import { microsoftEnabled } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
+import { timeAgo } from "@/lib/time";
 import { loadSetupState } from "@/lib/workspace";
 import { DocumentList, loadProjectSteps } from "../document-list";
 import { gitlabHref, loadProject } from "../project-data";
@@ -160,14 +161,6 @@ async function RecentActivity({ projectId }: { projectId: string }) {
       </ul>
     </section>
   );
-}
-
-function timeAgo(iso: string) {
-  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-  const rtf = new Intl.RelativeTimeFormat("it", { numeric: "auto" });
-  if (minutes < 60) return rtf.format(-minutes, "minute");
-  if (minutes < 60 * 24) return rtf.format(-Math.round(minutes / 60), "hour");
-  return rtf.format(-Math.round(minutes / (60 * 24)), "day");
 }
 
 function RailLink({ href, label, external }: { href: string | null; label: string; external?: boolean }) {

@@ -134,12 +134,14 @@ export type DriveItem = {
   size?: number;
   folder?: { childCount: number };
   file?: { mimeType: string };
+  createdDateTime?: string;
   lastModifiedDateTime: string;
   lastModifiedBy?: { user?: { displayName?: string } };
   parentReference: { driveId: string; id?: string; path?: string };
 };
 
-const ITEM_FIELDS = "id,name,webUrl,eTag,size,folder,file,lastModifiedDateTime,lastModifiedBy,parentReference";
+const ITEM_FIELDS =
+  "id,name,webUrl,eTag,size,folder,file,createdDateTime,lastModifiedDateTime,lastModifiedBy,parentReference";
 
 export async function listTeams(graph: Graph) {
   const { value } = await graph<{ value: Team[] }>("/me/joinedTeams?$select=id,displayName");
@@ -244,6 +246,101 @@ export type FileVersion = {
 export async function listVersions(graph: Graph, driveId: string, itemId: string) {
   const { value } = await graph<{ value: FileVersion[] }>(`/drives/${driveId}/items/${itemId}/versions`);
   return value;
+}
+
+// Attività nella cartella collegata e nelle sottocartelle (API activities di Graph, v1.0): anche
+// quelle fatte direttamente da Teams/SharePoint. Per un'eliminazione driveItem è la cartella che
+// conteneva l'elemento e il nome sta nell'azione.
+export type FileActivity = {
+  id: string;
+  action: "create" | "edit" | "move" | "rename" | "delete" | "restore";
+  at: string;
+  actor: string;
+  mine: boolean;
+  name: string;
+  folder: string; // relativa alla cartella collegata, "" = la cartella stessa
+  isFolder: boolean;
+  webUrl?: string; // assente per eliminati e spostati
+  oldName?: string;
+  from?: string; // spostati: cartella di origine
+};
+
+type RawActivity = {
+  id: string;
+  action: Record<string, { name?: string; objectType?: string; oldName?: string; to?: string } | undefined>;
+  actor?: { user?: { displayName?: string; self?: object } };
+  times: { recordedDateTime: string };
+  driveItem?: DriveItem;
+};
+
+// Le più importanti prima: un'attività può avere più azioni (es. edit + version).
+const ACTIONS = ["delete", "move", "rename", "restore", "create", "edit"] as const;
+const HOUR = 60 * 60 * 1000;
+
+export async function recentActivity(graph: Graph, driveId: string, itemId: string, days: number) {
+  const since = Date.now() - days * 24 * HOUR;
+  // Graph pagina e non ordina per data: si leggono fino a 5 pagine, poi si filtra e si ordina.
+  const readAll = async () => {
+    const value: RawActivity[] = [];
+    let path: string | undefined =
+      `/drives/${driveId}/items/${itemId}/activities?$top=200&$expand=driveItem($select=id,name,webUrl,folder,parentReference)`;
+    for (let page = 0; path && page < 5; page++) {
+      const body: { value: RawActivity[]; "@odata.nextLink"?: string } = await graph(path);
+      value.push(...body.value);
+      path = body["@odata.nextLink"]?.replace("https://graph.microsoft.com/v1.0", "");
+    }
+    return value;
+  };
+  const [root, value] = await Promise.all([getItem(graph, driveId, itemId), readAll()]);
+  const rootPath = pathOf(root);
+  const relativeTo = (path?: string) =>
+    path === rootPath ? "" : path?.startsWith(`${rootPath}/`) ? path.slice(rootPath.length + 1) : null;
+  // Uno spostamento dà la destinazione come "sites/<sito>/<raccolta>/…/<nome>" e, come
+  // un'eliminazione, driveItem = cartella di origine.
+  const rootUrl = decodeURIComponent(new URL(root.webUrl).pathname).slice(1);
+
+  const all = value.flatMap((a): FileActivity[] => {
+    const action = ACTIONS.find((k) => a.action[k]);
+    const item = a.driveItem;
+    const at = a.times.recordedDateTime;
+    // La modifica di una cartella è l'effetto di un cambio al suo interno: già riportato a parte.
+    if (!action || !item || Date.parse(at) < since || (action === "edit" && item.folder)) return [];
+    const deleted = action === "delete" ? a.action.delete! : null;
+    const moved = action === "move" ? (a.action.move!.to ?? "") : null;
+    const origin = relativeTo(deleted || moved !== null ? pathOf(item) : item.parentReference.path);
+    if (origin === null) return [];
+    // Destinazione fuori dalla cartella collegata: resta la cartella di origine.
+    const target = moved?.startsWith(`${rootUrl}/`) ? moved.slice(rootUrl.length + 1).split("/").slice(0, -1).join("/") : null;
+    return [
+      {
+        id: a.id,
+        action,
+        at,
+        actor: a.actor?.user?.displayName ?? "—",
+        mine: Boolean(a.actor?.user?.self),
+        name: deleted?.name ?? (moved !== null ? (moved.split("/").pop() ?? item.name) : item.name),
+        folder: target ?? origin,
+        isFolder: deleted ? deleted.objectType === "Folder" : moved !== null ? false : Boolean(item.folder),
+        webUrl: deleted || moved !== null ? undefined : item.webUrl,
+        oldName: a.action.rename?.oldName,
+        from: moved !== null ? origin : undefined,
+      },
+    ];
+  });
+
+  // Dalla più recente; i salvataggi ripetuti (stesso file, azione e persona entro un'ora)
+  // diventano una riga sola.
+  const last = new Map<string, number>();
+  return all
+    .sort((x, y) => y.at.localeCompare(x.at))
+    .filter((a) => {
+      const key = `${a.action}|${a.actor}|${a.folder}/${a.name}`;
+      const time = Date.parse(a.at);
+      const previous = last.get(key);
+      if (previous !== undefined && previous - time < HOUR) return false;
+      last.set(key, time);
+      return true;
+    });
 }
 
 // --- Gestione (7b): sempre dentro la cartella collegata al progetto ---

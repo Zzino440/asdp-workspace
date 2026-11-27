@@ -25,6 +25,38 @@
 
 ## Storia
 
+## [0.19.0] 2026-11-27 — Novità e attività nella scheda File
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Scheda File, novità**: pallino accanto ai file aggiunti o modificati nell'ultima ora e
+  alle cartelle che contengono novità dell'ultima ora (con il numero nel tooltip).
+- **Scheda File, colonna Modificato** come su SharePoint: "Pochi secondi fa", "12 minuti fa",
+  "3 ore fa", "Ieri alle 14:32", "Lunedì alle 09:10" nell'ultima settimana, poi "20 novembre"
+  (con l'anno se diverso); data e ora complete nel tooltip (`modifiedLabel` in `src/lib/time.ts`).
+- **Scheda File, vista Attività** per ogni cartella collegata (interruttore File | Attività, con
+  il numero di attività degli ultimi 7 giorni): chi ha aggiunto, modificato, spostato,
+  rinominato o eliminato cosa, anche direttamente da Teams/SharePoint. Raggruppata per giorno,
+  con ricerca (file, cartella, persona) e filtri Tutti/Solo io, tipo di azione e periodo (oggi,
+  7, 30 giorni). Ogni riga apre il file in Office web o la cartella nella vista File.
+- Dati dall'API `activities` di Microsoft Graph (v1.0) sulla cartella collegata e sulle
+  sottocartelle: nessuna tabella nuova, si vede solo ciò a cui l'utente ha accesso. Salvataggi
+  ripetuti dello stesso file entro un'ora diventano una riga sola.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint, build.
+- Nel browser su PSW: vista Attività con creazioni, modifiche ed eliminazioni reali (anche di
+  cartelle), filtri "Eliminati" e periodo; pallini sulle cartelle con novità e sui file aggiunti.
+  Prova su PSW con un file di test creato, rinominato, spostato in `Consegne` ed eliminato:
+  spostamento ("da cartella principale") ed eliminazione visibili; creazione e rinomina di un
+  file poi eliminato non arrivano da Graph (l'elemento non esiste più). Paginazione di Graph
+  verificata (fino a 5 pagine lette). Non provati: rinomina di un file che resta, "Solo io" con
+  un secondo utente.
+
 ## [0.18.0] 2026-11-27 — Ripiego sulle skill locali per i file Teams
 
 **Autore**: Lorenzo Belli con Claude Code

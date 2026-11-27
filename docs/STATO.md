@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.18.0, ripiego sulle skill locali per i file Teams via MCP, non committata su feature/int-mcp; Word provato su PSW, PowerPoint ed Excel da provare)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.19.0, novità e attività nella scheda File, committata su feature/int-mcp, non pushata; provata su PSW, spostamenti e rinomine da provare)
 
 ## Versione
 
@@ -186,6 +186,28 @@
   documento ASDP" (mappa item_id → documento da `document_publications.items`). Typecheck, lint,
   build ok; non provato nel browser.
   Typecheck, lint, build ok; non provato nel browser (serve una pubblicazione vera, su PSW).
+
+- `0.19.0` (2026-11-27, branch `feature/int-mcp`, committata, non pushata): scheda File con pallino
+  delle novità (file aggiunti/modificati nell'ultima ora, cartelle che le contengono; prima 7
+  giorni, ridotto su richiesta di Lorenzo perché troppi pallini) e
+  vista **Attività** per cartella collegata (interruttore File | Attività, `?vista=attivita`;
+  componente `progetti/[id]/file-activity.tsx`, dati da `recentActivity` in
+  `src/lib/microsoft.ts`). Spike del 2026-11-27 su PSW: l'API Graph v1.0
+  `/drives/{d}/items/{cartella}/activities` dà create/edit/delete (anche di cartelle e fatti da
+  Teams) con autore (`actor.user.self` = utente corrente) e percorso; per un'eliminazione
+  `driveItem` è la cartella che conteneva l'elemento e il nome sta in `action.delete.name`.
+  Quindi niente tabella nostra (il piano B con `file_events` non serve). `delta` scartato (solo
+  radice del drive). `timeAgo` spostato in `src/lib/time.ts`. Colonna "Modificato" della scheda File come su SharePoint
+  ("3 ore fa", "Ieri alle 20:21", data completa nel tooltip; `modifiedLabel`/`fullDateTime` in
+  `src/lib/time.ts`, fuso Europe/Rome), provata nel browser su PSW. Typecheck, lint e build ok;
+  provata nel browser su PSW (con `admin@asdp.test`, che ha l'account Microsoft di Lorenzo).
+  Spostamento provato su PSW: arriva come `action.move.to` ("sites/<sito>/<raccolta>/…/<nome>")
+  con `driveItem` = cartella di origine. Creazione e rinomina di un file poi eliminato non
+  arrivano (elemento non più espandibile). Graph pagina (`@odata.nextLink`) e non ordina: si
+  leggono fino a 5 pagine. **Non provati**: rinomina di un file che resta (forma di
+  `action.rename.oldName` presa dai doc beta), "Solo io" con un secondo utente. Il dev server appeso sulla 4100 è stato chiuso e
+  riavviato dal pannello del browser. Committata insieme, a parte, la barra delle versioni
+  sticky nella pagina del documento (`documenti/[...path]/page.tsx`).
 
 ## Milestone
 
