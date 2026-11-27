@@ -41,6 +41,8 @@
   documento è cambiato dopo la pubblicazione.
 - Motore unico in `src/lib/documents/export/` (registro dei formati), pubblicazione in
   `src/lib/documents/publish.ts`, route `GET /api/documents/export`.
+- **Documento → ritorno al progetto**: sopra il titolo un pulsante «← Nome progetto» al posto del
+  link grigio; breadcrumb con separatori più chiari e il tipo di documento evidenziato.
 - Decisione: i documenti ASDP restano su GitLab (spostarli su SharePoint è bloccato dal GDPR,
   rompe i permessi RLS e l'evidenza delle approvazioni); su Teams vanno solo copie.
 

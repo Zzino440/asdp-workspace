@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import { cn } from "cn";
 import { DocumentWorkspace } from "../document-workspace";
 import { ExportMenu, PublicationInfo, PublishButton } from "../publish-actions";
@@ -131,15 +132,20 @@ async function DocumentView({
       updated={latest ? `Aggiornato il ${dateFormat.format(new Date(latest.authoredDate))} da ${latest.authorName}` : null}
       breadcrumb={
         <nav aria-label="Percorso" className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
-          <Link href={`/progetti/${id}`} className="hover:text-foreground hover:underline">
+          <Link
+            href={`/progetti/${id}`}
+            aria-label={`Torna al progetto ${project?.name ?? ""}`.trim()}
+            className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 font-medium text-foreground")}
+          >
+            <ArrowLeft />
             {project?.name ?? "Progetto"}
           </Link>
-          <span>›</span>
+          <ChevronRight className="size-3.5" aria-hidden />
           <span>{type?.phase != null ? `Fase ${type.phase} · ${PHASES[type.phase]?.name}` : "Altri file"}</span>
           {type && (
             <>
-              <span>›</span>
-              <span>
+              <ChevronRight className="size-3.5" aria-hidden />
+              <span aria-current="page" className="text-foreground">
                 {type.code} {type.name}
               </span>
               {guidaHrefForType(type.code) && (

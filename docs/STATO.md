@@ -134,6 +134,8 @@
   formati su T2.2 e T3.1 della sandbox), apertura dei file la prova Lorenzo. **Da provare**:
   Pubblica su un Team di test (mai PFS), PDF su Vercel (Chromium) al prossimo deploy di prova.
   Dev server avviato dal pannello browser sulla 4101 (la 4100 era occupata).
+  Stessa versione, non committata: pagina documento con pulsante «← Nome progetto» nella
+  breadcrumb (ritorno al Percorso), separatori a chevron.
 
 ## Milestone
 
