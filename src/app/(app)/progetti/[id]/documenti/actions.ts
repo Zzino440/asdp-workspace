@@ -25,6 +25,7 @@ const MESSAGES = {
   invalid_state: "Lo stato del documento è cambiato: ricarica la pagina.",
   incomplete: "Completa la checklist e i campi obbligatori.",
   invalid_front_matter: "Il frontespizio YAML del documento non è valido: correggilo su GitLab e riprova.",
+  missing_front_matter: "Il testo salvato non ha più il frontespizio: niente è stato salvato.",
 };
 
 const approvalSchema = z.object({

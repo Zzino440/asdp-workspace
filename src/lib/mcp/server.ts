@@ -781,4 +781,7 @@ const SAVE_ERRORS = {
   invalid_front_matter:
     "Il frontespizio YAML (tra le due righe \"---\") non è valido. Correggilo (chiavi duplicate, rientri, " +
     "virgolette) e riprova; niente è stato salvato.",
+  missing_front_matter:
+    "Il content non ha il frontespizio (le righe \"---\" in testa) che il documento aveva: forse è troncato. " +
+    "Rileggi il documento con read_document e ripassa il file intero; niente è stato salvato.",
 };

@@ -212,7 +212,8 @@ export class DocumentError extends Error {
       | "unknown_type"
       | "invalid_state"
       | "incomplete"
-      | "invalid_front_matter",
+      | "invalid_front_matter"
+      | "missing_front_matter",
   ) {
     super(code);
   }
@@ -283,6 +284,10 @@ export async function saveDocument(
     const before = splitFrontMatter(previous);
     const after = splitFrontMatter(input.content);
     if (after.frontMatterError) throw new DocumentError("invalid_front_matter");
+    // Un testo troncato o riscritto senza le righe "---" toglierebbe stato e dati del documento.
+    if (before.frontMatterSource !== null && after.frontMatterSource === null) {
+      throw new DocumentError("missing_front_matter");
+    }
     if (level !== "approve" && changesApproval(before.frontMatter, after.frontMatter)) {
       throw new DocumentError("approval_fields");
     }
