@@ -3,13 +3,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cn } from "cn";
 import { DocumentWorkspace } from "../document-workspace";
+import { ExportMenu, PublicationInfo, PublishButton } from "../publish-actions";
 import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { documentLevel, listDocuments, listToApprove, listVersions, readDocument, readVersion } from "@/lib/documents";
+import { phaseFolderName, publicationStatus } from "@/lib/documents/publish";
 import { gateFor } from "@/lib/gates";
 import { guidaHrefForType } from "@/lib/guida";
 import { PHASES } from "@/lib/labels";
+import { microsoftEnabled } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
 
 export default function DocumentoPage({ params, searchParams }: PageProps<"/progetti/[id]/documenti/[...path]">) {
@@ -51,7 +54,11 @@ async function DocumentView({
     supabase.from("projects").select("name").eq("id", id).maybeSingle(),
   ]);
   if (!document) notFound();
-  const level = await documentLevel(supabase, id, document.documentType);
+  const [level, publication, { data: locations }] = await Promise.all([
+    documentLevel(supabase, id, document.documentType),
+    publicationStatus(supabase, id, document.path, document.lastCommitId),
+    supabase.from("project_file_locations").select("id, label").eq("project_id", id).order("created_at"),
+  ]);
   // Dopo Approva o Richiedi modifiche (?esito=…): il prossimo documento della coda.
   const esito = query.esito === "approvato" || query.esito === "modifiche" ? query.esito : null;
   const next = esito
@@ -79,6 +86,11 @@ async function DocumentView({
   const firstHeading = /^# +(.+?)\s*$/m.exec((document.body ?? "").trimStart().split("\n")[0] ?? "")?.[1] ?? null;
   const title = String(document.frontMatter.titolo || firstHeading || type?.name || document.path.split("/").pop());
   const latest = versions?.[0];
+
+  // Pubblica su Teams: documento Approvato, livello approve, funzione Microsoft attiva e cartella collegata.
+  const canPublish =
+    microsoftEnabled() && level === "approve" && document.frontMatter.stato === "Approvato" && (locations ?? []).length > 0;
+  const isMarkdown = document.body !== null;
 
   const docTitle = (d: (typeof documents)[number]) =>
     String(d.front_matter?.titolo || (types.find((t) => t.code === d.document_type && !t.per_feature)?.name ?? d.path.split("/").pop()));
@@ -199,6 +211,19 @@ async function DocumentView({
           )}
         </div>
       }
+      exportMenu={isMarkdown ? <ExportMenu projectId={id} path={document.path} /> : null}
+      publish={
+        canPublish ? (
+          <PublishButton
+            projectId={id}
+            path={document.path}
+            locations={locations ?? []}
+            phaseFolder={phaseFolderName(type?.phase)}
+            publication={publication}
+          />
+        ) : null
+      }
+      publication={publication ? <PublicationInfo publication={publication} /> : null}
       history={
         <ol className="flex flex-col gap-1">
           {(versions ?? []).map((v, i) => (

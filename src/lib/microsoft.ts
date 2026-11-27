@@ -303,3 +303,50 @@ export async function createUploadSession(
   );
   return uploadUrl;
 }
+
+// --- Pubblicazione dei documenti approvati (milestone 6) ---
+
+// Cartella figlia per nome; la crea se manca. Idempotente: con due pubblicazioni insieme il 409
+// della seconda si risolve rileggendo la cartella.
+async function childFolder(graph: Graph, driveId: string, parentId: string, name: string) {
+  try {
+    return await createFolder(graph, driveId, parentId, name);
+  } catch (error) {
+    if (!(error instanceof MicrosoftError && error.status === 409)) throw error;
+    return getItem(graph, driveId, parentId, name);
+  }
+}
+
+// Percorso di cartelle sotto parentId (["ASDP", "Fase 1 - Analisi"]); restituisce l'ultima.
+export async function ensureFolderPath(graph: Graph, driveId: string, parentId: string, names: string[]) {
+  let folder = await getItem(graph, driveId, parentId);
+  for (const name of names) folder = await childFolder(graph, driveId, folder.id, name);
+  return folder;
+}
+
+const SMALL_UPLOAD = 4 * 1024 * 1024;
+const CHUNK = 5 * 320 * 1024; // multiplo di 320 KiB, come chiede Graph
+
+// File generato dall'app, caricato dal server. Un file con lo stesso nome viene sostituito: stesso
+// link, SharePoint tiene le versioni precedenti.
+export async function uploadFile(graph: Graph, driveId: string, parentId: string, fileName: string, bytes: Uint8Array, mime: string) {
+  const body = (start: number, end: number) => new Blob([bytes.slice(start, end)]);
+  if (bytes.length <= SMALL_UPLOAD) {
+    return graph<DriveItem>(
+      `/drives/${driveId}/items/${parentId}:/${encodeURIComponent(fileName)}:/content?@microsoft.graph.conflictBehavior=replace`,
+      { method: "PUT", headers: { "Content-Type": mime }, body: body(0, bytes.length) },
+    );
+  }
+  const uploadUrl = await createUploadSession(graph, driveId, parentId, fileName, "replace");
+  for (let start = 0; ; start += CHUNK) {
+    const end = Math.min(start + CHUNK, bytes.length);
+    // uploadUrl è già autorizzato: niente token Graph.
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Range": `bytes ${start}-${end - 1}/${bytes.length}` },
+      body: body(start, end),
+    });
+    if (!response.ok) throw new MicrosoftError(response.status, `Graph ${response.status} sul caricamento`);
+    if (end === bytes.length) return (await response.json()) as DriveItem;
+  }
+}

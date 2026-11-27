@@ -3,6 +3,20 @@
 Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITETTURA.md` (§7 o
 §8) quando vengono prese in carico.
 
+## Documenti ASDP e Teams (dopo 0.16.0)
+
+- [ ] **Ricerca unica nel progetto**: una casella nell'intestazione del progetto che cerca insieme
+  documenti ASDP (titolo, codice, percorso) e file Teams delle cartelle collegate.
+- [ ] **"Documenti ASDP" nella scheda File**, accanto alle cartelle Teams, con l'albero per fase
+  (si sovrappone in parte al Percorso: da valutare).
+- [ ] **Link tra le due parti**: dal PDF pubblicato nella scheda File al documento nell'app e
+  viceversa (oggi solo app → Teams, da "Su Teams").
+- [ ] **Pubblica via MCP** (`publish_document`) e **Rimuovi da Teams**.
+- [ ] **GDPR**: la cartella del canale la vedono anche gli ospiti del cliente; inserire la
+  pubblicazione nell'analisi per l'IT prima di aprirla ad altri utenti.
+- [ ] **PDF su Vercel**: verificare dimensione della funzione e avvio a freddo di Chromium al
+  primo deploy; ripiego: PDF convertito da SharePoint dal .docx (`downloadUrl(..., "pdf")`).
+
 ## Ambiente cloud di test
 
 - [ ] **Email di invito sul progetto cloud.** Sul piano free con l'email predefinita di Supabase il

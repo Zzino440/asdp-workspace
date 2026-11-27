@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.15.0, file Teams: nuova versione, trascinamento, cronologia versioni, tasto destro; tutto committato su feature/miglioramenti-progetto)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.16.0, Esporta e Pubblica su Teams, **non committata** su feature/miglioramenti-progetto)
 
 ## Versione
 
@@ -124,6 +124,16 @@
   oltre `dstech.it` (lista nell'hook). Prima di aprirlo ad altri o al cloud: avvisare l'IT
   (consenso dato "solo Lorenzo in locale"); da valutare una app registration separata solo login.
   Cloud: `db push --remote`, `config push` con `MICROSOFT_CLIENT_ID/SECRET` nell'env della shell.
+
+- `0.16.0` (2026-11-27, branch `feature/miglioramenti-progetto`, **non committata**): decisione di
+  Lorenzo, i documenti ASDP restano su GitLab (analisi in chat: SharePoint come fonte è bloccato
+  dal GDPR, rompe RLS ed evidenza). Pagina del documento: **Esporta** (PDF, Word, .md) e
+  **Pubblica su Teams** degli approvati in `ASDP/Fase N - …/` con stato "Su Teams" / "Da
+  ripubblicare". Migrazione `20261127114831_document_publications.sql` applicata in locale, da
+  applicare sul cloud. Typecheck, lint, build, pgTAP nuovo ok; export provato via route (200 nei 3
+  formati su T2.2 e T3.1 della sandbox), apertura dei file la prova Lorenzo. **Da provare**:
+  Pubblica su un Team di test (mai PFS), PDF su Vercel (Chromium) al prossimo deploy di prova.
+  Dev server avviato dal pannello browser sulla 4101 (la 4100 era occupata).
 
 ## Milestone
 

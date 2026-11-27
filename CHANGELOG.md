@@ -25,6 +25,39 @@
 
 ## Storia
 
+## [0.16.0] 2026-11-27 — Esporta e Pubblica su Teams i documenti ASDP
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Documento → Esporta**: scarica il documento in PDF, Word o Markdown. PDF e Word hanno
+  un'intestazione leggibile (progetto, cliente, versione, stato, approvazione) al posto del
+  frontespizio YAML e la scritta "Bozza – non approvato" se il documento non è Approvato; il
+  Markdown è il file sorgente così com'è. Non usa Microsoft: vale per tutti, anche sul cloud.
+- **Documento Approvato → Pubblica su Teams** (solo con livello "approve", funzione Microsoft
+  attiva e una cartella Teams collegata): copie nei formati scelti in `ASDP/Fase N - …/` della
+  cartella del progetto, con nome stabile. Ripubblicare sostituisce i file (stesso link, versioni
+  su SharePoint). Sotto il titolo, "Su Teams" con i link ai file e "Da ripubblicare" quando il
+  documento è cambiato dopo la pubblicazione.
+- Motore unico in `src/lib/documents/export/` (registro dei formati), pubblicazione in
+  `src/lib/documents/publish.ts`, route `GET /api/documents/export`.
+- Decisione: i documenti ASDP restano su GitLab (spostarli su SharePoint è bloccato dal GDPR,
+  rompe i permessi RLS e l'evidenza delle approvazioni); su Teams vanno solo copie.
+
+### Migrazioni e configurazione
+- Migrazione `20261127114831_document_publications.sql` (tabella `document_publications`, RLS:
+  lettura come l'indice, scrittura con "approve"): applicata in locale, da applicare sul cloud.
+- Dipendenze nuove: `remark-rehype`, `rehype-stringify`, `docx`, `puppeteer-core`,
+  `@sparticuz/chromium` (+ `@types/mdast`). PDF con Chromium headless: su Vercel quello di
+  `@sparticuz/chromium` (`outputFileTracingIncludes` in `next.config.ts`), in locale il Chrome
+  installato (`CHROME_PATH` per un percorso diverso).
+
+### Test eseguiti
+- Typecheck, lint, build ok; pgTAP `document_publications` 5/5.
+- Esporta in locale (pm@, sandbox): T2.2 e T3.1 in PDF, Word e Markdown, risposta 200 con tipo e
+  nome file giusti. Apertura dei file da verificare da Lorenzo.
+- Pubblica su Teams: **non provata** (serve un Team di test).
+
 ## [0.15.0] 2026-11-27 — File Teams: sostituire con una nuova versione
 
 **Autore**: Lorenzo Belli con Claude Code

@@ -15,7 +15,7 @@ Problemi che risolve (call Lorenzo–Denis del 2026-11-18):
 | PM senza Git e senza accesso al repository | Solo browser; l'app scrive su GitLab con un service account |
 | Skill da installare sul PC | Le skill partono dall'app (cloud) oppure da Claude Code in locale, a scelta |
 | Framework copiato in ogni progetto | Una sola fonte versionata (plugin `asdp`); ogni progetto dichiara la versione |
-| SharePoint senza versioning | GitLab è la fonte; su SharePoint si pubblicano solo copie in sola lettura degli approvati |
+| Documenti ASDP da trovare anche in Teams | GitLab resta la fonte (decisione del 2026-11-27: spostarli su SharePoint è bloccato dal GDPR e rompe permessi RLS ed evidenza delle approvazioni); "Pubblica su Teams" mette copie degli approvati (PDF, Word, .md) nella cartella del progetto; "Esporta" scarica gli stessi formati |
 | File di progetto sparsi tra Teams, OneDrive e GitLab | Navigatore unico per progetto: documenti ASDP da GitLab, gli altri file (Word, Excel, PDF…) dalla cartella Teams/SharePoint del progetto via Microsoft Graph |
 | File sensibili (`reserved`) | Area Riservati fuori da Git, mai inviata all'AI |
 | Troppe domande sparse nei documenti | Vista unica delle `D[N]` di progetto, risposte in blocco, rigenerazione in aggiornamento |
@@ -89,6 +89,7 @@ permessi, stessi commit.
 | Utenti, ruoli per progetto, permessi, gate, run, commenti, risposte `D[N]` | Supabase | Dati che esistono solo nell'app |
 | File riservati, evidenze di approvazione | Supabase Storage | Fuori da Git; i riservati non vanno mai all'AI. Restano qui e non su SharePoint: lì li leggerebbero Copilot e i connettori M365 |
 | File di progetto non ASDP (Word, Excel, PDF, verbali…) | SharePoint, cartella del canale Teams del progetto | L'app li sfoglia, carica e sposta via Microsoft Graph con l'account Microsoft dell'utente; si aprono in Office per il web (co-editing e versioni di SharePoint). Mai copiati su GitLab |
+| Copie pubblicate su Teams | SharePoint, `ASDP/Fase N - …/` nella cartella collegata; cosa è stato pubblicato in Supabase, `document_publications` | Copie, non fonte: ereditano i permessi del canale. Ripubblicare sostituisce i file; "Da ripubblicare" se il documento cambia dopo |
 | Account Microsoft collegato | Supabase, `microsoft_accounts` | Refresh token dell'utente per Graph; RLS: solo la propria riga |
 | Cartelle Teams collegate al progetto | Supabase, `project_file_locations` | Etichetta, drive e cartella SharePoint; le vedono i membri, le cambiano PM e admin. I file restano su SharePoint |
 | Framework (skill `asdp`) | repo `dst-claude-skills` | Versione fissata per progetto, pubblicata sulla Skills API |
@@ -222,7 +223,7 @@ Nelle milestone: `open_questions`, `gates`, `skill_runs`, `comments`,
 | 3b | Dashboard "Tocca a me" (panoramica personale: miei documenti in attesa di altri, rimandati a me, scadenze, avanzamento; per le approvazioni solo un contatore verso `/approvazioni`); profilo progetto (Nuovo/Evolutiva/BugFix) e fase modificabile |
 | 4 | Skill in cloud con gate A/B; sincronizzazione versioni framework → Skills API |
 | 5 | Modifica con AI, Domande aperte di progetto (anticipabili dopo 2f: risposta alle D[N] con un clic) |
-| 6 | Riservati, Pubblica su SharePoint (Microsoft Graph), login Microsoft Entra, deploy Vercel |
+| 6 | Riservati, login Microsoft Entra, deploy Vercel. **Fatto** (0.16.0): Esporta (PDF, Word, .md; motore in `src/lib/documents/export/`) e Pubblica su Teams degli approvati (`src/lib/documents/publish.ts`) |
 | 7 | **In corso**, solo in locale per Lorenzo finché l'IT non vede l'analisi GDPR. 7a fatta (0.10.0): card "File di progetto" e pagina di collegamento. 7b fatta (0.11.0): carica, nuova cartella, rinomina, sposta, elimina, solo dentro la cartella collegata. File di progetto da Teams/SharePoint (Graph, account Microsoft dell'utente): 7a sfoglia e apri in Office per il web; 7b carica, cartelle, sposta, rinomina; 7c file come input delle skill; la pubblicazione degli approvati (6) scrive nella stessa cartella. La prova `/file-microsoft` (0.8.1) è stata tolta in 0.10.1 |
 
 ## 8. Punti aperti

@@ -2,6 +2,9 @@
 
 import { z } from "zod";
 import { changeApproval, DocumentError, saveDocument } from "@/lib/documents";
+import { EXPORT_FORMATS } from "@/lib/documents/export";
+import { type Publication, PublishError, publishDocument } from "@/lib/documents/publish";
+import { MicrosoftError } from "@/lib/microsoft";
 import { createClient } from "@/lib/supabase/server";
 
 export type SaveResult = { error: string | null; conflict?: boolean; lastCommitId?: string };
@@ -65,5 +68,43 @@ export async function saveDocumentAction(input: z.input<typeof saveSchema>): Pro
     if (e instanceof DocumentError) return { error: MESSAGES[e.code as keyof typeof MESSAGES], conflict: e.code === "conflict" };
     console.error(e);
     return { error: "Salvataggio non riuscito." };
+  }
+}
+
+const publishSchema = z.object({
+  projectId: z.guid(),
+  path: z.string().min(1),
+  formats: z.array(z.enum(EXPORT_FORMATS)).min(1),
+  locationId: z.guid().optional(),
+});
+
+const PUBLISH_MESSAGES = {
+  not_found: "Documento non trovato.",
+  forbidden: "Solo chi approva il documento può pubblicarlo su Teams.",
+  invalid_state: "Si pubblicano solo i documenti Approvati: ricarica la pagina.",
+  no_folder: "Il progetto non ha una cartella Teams collegata.",
+  no_account: "Collega il tuo account Microsoft dalla scheda File del progetto.",
+};
+
+export async function publishDocumentAction(
+  input: z.input<typeof publishSchema>,
+): Promise<{ error: string | null; publication?: Publication }> {
+  const parsed = publishSchema.safeParse(input);
+  if (!parsed.success) return { error: "Dati non validi." };
+  try {
+    return { error: null, publication: await publishDocument(await createClient(), parsed.data) };
+  } catch (e) {
+    if (e instanceof DocumentError || e instanceof PublishError)
+      return { error: PUBLISH_MESSAGES[e.code as keyof typeof PUBLISH_MESSAGES] ?? "Pubblicazione non riuscita." };
+    if (e instanceof MicrosoftError)
+      return {
+        error: e.reconnect
+          ? "L'accesso a Microsoft è scaduto: ricollega l'account dalla scheda File."
+          : e.isForbidden
+            ? "Non hai accesso in scrittura alla cartella Teams del progetto."
+            : "SharePoint non ha accettato i file: riprova.",
+      };
+    console.error(e);
+    return { error: "Pubblicazione non riuscita." };
   }
 }

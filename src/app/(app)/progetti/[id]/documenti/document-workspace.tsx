@@ -67,6 +67,10 @@ export function DocumentWorkspace(props: {
   updated: string | null;
   tree: ReactNode;
   history: ReactNode;
+  // Esporta (sempre), Pubblica su Teams e stato della copia su Teams (se ci sono).
+  exportMenu: ReactNode;
+  publish: ReactNode | null;
+  publication: ReactNode | null;
 }) {
   const router = useRouter();
   const draftKey = `asdp-bozza:${props.projectId}:${props.path}`;
@@ -252,6 +256,7 @@ export function DocumentWorkspace(props: {
                     <History />
                     Cronologia
                   </Button>
+                  {!props.versionView && props.exportMenu}
                   {props.canEdit && !props.versionView && (
                     <Button size="sm" onClick={() => startEditing(null)}>
                       <Pencil />
@@ -286,6 +291,7 @@ export function DocumentWorkspace(props: {
                     </span>
                   )}
                 </Property>
+                {props.publication && <Property label="Su Teams">{props.publication}</Property>}
               </dl>
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)}>
@@ -303,6 +309,7 @@ export function DocumentWorkspace(props: {
                     gate={props.gate}
                   />
                 )}
+                {!isEditing && !props.versionView && props.publish}
               </div>
             </div>
           )}
