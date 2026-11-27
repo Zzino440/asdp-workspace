@@ -43,6 +43,8 @@
   `src/lib/documents/publish.ts`, route `GET /api/documents/export`.
 - **Documento → ritorno al progetto**: sopra il titolo un pulsante «← Nome progetto» al posto del
   link grigio; breadcrumb con separatori più chiari e il tipo di documento evidenziato.
+- **Barra laterale → I miei progetti**: sotto «Progetti» i progetti non chiusi in cui sei nel team,
+  più quello aperto, evidenziato anche dentro documenti e file; un clic porta al Percorso.
 - Decisione: i documenti ASDP restano su GitLab (spostarli su SharePoint è bloccato dal GDPR,
   rompe i permessi RLS e l'evidenza delle approvazioni); su Teams vanno solo copie.
 

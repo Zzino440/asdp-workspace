@@ -135,7 +135,8 @@
   Pubblica su un Team di test (mai PFS), PDF su Vercel (Chromium) al prossimo deploy di prova.
   Dev server avviato dal pannello browser sulla 4101 (la 4100 era occupata).
   Stessa versione, non committata: pagina documento con pulsante «← Nome progetto» nella
-  breadcrumb (ritorno al Percorso), separatori a chevron.
+  breadcrumb (ritorno al Percorso), separatori a chevron. Barra laterale: «I miei progetti» sotto
+  «Progetti» (progetti non chiusi del team dell'utente più quello aperto, evidenziato).
 
 ## Milestone
 
