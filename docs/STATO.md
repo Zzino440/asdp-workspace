@@ -35,7 +35,9 @@
 1. Provare a mano la pagina del documento 0.21–0.22 (pannello ridotto, editor) e decidere se fare
    i riquadri D[N] e "Da chiarire" anche in modifica (plugin di decorazioni ProseMirror, senza
    toccare il Markdown salvato). Non committato: lampeggio della domanda (lettura e modifica) rifatto
-   come velo e bordo sottile nel colore dello stato della D[N] (`document-workspace.tsx`).
+   come velo e bordo sottile nel colore dello stato della D[N] (`document-workspace.tsx`);
+   riquadri D[N] e "Da chiarire" tondi con bordo sottile intero invece della barra a sinistra
+   (`markdown.tsx`).
 2. Plugin `asdp` 0.16.2 in `dst-claude-skills`: committare le modifiche a `p1-3` e `t1-4`
    (aggiornamento sullo stesso file con vX.Y+1) sul branch `feature/asdp-mcp`. Il branch non è
    pushato e **non va portato su `main`** finché `.mcp.json` punta al server di prova.

@@ -37,7 +37,7 @@ function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?:
           hProperties: {
             dataBlock: index,
             className: [
-              "my-3 rounded-r-md border-l-4 border-(--state-complete-border) bg-(--state-complete) px-4 py-1 text-(--state-complete-foreground)",
+              "my-3 rounded-md border border-(--state-complete-border) bg-(--state-complete) px-4 py-1 text-(--state-complete-foreground)",
             ],
           },
         };
@@ -75,6 +75,12 @@ function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?:
         const pool = section?.children ?? out;
         const previous = pool.at(-1);
         const note = previous?.type === "blockquote" && textOf(previous).trimStart().startsWith("❓") ? [pool.pop()!] : [];
+        // La nota prende i colori dello stato della domanda (es. blu se la risposta è da applicare).
+        for (const n of note) {
+          n.data = {
+            hProperties: { ...n.data?.hProperties, className: [`my-3 rounded-md border px-4 py-1 ${BORDER[status]} ${BADGE[status]}`] },
+          };
+        }
         section = { children: [node] };
         const box = {
           type: "questionBox",
@@ -82,7 +88,7 @@ function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?:
           data: {
             hName: "div",
             hProperties: {
-              className: [`rounded-r-md border-l-4 bg-muted/40 px-4 py-1 ${BORDER[status]}`],
+              className: [`rounded-md border bg-muted/40 px-4 py-1 ${BORDER[status]}`],
             },
           },
         };

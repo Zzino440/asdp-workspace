@@ -347,8 +347,8 @@ export function DocumentWorkspace(props: {
     const question = questions.find((q) => q.id.toLowerCase() === id);
     const color = QUESTION_COLOR[question ? statusOf(question) : "aperta"];
     const tint = (percent: number) => `color-mix(in srgb, ${color} ${percent}%, transparent)`;
-    // Stessa forma dei riquadri (rounded-r-md): squadrato a sinistra, dove c'è la barra colorata.
-    const borderRadius = "0 var(--radius-md) var(--radius-md) 0";
+    // Stessa forma dei riquadri (rounded-md).
+    const borderRadius = "var(--radius-md)";
     target.animate(
       [
         { backgroundColor: tint(15), boxShadow: `0 0 0 2px ${tint(70)}`, borderRadius },
