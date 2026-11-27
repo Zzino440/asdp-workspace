@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.15.0, file Teams: nuova versione, trascinamento, cronologia versioni, tasto destro; tasto destro non committato)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.15.0, file Teams: nuova versione, trascinamento, cronologia versioni, tasto destro; tutto committato su feature/miglioramenti-progetto)
 
 ## Versione
 
