@@ -25,6 +25,30 @@
 
 ## Storia
 
+## [0.22.0] 2026-11-27 — Documento: indice sincronizzato e pannello riducibile
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- UI, documento: "In questa pagina" segue il testo mentre lo modifichi (titoli aggiunti, rinominati
+  o tolti compaiono subito).
+- UI, pannello a destra: si può ridurre a una colonnina di trattini (titoli e domande colorate per
+  stato); passando sopra si apre il pannello completo sopra il testo, senza spostarlo. La scelta
+  resta salvata nel browser. Tra 1024 e 1280 px la colonnina c'è sempre (prima l'indice spariva).
+- Corretto: aprendo un documento dopo un altro l'indice poteva risultare vuoto o doppio, e salti e
+  punto di lettura potevano usare il testo del documento precedente (Next lo tiene nascosto nella
+  pagina).
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint e build.
+- Browser in locale, PSW P1.3: navigazione Kickoff → Requisiti (indice con 20 titoli, niente
+  doppioni), pannello ridotto e aperto al passaggio del mouse sopra l'intestazione, salto da una
+  voce e chiusura all'uscita del mouse, titolo aggiunto in modifica che compare nell'indice;
+  1440 px e 1100 px.
+
 ## [0.21.2] 2026-11-27 — Documento: stesso punto tra lettura e modifica
 
 **Autore**: Lorenzo Belli con Claude Code

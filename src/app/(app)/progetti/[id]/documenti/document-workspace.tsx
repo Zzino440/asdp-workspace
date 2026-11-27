@@ -3,7 +3,7 @@
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { History, Pencil, SlidersHorizontal, X } from "lucide-react";
+import { History, PanelRightClose, PanelRightOpen, Pencil, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "cn";
 import { parse } from "yaml";
 import { saveDocumentAction } from "./actions";
@@ -22,11 +22,18 @@ import { changedBlocks, spliceMarkdown } from "@/lib/markdown-splice";
 import { QUESTION_STATUS_LABEL, questionsOf, statusOf, type QuestionStatus } from "@/lib/questions";
 import { Markdown } from "@/components/markdown";
 
-const CONTENT_ID = "contenuto-documento";
-const EDITOR_ID = "editor-documento";
+const OUTLINE_COLLAPSED_KEY = "asdp:indice-ridotto";
 
 // Punto di lettura da ritrovare in lettura dopo Salva: il salvataggio rimonta la pagina (key).
 let savedAnchor: { path: string; anchor: Anchor } | null = null;
+const rememberAnchor = (path: string, anchor: Anchor | null) => {
+  if (anchor) savedAnchor = { path, anchor };
+};
+const takeAnchor = (path: string) => {
+  const found = savedAnchor?.path === path ? savedAnchor.anchor : null;
+  if (found) savedAnchor = null;
+  return found;
+};
 
 // Pallino dello stato di una D[N] nel pannello, con i colori dei riquadri nel testo.
 const QUESTION_DOT: Record<QuestionStatus, string> = {
@@ -108,11 +115,16 @@ export function DocumentWorkspace(props: {
   const editor = useRef<{ baseline: string; read: () => string } | null>(null);
   const leaving = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
+  // Testo in lettura e editor di questa pagina: niente id, Next tiene nel DOM (nascoste) le pagine
+  // visitate prima e un getElementById potrebbe trovare il testo di un altro documento.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const editorRootRef = useRef<HTMLDivElement>(null);
   // Entrando in modifica: il punto di lettura da ritrovare nell'editor e, col doppio clic, dove
-  // mettere il cursore. editorReady cambia quando l'editor è pronto (l'indice rilegge i titoli).
+  // mettere il cursore.
   const enterAnchor = useRef<Anchor | null>(null);
   const caret = useRef<{ x: number; y: number } | null>(null);
-  const [editorReady, setEditorReady] = useState(0);
+  // Pannello di destra ridotto a una colonnina di trattini, aperto al passaggio del mouse.
+  const [collapsed, setCollapsed] = useState(false);
 
   // Aprendo una versione dalla cronologia l'editor si chiude.
   const isEditing = editing && !props.versionView;
@@ -126,6 +138,19 @@ export function DocumentWorkspace(props: {
       if (saved) setDraft(JSON.parse(saved) as Draft);
     } catch {}
   }, [draftKey]);
+
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage esiste solo nel browser
+      setCollapsed(localStorage.getItem(OUTLINE_COLLAPSED_KEY) === "1");
+    } catch {}
+  }, []);
+  function toggleCollapsed(value: boolean) {
+    setCollapsed(value);
+    try {
+      localStorage.setItem(OUTLINE_COLLAPSED_KEY, value ? "1" : "0");
+    } catch {}
+  }
 
   function storeDraft(body: string) {
     const baseline = editor.current?.baseline ?? originalBody;
@@ -165,7 +190,7 @@ export function DocumentWorkspace(props: {
   // Linea sotto cui comincia il testo visibile: intestazione fissa e, in modifica, barra dell'editor.
   function visibleLine(editingNow: boolean) {
     const header = headerRef.current?.getBoundingClientRect().bottom ?? 0;
-    const toolbar = document.querySelector<HTMLElement>("[data-editor-toolbar]")?.offsetHeight ?? 0;
+    const toolbar = editorRootRef.current?.querySelector<HTMLElement>("[data-editor-toolbar]")?.offsetHeight ?? 0;
     return header + (editingNow ? toolbar + 12 : 0);
   }
 
@@ -173,7 +198,7 @@ export function DocumentWorkspace(props: {
   function startEditing(fromDraft: Draft | null, at?: { x: number; y: number; block: HTMLElement }) {
     enterAnchor.current = at
       ? anchorOf({ element: at.block, index: Number(at.block.dataset.block) }, visibleLine(false))
-      : captureAnchor(readBlocks(CONTENT_ID), visibleLine(false));
+      : captureAnchor(readBlocks(contentRef.current), visibleLine(false));
     caret.current = at ? { x: at.x, y: at.y } : null;
     setResume(fromDraft?.body ?? null);
     setBodyDirty(false);
@@ -190,8 +215,8 @@ export function DocumentWorkspace(props: {
 
   function cancel() {
     if (dirty && !confirm("Annullare le modifiche non salvate?")) return;
-    const anchor = captureAnchor(editorBlocks(EDITOR_ID), visibleLine(true));
-    if (anchor) savedAnchor = { path: props.path, anchor };
+    const anchor = captureAnchor(editorBlocks(editorRootRef.current), visibleLine(true));
+    rememberAnchor(props.path, anchor);
     clearDraft();
     editor.current = null;
     setMine(null);
@@ -206,7 +231,7 @@ export function DocumentWorkspace(props: {
   }
 
   function save() {
-    const anchor = captureAnchor(editorBlocks(EDITOR_ID), visibleLine(true));
+    const anchor = captureAnchor(editorBlocks(editorRootRef.current), visibleLine(true));
     const body = bodyText();
     const yamlText = props.frontMatterSource;
     const content = yamlText === null ? body : `---${newline}${yamlText}${newline}---${newline}${body}`;
@@ -223,7 +248,7 @@ export function DocumentWorkspace(props: {
         return;
       }
       clearDraft();
-      if (anchor) savedAnchor = { path: props.path, anchor };
+      rememberAnchor(props.path, anchor);
       leaving.current = true;
       router.refresh();
     });
@@ -279,20 +304,22 @@ export function DocumentWorkspace(props: {
   // Porta un elemento del testo appena sotto l'intestazione fissa (alta quanto il titolo va a capo)
   // e, in modifica, sotto la barra dell'editor.
   const scrollToElement = (element: HTMLElement) => {
-    const toolbar = document.querySelector<HTMLElement>("[data-editor-toolbar]")?.offsetHeight ?? 0;
-    const line = (headerRef.current?.offsetHeight ?? 0) + (isEditing ? toolbar + 12 : 0);
+    const toolbar = editorRootRef.current?.querySelector<HTMLElement>("[data-editor-toolbar]")?.offsetHeight ?? 0;
+    const line = (headerRef.current?.offsetHeight ?? 0) + (isEditing ? toolbar + 4 : 0);
     window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - line - 16, behavior: "smooth" });
   };
   // Porta alla domanda e la fa lampeggiare per un attimo. Nell'editor è il suo titolo "D3 · …".
   const goToQuestion = (event: React.MouseEvent, id: string) => {
     const target =
-      document.getElementById(id) ??
-      [...document.querySelectorAll<HTMLElement>(`#${EDITOR_ID} :is(h2, h3, h4, h5, h6)`)].find((h) =>
+      contentRef.current?.querySelector<HTMLElement>(`#${id}`) ??
+      [...(editorRootRef.current?.querySelectorAll<HTMLElement>(":is(h2, h3, h4, h5, h6)") ?? [])].find((h) =>
         (h.textContent ?? "").toLowerCase().startsWith(`${id} ·`),
       );
     if (!target) return;
     event.preventDefault();
-    scrollToElement(target);
+    // Nell'editor il "❓ Da chiarire" è un blocco a sé subito prima del titolo: si scorre a quello.
+    const note = target.previousElementSibling as HTMLElement | null;
+    scrollToElement(isEditing && note?.textContent?.trimStart().startsWith("❓") ? note : target);
     if (!isEditing) history.replaceState(null, "", `#${id}`);
     target.animate(
       [
@@ -305,9 +332,8 @@ export function DocumentWorkspace(props: {
 
   // Tornando in lettura (Annulla, o pagina rimontata dopo Salva): stesso blocco nello stesso punto.
   useLayoutEffect(() => {
-    if (isEditing || savedAnchor?.path !== props.path) return;
-    restoreAnchor(readBlocks(CONTENT_ID), savedAnchor.anchor, visibleLine(false));
-    savedAnchor = null;
+    const anchor = isEditing ? null : takeAnchor(props.path);
+    if (anchor) restoreAnchor(readBlocks(contentRef.current), anchor, visibleLine(false));
   }, [isEditing, props.path]);
 
   // Altezza dell'intestazione fissa in --doc-header-h: la barra dell'editor si ancora subito sotto.
@@ -320,6 +346,42 @@ export function DocumentWorkspace(props: {
     observer.observe(header);
     return () => observer.disconnect();
   }, []);
+
+  // Domande e "In questa pagina", nel pannello fisso e in quello che si apre dalla colonnina.
+  const sidePanel = (action: ReactNode) => (
+    <>
+      {questions.length > 0 && (
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Domande</h2>
+            {action}
+          </div>
+          <ul className="flex flex-col gap-0.5 text-sm">
+            {questions.map((q) => (
+              <li key={q.id}>
+                <a
+                  href={`#${q.id.toLowerCase()}`}
+                  onClick={(e) => goToQuestion(e, q.id.toLowerCase())}
+                  title={QUESTION_STATUS_LABEL[statusOf(q)]}
+                  className="flex items-center gap-2 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <span aria-hidden className={cn("size-2 shrink-0 rounded-full", QUESTION_DOT[statusOf(q)])} />
+                  <span className="truncate">
+                    {q.id} · {q.title}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">In questa pagina</h2>
+        {questions.length === 0 && action}
+      </div>
+      <DocumentOutline containerRef={isEditing ? editorRootRef : contentRef} scrollTo={scrollToElement} />
+    </>
+  );
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
@@ -549,17 +611,16 @@ export function DocumentWorkspace(props: {
           <CardContent>
             {props.versionView ??
               (isEditing && props.body !== null ? (
-                <div id={EDITOR_ID}>
+                <div ref={editorRootRef}>
                   <MilkdownEditor
                     initial={originalBody}
                     draft={resume}
                     onReady={(baseline, read, focusAt) => {
                       editor.current = { baseline, read };
                       setBodyDirty(read() !== baseline);
-                      setEditorReady((n) => n + 1);
                       // Dopo il primo disegno dell'editor: stesso blocco nello stesso punto, poi il cursore.
                       requestAnimationFrame(() => {
-                        if (enterAnchor.current) restoreAnchor(editorBlocks(EDITOR_ID), enterAnchor.current, visibleLine(true));
+                        if (enterAnchor.current) restoreAnchor(editorBlocks(editorRootRef.current), enterAnchor.current, visibleLine(true));
                         if (caret.current) focusAt(caret.current.x, caret.current.y);
                         enterAnchor.current = null;
                         caret.current = null;
@@ -574,7 +635,7 @@ export function DocumentWorkspace(props: {
                 </div>
               ) : (
                 <div
-                  id={CONTENT_ID}
+                  ref={contentRef}
                   className={cn(props.hideFirstHeading && "[&>h1:first-child]:hidden")}
                   onClick={copyAnswersPrompt}
                   onDoubleClick={(e) => {
@@ -604,53 +665,55 @@ export function DocumentWorkspace(props: {
       </div>
 
       {/* A destra: domande e indice delle sezioni (anche in modifica, così il testo non cambia
-          larghezza) o la cronologia. */}
-      <aside className={cn("w-full shrink-0 lg:w-72", showHistory ? "block" : "hidden xl:block")}>
-        <div className="sticky top-8 flex max-h-[calc(100vh-4rem)] flex-col gap-3 overflow-y-auto">
-          {!showHistory && questions.length > 0 && (
-            <>
-              <h2 className="text-sm font-semibold">Domande</h2>
-              <ul className="flex flex-col gap-0.5 text-sm">
-                {questions.map((q) => (
-                  <li key={q.id}>
-                    <a
-                      href={`#${q.id.toLowerCase()}`}
-                      onClick={(e) => goToQuestion(e, q.id.toLowerCase())}
-                      title={QUESTION_STATUS_LABEL[statusOf(q)]}
-                      className="flex items-center gap-2 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      <span
-                        aria-hidden
-                        className={cn("size-2 shrink-0 rounded-full", QUESTION_DOT[statusOf(q)])}
-                      />
-                      <span className="truncate">
-                        {q.id} · {q.title}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">{showHistory ? "Cronologia" : "In questa pagina"}</h2>
-            {historyOpen && (
+          larghezza) o la cronologia. Ridotto (o tra lg e xl) resta una colonnina di trattini che si
+          apre al passaggio del mouse, sopra il testo. */}
+      {showHistory ? (
+        <aside className="w-full shrink-0 lg:w-72">
+          <div className="sticky top-8 flex max-h-[calc(100vh-4rem)] flex-col gap-3 overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Cronologia</h2>
               <Button variant="ghost" size="icon-sm" aria-label="Chiudi la cronologia" onClick={() => setHistoryOpen(false)}>
                 <X />
               </Button>
-            )}
+            </div>
+            {props.history}
           </div>
-          {showHistory ? (
-            props.history
-          ) : (
-            <DocumentOutline
-              key={isEditing ? `editor-${editorReady}` : "lettura"}
-              containerId={isEditing ? EDITOR_ID : CONTENT_ID}
-              scrollTo={scrollToElement}
-            />
+        </aside>
+      ) : (
+        <aside className={cn("hidden shrink-0 lg:block", collapsed ? "w-6" : "w-6 xl:w-72")}>
+          {!collapsed && (
+            <div className="sticky top-8 hidden max-h-[calc(100vh-4rem)] flex-col gap-3 overflow-y-auto xl:flex">
+              {sidePanel(
+                <Button variant="ghost" size="icon-sm" aria-label="Riduci il pannello" title="Riduci il pannello" onClick={() => toggleCollapsed(true)}>
+                  <PanelRightClose />
+                </Button>,
+              )}
+            </div>
           )}
-        </div>
-      </aside>
+          <div className={cn("group sticky top-8 z-30", !collapsed && "xl:hidden")}>
+            <div className="flex max-h-[calc(100vh-4rem)] flex-col items-end gap-4 overflow-hidden py-2">
+              {questions.length > 0 && (
+                <ul className="flex flex-col items-end gap-2">
+                  {questions.map((q) => (
+                    <li key={q.id} className={cn("block h-0.5 w-4 rounded-full", QUESTION_DOT[statusOf(q)])} />
+                  ))}
+                </ul>
+              )}
+              <DocumentOutline compact containerRef={isEditing ? editorRootRef : contentRef} scrollTo={scrollToElement} />
+            </div>
+            <div className="invisible absolute top-0 right-0 z-30 flex max-h-[calc(100vh-4rem)] w-72 flex-col gap-3 overflow-y-auto rounded-lg border bg-popover p-3 opacity-0 shadow-lg transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100"
+              // Dopo il clic su una voce il pannello si chiude appena il mouse esce (il focus lo terrebbe aperto).
+              onClick={() => (document.activeElement as HTMLElement | null)?.blur()}
+            >
+              {sidePanel(
+                <Button variant="ghost" size="icon-sm" aria-label="Fissa il pannello" title="Fissa il pannello" className="hidden xl:inline-flex" onClick={() => toggleCollapsed(false)}>
+                  <PanelRightOpen />
+                </Button>,
+              )}
+            </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

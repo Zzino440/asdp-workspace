@@ -10,14 +10,15 @@ export type Anchor = { index: number; text: string; top: number; hidden: number 
 const textOf = (element: HTMLElement) => (element.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 60);
 const sameText = (a: string, b: string) => a !== "" && b !== "" && (a.startsWith(b) || b.startsWith(a));
 
-export const readBlocks = (container: string): Block[] =>
-  [...document.querySelectorAll<HTMLElement>(`#${container} [data-block]`)].map((element) => ({
+// root: il contenitore di questa pagina (Next tiene nel DOM, nascoste, le pagine visitate prima).
+export const readBlocks = (root: HTMLElement | null): Block[] =>
+  [...(root?.querySelectorAll<HTMLElement>("[data-block]") ?? [])].map((element) => ({
     element,
     index: Number(element.dataset.block),
   }));
 
-export const editorBlocks = (container: string): Block[] =>
-  [...document.querySelectorAll<HTMLElement>(`#${container} .ProseMirror > *`)].map((element, index) => ({
+export const editorBlocks = (root: HTMLElement | null): Block[] =>
+  [...(root?.querySelectorAll<HTMLElement>(".ProseMirror > *") ?? [])].map((element, index) => ({
     element,
     index,
   }));

@@ -8,6 +8,19 @@
 
 **Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (domande D[N] evidenziate nel documento, branch `feat/domande-evidenziate`)
 
+## In corso: indice sincronizzato e pannello riducibile (0.22.0, 2026-11-27, `feat/domande-evidenziate`, non committato)
+
+- `document-outline.tsx`: `MutationObserver` sul contenitore, rilegge i titoli dopo 200 ms;
+  variante `compact` (trattini). Prende `containerRef` (documento) o `containerId` (guida).
+- `document-workspace.tsx`: pannello destro riducibile (`asdp:indice-ridotto` in localStorage),
+  colonnina + pannello al passaggio del mouse (z-30, sopra l'intestazione); `editorReady` tolto.
+- Causa dell'indice vuoto/doppio: Next tiene nel DOM, nascosta, la pagina del documento visitato
+  prima, con gli stessi id. Ora lettura ed editor si trovano con ref (anche `scroll-anchor.ts`
+  e il salto alle D[N]); niente più `getElementById` nel documento.
+- Typecheck, lint, build ok; browser ok (vedi CHANGELOG 0.22.0).
+- Aperto, chiesto dall'utente: editor molto diverso dalla lettura (spaziatura elenchi e caselle,
+  riquadri D[N] e "Da chiarire" assenti in modifica). Proposta in chat, da decidere.
+
 ## Fatto: stesso punto tra lettura e modifica (0.21.2, 2026-11-27, committato su `feat/domande-evidenziate`)
 
 - `scroll-anchor.ts`: il blocco in cima all'area visibile (data-block in lettura, figli di
