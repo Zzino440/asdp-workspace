@@ -35,6 +35,9 @@
 - **Scheda File, colonna Modificato** come su SharePoint: "Pochi secondi fa", "12 minuti fa",
   "3 ore fa", "Ieri alle 14:32", "Lunedì alle 09:10" nell'ultima settimana, poi "20 novembre"
   (con l'anno se diverso); data e ora complete nel tooltip (`modifiedLabel` in `src/lib/time.ts`).
+  Per le cartelle data e autore sono quelli dell'ultima modifica al contenuto (sottocartelle
+  comprese, dall'attività degli ultimi 30 giorni), con il nome dell'elemento nel tooltip; anche
+  l'ordinamento per "Modificato" usa questa data.
 - **Scheda File, vista Attività** per ogni cartella collegata (interruttore File | Attività, con
   il numero di attività degli ultimi 7 giorni): chi ha aggiunto, modificato, spostato,
   rinominato o eliminato cosa, anche direttamente da Teams/SharePoint. Raggruppata per giorno,

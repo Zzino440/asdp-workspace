@@ -199,7 +199,9 @@
   Quindi niente tabella nostra (il piano B con `file_events` non serve). `delta` scartato (solo
   radice del drive). `timeAgo` spostato in `src/lib/time.ts`. Colonna "Modificato" della scheda File come su SharePoint
   ("3 ore fa", "Ieri alle 20:21", data completa nel tooltip; `modifiedLabel`/`fullDateTime` in
-  `src/lib/time.ts`, fuso Europe/Rome), provata nel browser su PSW. Typecheck, lint e build ok;
+  `src/lib/time.ts`, fuso Europe/Rome), provata nel browser su PSW. Cartelle: data, autore e ordinamento
+  dall'ultima modifica al contenuto (`withContent` in `project-files.tsx`, attività degli ultimi
+  30 giorni; oltre, resta la data della cartella), provato su PSW. Typecheck, lint e build ok;
   provata nel browser su PSW (con `admin@asdp.test`, che ha l'account Microsoft di Lorenzo).
   Spostamento provato su PSW: arriva come `action.move.to` ("sites/<sito>/<raccolta>/…/<nome>")
   con `driveItem` = cartella di origine. Creazione e rinomina di un file poi eliminato non
