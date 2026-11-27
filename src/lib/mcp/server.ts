@@ -737,7 +737,10 @@ const FILE_ERRORS: Record<FilesErrorCode, string> = {
   not_found: "File o cartella non trovato nella cartella del progetto. Usa list_project_files per i percorsi.",
   forbidden: "L'utente non ha i permessi su Teams per questa operazione.",
   exists: "Esiste già un elemento con questo nome.",
-  locked: "Il file è aperto o bloccato in SharePoint: riprova tra poco.",
+  locked:
+    "Il file è aperto in modifica in Word/Excel/PowerPoint (anche nel browser): finché resta aperto SharePoint " +
+    "rifiuta ogni scrittura, anche con get_project_file_link/create_project_upload_link. Niente è stato salvato: " +
+    "chiedi all'utente di chiudere il file e poi riprova.",
   invalid_path:
     'Percorso non valido: relativo alla cartella collegata, senza ".." e con un nome senza " * : < > ? \\ | né ' +
     "punto finale.",

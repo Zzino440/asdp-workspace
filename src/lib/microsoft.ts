@@ -351,6 +351,15 @@ const json = (method: string, body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
+// Il blocco condiviso che Word/Office per il web lascia sul file anche per minuti dopo la chiusura
+// fa rispondere 423 a ogni scrittura via Graph. Con questa intestazione SharePoint lo scavalca
+// (come fa la sua interfaccia); un file ancora aperto in modifica resta rifiutato con 423.
+const BYPASS_LOCK = { Prefer: "bypass-shared-lock" };
+const jsonBypass = (method: string, body: unknown): RequestInit => ({
+  ...json(method, body),
+  headers: { "Content-Type": "application/json", ...BYPASS_LOCK },
+});
+
 // Elemento dentro la cartella collegata (sottocartelle comprese, esclusa la cartella stessa);
 // altrimenti 404, come se non esistesse: dal progetto non si tocca niente fuori dalla cartella.
 export async function itemInFolder(graph: Graph, driveId: string, rootId: string, itemId: string) {
@@ -368,10 +377,10 @@ export const createFolder = (graph: Graph, driveId: string, parentId: string, na
   );
 
 export const renameItem = (graph: Graph, driveId: string, itemId: string, name: string) =>
-  graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, json("PATCH", { name }));
+  graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, jsonBypass("PATCH", { name }));
 
 export const moveItem = (graph: Graph, driveId: string, itemId: string, parentId: string, name?: string) =>
-  graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, json("PATCH", { parentReference: { id: parentId }, name }));
+  graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, jsonBypass("PATCH", { parentReference: { id: parentId }, name }));
 
 // Copia asincrona: SharePoint la accetta (202) e la completa da solo; un nome già presente la fa fallire.
 // name: nome della copia (di default quello dell'originale).
@@ -406,7 +415,7 @@ export const uploadSmallFile = (
 
 // Nel cestino del sito SharePoint: si recupera da lì.
 export const deleteItem = (graph: Graph, driveId: string, itemId: string) =>
-  graph<void>(`/drives/${driveId}/items/${itemId}`, { method: "DELETE" });
+  graph<void>(`/drives/${driveId}/items/${itemId}`, { method: "DELETE", headers: BYPASS_LOCK });
 
 // Sessione di caricamento: il browser manda i byte direttamente a SharePoint (uploadUrl già
 // autorizzato, senza token), quindi il file non passa dall'app. Con un nome già presente:
@@ -447,7 +456,7 @@ export async function replaceContent(graph: Graph, driveId: string, itemId: stri
   if (bytes.length <= SMALL_UPLOAD) {
     return graph<DriveItem>(`/drives/${driveId}/items/${itemId}/content`, {
       method: "PUT",
-      headers: { "Content-Type": mime, "If-Match": eTag },
+      headers: { "Content-Type": mime, "If-Match": eTag, ...BYPASS_LOCK },
       body: new Blob([bytes.slice()]),
     });
   }
@@ -459,7 +468,7 @@ export async function replaceContent(graph: Graph, driveId: string, itemId: stri
 export async function replaceUploadSession(graph: Graph, driveId: string, itemId: string, eTag: string) {
   const { uploadUrl } = await graph<{ uploadUrl: string }>(`/drives/${driveId}/items/${itemId}/createUploadSession`, {
     ...json("POST", { item: { "@microsoft.graph.conflictBehavior": "replace" } }),
-    headers: { "Content-Type": "application/json", "If-Match": eTag },
+    headers: { "Content-Type": "application/json", "If-Match": eTag, ...BYPASS_LOCK },
   });
   return uploadUrl;
 }

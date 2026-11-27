@@ -132,7 +132,7 @@ function failure(e: unknown): FileResult {
   if (!(e instanceof MicrosoftError)) throw e;
   if (e.reconnect) return { error: "Il collegamento a Microsoft è scaduto: ricarica la pagina e ricollega l'account." };
   if (e.status === 409) return { error: "Esiste già un elemento con questo nome." };
-  if (e.status === 423) return { error: "Il file è aperto o bloccato in SharePoint: riprova tra poco." };
+  if (e.status === 423) return { error: "Il file è aperto in modifica in Office: chiudilo e riprova." };
   if (e.isForbidden) return { error: "Non hai i permessi per questa operazione su Teams." };
   return { error: "Microsoft non risponde: riprova tra poco." };
 }

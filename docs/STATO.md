@@ -8,6 +8,26 @@
 
 **Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.19.0, novità e attività nella scheda File, committata su feature/int-mcp, non pushata; provata su PSW, spostamenti e rinomine da provare)
 
+## In corso: file bloccati da Word per il web (2026-11-27, non committato)
+
+- Problema: dopo che un file è stato aperto in Word per il web, Graph rifiuta ogni scrittura con
+  423 `resourceLocked` anche dopo la chiusura della scheda (visto per oltre 10 minuti). Lo stesso
+  vale per il ripiego scarica/ricarica (sessione di caricamento). SharePoint dall'interfaccia
+  elimina il file dopo un avviso (scavalca il blocco condiviso).
+- Fatto (`0.19.1`, non committato): `Prefer: bypass-shared-lock` su scrittura del contenuto,
+  sessione di caricamento, eliminazione, spostamento e rinomina (`src/lib/microsoft.ts`);
+  `web_url` dei file MCP in sola lettura (`action=view`, `src/lib/project-files.ts`); messaggio
+  del 423 più chiaro (MCP e scheda File). Su PSW (`Governance/Agenda Kickoff 12-01-2027 - test
+  blocco.docx`): file aperto in Word per il web → 423; subito dopo la chiusura → salvato (v3).
+  Prova di controllo senza intestazione non fatta (scelta dell'utente: l'intestazione non fa
+  danni). Da provare: eliminazione/spostamento di un file appena chiuso, link `action=view`.
+  **Rischio aperto**: su eliminazione, spostamento e rinomina l'intestazione scavalca il blocco
+  anche con il file aperto in Word (SharePoint lo fa ma prima avvisa), da MCP e da scheda File,
+  senza avviso. Proposta: prima senza intestazione, sul 423 chiedere conferma e riprovare con
+  `force` (MCP) / dialog di conferma (app).
+- Su PSW resta anche `Governance/Agenda Kickoff 12-01-2027.docx` nel cestino del sito (eliminato
+  a mano durante la prova).
+
 ## Versione
 
 - Fino a `0.11.0` tutto su `master` e su `origin/master` (2026-11-26), tag `0.1.0`–`0.11.0`

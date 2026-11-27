@@ -25,6 +25,30 @@
 
 ## Storia
 
+## [0.19.1] 2026-11-27 — File bloccati da Office per il web
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **File Teams, scritture**: dopo che un file è stato aperto in Word/Excel/PowerPoint per il web,
+  SharePoint lo teneva bloccato per minuti anche dopo la chiusura e ogni scrittura (edit_*,
+  caricamento, eliminazione, spostamento, rinomina) riceveva 423. Ora le richieste a Graph
+  mandano `Prefer: bypass-shared-lock`, come fa l'interfaccia di SharePoint: il blocco rimasto
+  dopo la chiusura non ferma più le scritture; un file ancora aperto in modifica resta rifiutato.
+- **MCP**: `web_url` dei file apre in sola lettura (`action=view`), così guardare un file non lo
+  blocca; il messaggio del file bloccato dice di chiuderlo e che gli altri tool non aggirano il
+  blocco.
+- **Scheda File**: messaggio del file bloccato più chiaro.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Su PSW con `edit_word_file`: file aperto in Word per il web → 423; subito dopo la chiusura →
+  salvato. Senza l'intestazione il blocco era rimasto oltre 10 minuti dopo la chiusura (non
+  ripetuto come prova di controllo).
+- Typecheck, lint, build.
+
 ## [0.19.0] 2026-11-27 — Novità e attività nella scheda File
 
 **Autore**: Lorenzo Belli con Claude Code

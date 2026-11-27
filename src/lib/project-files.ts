@@ -126,7 +126,8 @@ const entry = (item: DriveItem, path: string) => ({
   modified: item.lastModifiedDateTime,
   modified_by: item.lastModifiedBy?.user?.displayName,
   etag: item.folder ? undefined : item.eTag,
-  web_url: item.webUrl,
+  // In sola lettura: aprirlo in modifica con Office per il web blocca il file per le scritture dell'MCP.
+  web_url: item.webUrl.replace("action=default", "action=view"),
 });
 
 export async function projectFiles(supabase: SupabaseClient, projectId: string, location?: string) {
