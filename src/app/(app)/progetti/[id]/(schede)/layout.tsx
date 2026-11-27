@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { NATURE_LABELS, PHASES, PROJECT_STATUS_LABELS } from "@/lib/labels";
 import { microsoftEnabled } from "@/lib/microsoft";
-import { AdvancePhaseButton } from "../advance-phase";
+import { PhaseChangeButton } from "../advance-phase";
 import { loadProjectSteps } from "../document-list";
 import { loadProject } from "../project-data";
 import { ProjectTabs } from "../project-tabs";
@@ -24,7 +24,7 @@ export default function ProjectLayout({ children, params }: LayoutProps<"/proget
 
 async function Header({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { project, canManage } = await loadProject(id);
+  const { project, canManage, isAdmin } = await loadProject(id);
 
   return (
     <StickyHeader>
@@ -50,6 +50,9 @@ async function Header({ params }: { params: Promise<{ id: string }> }) {
                 <AdvancePhase projectId={project.id} currentPhase={project.current_phase} />
               </Suspense>
             )}
+            {isAdmin && project.current_phase > 0 && (
+              <PhaseChangeButton projectId={project.id} from={project.current_phase} to={project.current_phase - 1} />
+            )}
           </div>
         </div>
         {canManage && <ReindexButton projectId={project.id} />}
@@ -67,5 +70,5 @@ async function AdvancePhase({ projectId, currentPhase }: { projectId: string; cu
   const complete =
     mapTypes.some((t) => t.phase === currentPhase) && !open.some((s) => s.phase === currentPhase);
   if (!complete) return null;
-  return <AdvancePhaseButton projectId={projectId} nextPhase={currentPhase + 1} />;
+  return <PhaseChangeButton projectId={projectId} from={currentPhase} to={currentPhase + 1} />;
 }

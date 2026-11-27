@@ -25,6 +25,34 @@
 
 ## Storia
 
+## [0.20.0] 2026-11-27 — Cambio di fase con conferma e ritorno indietro (admin)
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- UI, intestazione del progetto: "Passa alla Fase N" chiede conferma prima di cambiare fase.
+- Nuovo "Torna alla Fase N-1" nell'intestazione, solo per l'admin, con conferma: nessun
+  documento viene toccato, cambia solo la fase attuale e il prossimo passo.
+- Percorso: quando un documento di una fase precedente non è più pronto (es. approvazione
+  revocata), l'admin vede accanto all'avviso "Torna alla Fase X".
+- Impostazioni › Generale: nella select "Fase corrente" le fasi precedenti sono disabilitate per
+  chi non è admin.
+- Database: il trigger `projects_phase_back` rifiuta il ritorno a una fase precedente a chi non è
+  admin (prima lo poteva fare anche il PM dalle Impostazioni).
+
+### Migrazioni e configurazione
+- `20261127170350_phase_back_admin_only.sql` (da applicare sul cloud).
+
+### Test eseguiti
+- Typecheck, lint, build ok.
+- pgTAP `project_phase.test.sql` ok (PM non torna indietro, PM va avanti, admin torna indietro).
+  Gli altri test pgTAP falliscono sul DB locale per i dati in più rispetto al seed (conteggi),
+  non per questa modifica.
+- Browser (locale, PSW, admin): Fase 1 → "Torna alla Fase 0" con conferma; "Passa alla Fase 1"
+  con Annulla (fase invariata) e conferma; avviso del Percorso con "Torna alla Fase 0" simulando
+  nell'indice locale un documento di Fase 0 In corso (poi ripristinato). Non provato con un
+  utente PM nel browser.
+
 ## [0.19.3] 2026-11-27 — Stessa intestazione in ogni stato del documento
 
 **Autore**: Lorenzo Belli con Claude Code

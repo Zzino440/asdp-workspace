@@ -12,6 +12,7 @@ import { guidaHref, guidaHrefForType } from "@/lib/guida";
 import { isDone, phaseProgress } from "@/lib/phase-progress";
 import { answersPrompt, stepPrompt } from "@/lib/prompts";
 import type { MapDoc, MapType, NextStep } from "@/lib/project-steps";
+import { PhaseChangeButton } from "./advance-phase";
 import { CopyPromptButton } from "./copy-prompt-button";
 
 type ProjectInfo = { code: string; nature: string; teams: boolean };
@@ -27,6 +28,8 @@ const DOT: Record<string, string> = {
 // Percorso del progetto come timeline: tutte le fasi in un elenco, aperte quelle con lavoro da
 // fare e le future, chiuse quelle complete (con i pallini di stato dei documenti).
 export function ProjectMap({
+  projectId,
+  isAdmin,
   project,
   currentPhase,
   types,
@@ -35,6 +38,8 @@ export function ProjectMap({
   next,
   behind,
 }: {
+  projectId: string;
+  isAdmin: boolean;
   project: ProjectInfo;
   currentPhase: number;
   types: MapType[];
@@ -75,26 +80,31 @@ export function ProjectMap({
   }, []);
 
   // Prima fase precedente con documenti non pronti: la apre e la porta in vista.
+  const behindPhase = PHASES.find((p) => p.n < currentPhase && !complete(p.n));
   const showBehind = () => {
-    const phase = PHASES.find((p) => p.n < currentPhase && !complete(p.n));
-    if (!phase) return;
-    setOpen((current) => new Set(current).add(phase.n));
-    requestAnimationFrame(() => document.getElementById(`fase-${phase.n}`)?.scrollIntoView({ behavior: "smooth" }));
+    if (!behindPhase) return;
+    setOpen((current) => new Set(current).add(behindPhase.n));
+    requestAnimationFrame(() => document.getElementById(`fase-${behindPhase.n}`)?.scrollIntoView({ behavior: "smooth" }));
   };
 
   return (
     <div className="flex flex-col gap-5">
       {next && <NextStepCard project={project} next={next} />}
       {behind > 0 && (
-        <button
-          type="button"
-          onClick={showBehind}
-          className="w-fit text-left text-sm text-muted-foreground hover:text-foreground hover:underline"
-        >
-          {behind === 1
-            ? "1 documento delle fasi precedenti non è ancora pronto: mostralo"
-            : `${behind} documenti delle fasi precedenti non sono ancora pronti: mostrali`}
-        </button>
+        <p className="flex flex-wrap gap-x-1.5 text-sm text-muted-foreground">
+          <button type="button" onClick={showBehind} className="text-left hover:text-foreground hover:underline">
+            {behind === 1
+              ? "1 documento delle fasi precedenti non è ancora pronto: mostralo"
+              : `${behind} documenti delle fasi precedenti non sono ancora pronti: mostrali`}
+          </button>
+          {/* Solo admin: riportare il progetto alla fase rimasta indietro (es. approvazione revocata). */}
+          {isAdmin && behindPhase && (
+            <>
+              <span aria-hidden>·</span>
+              <PhaseChangeButton projectId={projectId} from={currentPhase} to={behindPhase.n} look="link" />
+            </>
+          )}
+        </p>
       )}
 
       <div className="relative">

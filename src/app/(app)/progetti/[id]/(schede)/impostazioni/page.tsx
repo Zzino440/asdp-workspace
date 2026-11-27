@@ -46,7 +46,7 @@ async function Settings({
   return (
     <div className="flex max-w-5xl flex-col divide-y divide-border">
       <Section id="generale" title="Generale" description="Dati del progetto e repo dei documenti ASDP.">
-        <ProjectSettingsForm project={project} />
+        <ProjectSettingsForm project={project} isAdmin={isAdmin} />
       </Section>
 
       <Section id="team" title="Team" description="I ruoli decidono chi modifica e chi approva ogni documento.">

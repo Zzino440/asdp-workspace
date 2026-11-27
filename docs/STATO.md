@@ -6,9 +6,21 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.19.3, intestazione del documento uguale in ogni stato, su master)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.20.0, cambio di fase con conferma e ritorno indietro solo admin, su master)
 
-## Fatto: intestazione del documento uguale in ogni stato (0.19.3, 2026-11-27, committato)
+## Fatto: cambio di fase con conferma e ritorno indietro (0.20.0, 2026-11-27, committato)
+
+- `advance-phase.tsx` ora è `PhaseChangeButton` (Dialog di conferma, avanti e indietro);
+  `setPhase` in `progetti/actions.ts` sostituisce `advancePhase`. "Torna alla Fase N-1"
+  nell'intestazione e "Torna alla Fase X" nell'avviso del Percorso, solo admin. Select di
+  Impostazioni lasciata (scelta dell'utente), fasi precedenti disabilitate per chi non è admin.
+- Regola nel DB: trigger `projects_phase_back` (migrazione `20261127170350`), applicata in
+  locale con `supabase migration up`, **da applicare sul cloud**. Per estendere il potere ad
+  altri ruoli si cambia solo la condizione del trigger.
+- Provato in locale su PSW come admin (PSW lasciato in Fase 1). Non provato come PM nel browser.
+- Nessun tag e nessun push per 0.19.3 e 0.20.0.
+
+## Fatto: intestazione del documento uguale in ogni stato (0.19.3, 2026-11-27, committato 90cfbaf)
 
 - Esporta e Teams in un solo menu (`publish-actions.tsx`, `PublicationInfo`/`PublishButton`
   sostituiti da `ExportMenu` + `PublishDialog`); "Su Teams" fuori dalla riga dei dati. Scelte

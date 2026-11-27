@@ -12,16 +12,20 @@ export async function DocumentList({
   projectId,
   project,
   currentPhase,
+  isAdmin,
 }: {
   projectId: string;
   project: { code: string; nature: string; teams: boolean };
   currentPhase: number;
+  isAdmin: boolean;
 }) {
   const { mapTypes, otherFiles, features, open } = await loadProjectSteps(projectId);
   const { next, behind } = nextStep(open, currentPhase);
 
   return (
     <ProjectMap
+      projectId={projectId}
+      isAdmin={isAdmin}
       project={{ code: project.code, nature: project.nature, teams: project.teams }}
       currentPhase={currentPhase}
       types={mapTypes}

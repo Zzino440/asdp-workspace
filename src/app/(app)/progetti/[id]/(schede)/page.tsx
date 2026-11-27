@@ -30,7 +30,7 @@ async function Percorso({
   searchParams: Promise<{ avviso?: string }>;
 }) {
   const [{ id }, { avviso }] = await Promise.all([params, searchParams]);
-  const { project, canManage, members, repositories } = await loadProject(id);
+  const { project, canManage, isAdmin, members, repositories } = await loadProject(id);
   const supabase = await createClient();
   const [setup, { data: folders }] = await Promise.all([
     canManage ? loadSetupState(supabase, id) : null,
@@ -57,6 +57,7 @@ async function Percorso({
             projectId={project.id}
             project={{ ...project, teams: Boolean(folders?.length) }}
             currentPhase={project.current_phase}
+            isAdmin={isAdmin}
           />
         </Suspense>
       </div>

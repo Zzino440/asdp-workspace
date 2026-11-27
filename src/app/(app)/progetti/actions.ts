@@ -173,6 +173,7 @@ export async function updateProject(projectId: string, _prev: FormState, formDat
   const supabase = await createClient();
   const { data, error } = await supabase.from("projects").update(fields).eq("id", projectId).select("id, gitlab_project_path").single();
   if (error?.code === "23514") return { error: "La fine prevista non può venire prima dell'inizio." };
+  if (error?.code === "42501") return { error: PHASE_BACK_ERROR };
   if (!data) return { error: "Non hai i permessi per modificare questo progetto." };
 
   let warning: string | null = null;
@@ -187,16 +188,21 @@ export async function updateProject(projectId: string, _prev: FormState, formDat
   return { error: null, ok: true, warning };
 }
 
-export async function advancePhase(projectId: string, phase: number): Promise<FormState> {
+// Il trigger projects_phase_back rifiuta con 42501 il ritorno a una fase precedente a chi non è admin.
+const PHASE_BACK_ERROR = "Solo un amministratore può riportare il progetto a una fase precedente.";
+
+// Avanti (admin o PM) o indietro (solo admin): la direzione la controlla il database.
+export async function setPhase(projectId: string, phase: number): Promise<FormState> {
   const parsed = z.number().int().min(0).max(4).safeParse(phase);
   if (!parsed.success) return { error: "Fase non valida." };
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .update({ current_phase: parsed.data })
     .eq("id", projectId)
     .select("id");
+  if (error?.code === "42501") return { error: PHASE_BACK_ERROR };
   if (!data?.length) return { error: "Non hai i permessi per modificare questo progetto." };
   refresh();
   return { error: null, ok: true };
