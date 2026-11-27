@@ -336,10 +336,14 @@ export function DocumentWorkspace(props: {
     const note = target.previousElementSibling as HTMLElement | null;
     scrollToElement(isEditing && note?.textContent?.trimStart().startsWith("❓") ? note : target);
     if (!isEditing) history.replaceState(null, "", `#${id}`);
+    // Alone arrotondato attorno alla domanda. In modifica il titolo non ha un riquadro suo: si
+    // colora anche lo sfondo e si arrotonda; in lettura il riquadro tiene i suoi colori.
+    const glow = "color-mix(in srgb, var(--ring) 35%, transparent)";
+    const fill = (color: string) => (isEditing ? { backgroundColor: color, borderRadius: "var(--radius)" } : {});
     target.animate(
       [
-        { outline: "2px solid var(--state-complete-border)", outlineOffset: "6px" },
-        { outline: "2px solid transparent", outlineOffset: "6px" },
+        { boxShadow: `0 0 0 6px ${glow}`, ...fill(glow) },
+        { boxShadow: "0 0 0 6px transparent", ...fill("transparent") },
       ],
       { duration: 1800, delay: 300, easing: "ease-in" },
     );
