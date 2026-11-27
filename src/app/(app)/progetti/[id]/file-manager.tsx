@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition } from "react";
-import { ChevronRight, Folder, FolderPlus, MoreHorizontal, MoveRight, Pencil, Trash2, Upload, X } from "lucide-react";
+import { ChevronRight, Folder, FolderPlus, History, MoreHorizontal, MoveRight, Pencil, Trash2, Upload, X } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,6 +27,7 @@ import {
   startNewVersion,
   startUpload,
 } from "../file-actions";
+import { VersionsSheet } from "./file-versions";
 
 // Gestione dei file nella card (7b). Agisce come l'utente: se su Teams non può scrivere,
 // SharePoint rifiuta e il messaggio compare qui.
@@ -306,8 +307,8 @@ export function ItemActions({
   projectId,
   locationId,
   item,
-}: Target & { item: { id: string; name: string; folder: boolean } }) {
-  const [dialog, setDialog] = useState<"version" | "rename" | "move" | "delete" | null>(null);
+}: Target & { item: { id: string; name: string; folder: boolean; driveId: string; webUrl: string } }) {
+  const [dialog, setDialog] = useState<"versions" | "version" | "rename" | "move" | "delete" | null>(null);
   const close = () => setDialog(null);
   const kind = item.folder ? "la cartella" : "il file";
 
@@ -319,9 +320,14 @@ export function ItemActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           {!item.folder && (
-            <DropdownMenuItem onClick={() => setDialog("version")}>
-              <Upload /> Carica nuova versione
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onClick={() => setDialog("versions")}>
+                <History /> Cronologia versioni
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDialog("version")}>
+                <Upload /> Carica nuova versione
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuItem onClick={() => setDialog("rename")}>
             <Pencil /> Rinomina
@@ -336,6 +342,9 @@ export function ItemActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {dialog === "versions" && (
+        <VersionsSheet projectId={projectId} locationId={locationId} item={item} onClose={close} />
+      )}
       {dialog === "version" && (
         <NewVersionDialog projectId={projectId} locationId={locationId} item={item} onClose={close} />
       )}

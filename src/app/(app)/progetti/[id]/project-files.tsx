@@ -381,7 +381,13 @@ export async function ProjectFiles({
                       <ItemActions
                         projectId={projectId}
                         locationId={location.id}
-                        item={{ id: item.id, name: item.name, folder: Boolean(item.folder) }}
+                        item={{
+                          id: item.id,
+                          name: item.name,
+                          folder: Boolean(item.folder),
+                          driveId: location.drive_id,
+                          webUrl: item.webUrl,
+                        }}
                       />
                     </div>
                   </TableCell>

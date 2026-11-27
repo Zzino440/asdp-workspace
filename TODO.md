@@ -101,6 +101,11 @@ l'analisi GDPR per l'IT.
   cambia o sparisce); serve una versione fissa del file o una copia in Storage. Da decidere col
   team. Con «Sostituisci» / «Carica nuova versione» (`0.15.0`) succede più spesso: stesso link,
   contenuto nuovo. Vale anche per la tracciabilità qui sopra.
+- [ ] **Cronologia versioni, seguiti** (oggi solo consultazione, `0.15.0`): **Ripristina** una
+  versione (`restoreVersion` di Graph, crea una versione nuova); **nomi alle versioni**
+  ("Inviata al cliente", "Approvata dal PO") in una tabella Supabase, con filtro per nascondere i
+  salvataggi automatici: base per l'evidenza del PO qui sopra; **cosa è cambiato** tra due
+  versioni (diff del testo; verificare se `?format=pdf` funziona anche sulle versioni).
 - [ ] **7c, file come input delle skill**: opzione economica `get_project` che restituisce le
   cartelle collegate (Claude Desktop le legge col connettore M365); opzione completa tool MCP
   `list_project_files` / `read_project_file`. Bloccata dalla DPIA (dati dei clienti verso

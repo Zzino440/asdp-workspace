@@ -217,12 +217,28 @@ export async function searchFolder(graph: Graph, driveId: string, itemId: string
 }
 
 // URL di download temporaneo (Graph risponde 302 verso l'URL firmato). format "pdf": il file
-// Office convertito in PDF da SharePoint.
-export async function downloadUrl(graph: Graph, driveId: string, itemId: string, format?: "pdf") {
+// Office convertito in PDF da SharePoint. versionId: il contenuto di una versione precedente.
+export async function downloadUrl(graph: Graph, driveId: string, itemId: string, format?: "pdf", versionId?: string) {
   const query = format ? `?format=${format}` : "";
-  const response = await graph<Response>(`/drives/${driveId}/items/${itemId}/content${query}`, { redirect: "manual" });
+  const version = versionId ? `/versions/${encodeURIComponent(versionId)}` : "";
+  const response = await graph<Response>(`/drives/${driveId}/items/${itemId}${version}/content${query}`, {
+    redirect: "manual",
+  });
   if (response.status !== 302) throw new MicrosoftError(response.status, `Graph ${response.status} sul download`);
   return response.headers.get("location")!;
+}
+
+// Versioni di un file, dalla più recente (la prima è quella attuale). Id come su SharePoint ("3.0").
+export type FileVersion = {
+  id: string;
+  lastModifiedDateTime: string;
+  lastModifiedBy?: { user?: { displayName?: string } };
+  size?: number;
+};
+
+export async function listVersions(graph: Graph, driveId: string, itemId: string) {
+  const { value } = await graph<{ value: FileVersion[] }>(`/drives/${driveId}/items/${itemId}/versions`);
+  return value;
 }
 
 // --- Gestione (7b): sempre dentro la cartella collegata al progetto ---

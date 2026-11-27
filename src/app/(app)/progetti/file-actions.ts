@@ -11,7 +11,9 @@ import {
   graphClient,
   itemInFolder,
   listChildren,
+  listVersions,
   MicrosoftError,
+  type FileVersion,
   moveItem,
   renameItem,
 } from "@/lib/microsoft";
@@ -277,6 +279,21 @@ export async function startNewVersion(projectId: string, locationId: string, ite
     const item = await itemInFolder(graph, drive, root, itemId);
     if (item.folder || !item.parentReference.id) return { error: "Si può caricare una nuova versione solo di un file." };
     return { uploadUrl: await createUploadSession(graph, drive, item.parentReference.id, item.name, "replace") };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+// Cronologia delle versioni di un file della cartella collegata, come su SharePoint.
+export async function fileVersions(
+  projectId: string,
+  locationId: string,
+  itemId: string,
+): Promise<{ error?: string; versions?: FileVersion[] }> {
+  try {
+    const { graph, drive, root } = await location(projectId, locationId);
+    await itemInFolder(graph, drive, root, itemId);
+    return { versions: await listVersions(graph, drive, itemId) };
   } catch (e) {
     return failure(e);
   }

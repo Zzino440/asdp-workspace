@@ -41,6 +41,10 @@
   Mentre si trascina, la card mostra un overlay con la cartella di destinazione ("Trascina qui",
   poi "Rilascia per caricare"); fuori dalla card il rilascio è bloccato. Le cartelle trascinate
   sono saltate con un avviso. Non attivo nei risultati di ricerca.
+- **Menu ⋯ di un file → Cronologia versioni**: pannello laterale con le versioni del file come su
+  SharePoint (numero, autore, ora, dimensione), raggruppate per giorno; l'attuale si apre in
+  Office web, le precedenti si scaricano. Solo consultazione. Graph: `listVersions`, `downloadUrl`
+  con la versione, azione `fileVersions` (controlla con `itemInFolder`); componente shadcn `Sheet`.
 - Graph: `createUploadSession` con `conflictBehavior` `rename` o `replace`; nuova azione
   `startNewVersion` (controlla con `itemInFolder` che il file sia nella cartella collegata).
 - Il tool MCP di caricamento non cambia (con un nome già presente fallisce).
@@ -54,6 +58,8 @@
 - Non provato nel browser con SharePoint: da provare su una cartella di test.
 - Trascinamento: overlay provato nel browser con eventi simulati (entrata nella finestra, sopra la
   card, uscita); rilascio reale dal computer e caricamento non provati.
+- Cronologia versioni: provata nel browser su un .docx reale di PFS (10 versioni, confrontabili
+  con SharePoint); "Scarica" di una versione vecchia risponde col redirect di Graph.
 
 ## [0.14.0] 2026-11-26 — Percorso: stati, domande D[N] e attività recente
 

@@ -8,7 +8,8 @@ export async function GET(request: NextRequest) {
   if (!microsoftEnabled()) notFound();
   const drive = request.nextUrl.searchParams.get("drive");
   const item = request.nextUrl.searchParams.get("item");
+  const version = request.nextUrl.searchParams.get("version") ?? undefined;
   const graph = await graphClient(await createClient());
   if (!graph || !drive || !item) notFound();
-  redirect(await downloadUrl(graph, drive, item));
+  redirect(await downloadUrl(graph, drive, item, undefined, version));
 }
