@@ -6,9 +6,16 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.19.2, intestazione del documento più ordinata, branch feature/recent-activity-sharepoint, non committata)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.19.3, intestazione del documento uguale in ogni stato, su master)
 
-## Fatto: intestazione del documento (0.19.2, 2026-11-27, non committato)
+## Fatto: intestazione del documento uguale in ogni stato (0.19.3, 2026-11-27, committato)
+
+- Esporta e Teams in un solo menu (`publish-actions.tsx`, `PublicationInfo`/`PublishButton`
+  sostituiti da `ExportMenu` + `PublishDialog`); "Su Teams" fuori dalla riga dei dati. Scelte
+  dell'utente: un solo menu, Revoca approvazione resta nel posto del flusso. Provato in locale su
+  PSW (Kickoff Pack Approvato e pubblicato, Verbale In corso); Ripubblica non eseguita.
+
+## Fatto: intestazione del documento (0.19.2, 2026-11-27, committato 395b82c)
 
 - `document-workspace.tsx`: titolo e azioni sulla stessa riga, un solo gruppo di azioni
   (Modifica testo resta il pulsante principale, scelta dell'utente), dati e versione compatti;

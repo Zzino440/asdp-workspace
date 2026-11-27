@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ChevronRight, CircleHelp } from "lucide-react";
 import { cn } from "cn";
 import { DocumentWorkspace } from "../document-workspace";
-import { ExportMenu, PublicationInfo, PublishButton } from "../publish-actions";
+import { ExportMenu } from "../publish-actions";
 import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -221,21 +221,15 @@ async function DocumentView({
           )}
         </div>
       }
-      exportMenu={isMarkdown ? <ExportMenu projectId={id} path={document.path} /> : null}
-      publish={
-        canPublish ? (
-          <PublishButton
+      exportMenu={
+        isMarkdown ? (
+          <ExportMenu
             projectId={id}
             path={document.path}
-            locations={locations ?? []}
-            phaseFolder={phaseFolderName(type?.phase)}
+            publish={canPublish ? { locations: locations ?? [] } : null}
             publication={publication}
+            phaseFolder={phaseFolderName(type?.phase)}
           />
-        ) : null
-      }
-      publication={
-        publication ? (
-          <PublicationInfo publication={publication} projectId={id} phaseFolder={phaseFolderName(type?.phase)} />
         ) : null
       }
       history={

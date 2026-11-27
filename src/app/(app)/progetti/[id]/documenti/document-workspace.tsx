@@ -67,10 +67,8 @@ export function DocumentWorkspace(props: {
   updated: string | null;
   tree: ReactNode;
   history: ReactNode;
-  // Esporta (sempre), Pubblica su Teams e stato della copia su Teams (se ci sono).
+  // Esporta: scarica il documento e gestisce la sua copia su Teams.
   exportMenu: ReactNode;
-  publish: ReactNode | null;
-  publication: ReactNode | null;
 }) {
   const router = useRouter();
   const draftKey = `asdp-bozza:${props.projectId}:${props.path}`;
@@ -268,7 +266,6 @@ export function DocumentWorkspace(props: {
                       gate={props.gate}
                     />
                   )}
-                  {!props.versionView && props.publish}
                   {props.canEdit && !props.versionView && (
                     <Button size="sm" onClick={() => startEditing(null)}>
                       <Pencil />
@@ -304,7 +301,6 @@ export function DocumentWorkspace(props: {
                       </span>
                     )}
                   </Property>
-                  {props.publication && <Property label="Su Teams">{props.publication}</Property>}
                 </dl>
               )}
               {meta.length > 0 && <p className="text-xs text-muted-foreground">{meta.join(" · ")}</p>}

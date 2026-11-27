@@ -25,6 +25,25 @@
 
 ## Storia
 
+## [0.19.3] 2026-11-27 — Stessa intestazione in ogni stato del documento
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- UI, pagina del documento: Esporta e Teams in un solo menu (Scarica PDF/Word/Markdown; Su Teams:
+  Apri il PDF/Word, Vedi nei File, Pubblica o Ripubblica su Teams). Un pallino sul pulsante dice
+  se il documento è su Teams (verde) o se la copia va ripubblicata.
+- "Su Teams" esce dalla riga dei dati: l'intestazione ha la stessa forma In corso, Completo e
+  Approvato (Cronologia · Esporta · passo del flusso · Modifica testo).
+
+### Migrazioni e configurazione
+- Nessuna
+
+### Test eseguiti
+- Typecheck, lint, build ok.
+- Browser (locale, PSW, admin): Kickoff Pack Approvato e pubblicato (menu con sezione Teams,
+  finestra Ripubblica aperta e annullata) e Verbale In corso con la stessa intestazione.
+
 ## [0.19.2] 2026-11-27 — Intestazione del documento più ordinata
 
 **Autore**: Lorenzo Belli con Claude Code
