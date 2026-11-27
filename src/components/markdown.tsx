@@ -1,7 +1,7 @@
 import type { Nodes, Root, RootContent } from "mdast";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { QUESTION, QUESTION_STATUS_LABEL, questionsOf, type QuestionStatus } from "@/lib/questions";
+import { QUESTION, QUESTION_STATUS_LABEL, questionsOf, TRACE, traceIds, type QuestionStatus } from "@/lib/questions";
 
 const textOf = (node: Nodes): string =>
   "value" in node ? node.value : "children" in node ? node.children.map(textOf).join("") : "";
@@ -113,6 +113,71 @@ function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?:
   };
 }
 
+// Punti risolti da una D[N] o aggiornati su indicazione utente: la traccia "→ risolto da D1" diventa
+// un'etichetta verde (lo stato dopo "Risposta da applicare") e il blocco che la contiene prende la
+// tinta. Il blocco è il più vicino (paragrafo, anche in un blockquote, o cella); un paragrafo di
+// una voce d'elenco evidenzia la voce. data-trace sta sull'etichetta: una per traccia, nell'ordine
+// di tracesOf, per il salto dal pannello.
+const TRACE_TINT = {
+  listItem: "rounded-md bg-(--state-approved)/30 px-1",
+  // className sostituisce quello dei components sotto: qui si ripetono le loro classi.
+  tableCell: "border border-border bg-(--state-approved)/30 px-2 py-1 align-top",
+  paragraph:
+    "my-3 rounded-md border border-(--state-approved-border)/60 bg-(--state-approved)/30 px-2 py-1 leading-relaxed",
+} as const;
+
+function remarkTraces() {
+  const tint = (node: Nodes, kind: keyof typeof TRACE_TINT) => {
+    const props = (node.data?.hProperties ?? {}) as Record<string, unknown>;
+    if (props.dataTraceBlock) return;
+    node.data = { ...node.data, hProperties: { ...props, dataTraceBlock: true, className: [TRACE_TINT[kind]] } };
+  };
+  const walk = (node: Nodes, ancestors: Nodes[]) => {
+    if (!("children" in node)) return;
+    const children: RootContent[] = [];
+    let found = false;
+    for (const child of node.children as RootContent[]) {
+      if (child.type !== "text" || !TRACE.test(child.value)) {
+        walk(child, [...ancestors, node]);
+        children.push(child);
+        continue;
+      }
+      found = true;
+      let rest = child.value;
+      for (let match = TRACE.exec(rest); match; match = TRACE.exec(rest)) {
+        if (match.index) children.push({ type: "text", value: rest.slice(0, match.index).trimEnd() });
+        const ids = traceIds(match);
+        children.push({
+          type: "text",
+          value: "",
+          data: {
+            hName: "span",
+            hProperties: {
+              dataTrace: true,
+              className: [
+                "ml-1.5 rounded px-1.5 py-0.5 align-middle text-xs font-medium whitespace-nowrap bg-(--state-approved) text-(--state-approved-foreground)",
+              ],
+            },
+            hChildren: [{ type: "text", value: ids.length ? `Risolta · ${ids.join(", ")}` : "Aggiornato su indicazione utente" }],
+          },
+        });
+        rest = rest.slice(match.index + match[0].length);
+      }
+      if (rest) children.push({ type: "text", value: rest });
+    }
+    (node as { children: RootContent[] }).children = children;
+    if (!found) return;
+    // Blocco più vicino che contiene la traccia (node è il genitore del testo, o un inline dentro).
+    const chain = [...ancestors, node];
+    const index = chain.findLastIndex((n) => n.type === "paragraph" || n.type === "tableCell" || n.type === "heading");
+    const block = chain[index];
+    if (!block) return;
+    if (block.type === "paragraph" && chain[index - 1]?.type === "listItem") tint(chain[index - 1], "listItem");
+    else tint(block, block.type === "tableCell" ? "tableCell" : "paragraph");
+  };
+  return (tree: Root) => walk(tree, []);
+}
+
 // Stili del Markdown con i token del tema (niente plugin typography).
 const components: Components = {
   h1: (props) => <h1 className="mt-6 mb-3 text-2xl font-semibold first:mt-0" {...props} />,
@@ -140,7 +205,7 @@ const components: Components = {
 export function Markdown({ children, answersPrompt }: { children: string; answersPrompt?: string }) {
   const statuses = new Map(questionsOf(children).map((q) => [q.id, q.status ?? "aperta"]));
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkOpenPoints(statuses, answersPrompt)]} components={components}>
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkOpenPoints(statuses, answersPrompt), remarkTraces]} components={components}>
       {children}
     </ReactMarkdown>
   );

@@ -8,7 +8,7 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.24.0 unita in `master`, taggata e pushata)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.25.0 su `master`, non committata)
 
 ## Dove siamo
 
@@ -18,6 +18,9 @@
 - **0.24.0** su `master` (da `feedback-azioni`, unito, si può eliminare): punto 1 della UX
   dell'analisi: «Tocca a te» nel prossimo passo, toast di conferma (`sonner`), conflitti con chi e
   quando. Tag `0.23.0` e `0.24.0` creati e pushati con `master` il 2026-11-27.
+- **0.25.0** su `master`, **non committata**: punti risolti evidenziati nella pagina del documento
+  (tracce `→ risolto da D[N]` / `→ aggiornato su indicazione utente` in verde, gruppo «Risolte»
+  nel pannello); istruzione MCP e guide allineate alla versione solo nel frontespizio. Da fare: commit, tag `0.25.0`, push.
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
 - **0.23.0** su `master`: editor con menu "/" e menu sulla selezione.
@@ -39,13 +42,20 @@
    accetta `/` seguito da backslash; immagini remote nell'export PDF.
 1. Provare a mano la pagina del documento 0.21–0.22 (pannello ridotto, editor) e decidere se fare
    i riquadri D[N] e "Da chiarire" anche in modifica (plugin di decorazioni ProseMirror, senza
-   toccare il Markdown salvato). Non committato: lampeggio della domanda (lettura e modifica) rifatto
-   come velo e bordo sottile nel colore dello stato della D[N] (`document-workspace.tsx`);
-   riquadri D[N] e "Da chiarire" tondi con bordo sottile intero invece della barra a sinistra
-   (`markdown.tsx`).
-2. Plugin `asdp` 0.16.2 in `dst-claude-skills`: committare le modifiche a `p1-3` e `t1-4`
-   (aggiornamento sullo stesso file con vX.Y+1) sul branch `feature/asdp-mcp`. Il branch non è
-   pushato e **non va portato su `main`** finché `.mcp.json` punta al server di prova.
+   toccare il Markdown salvato). Lampeggio a velo e riquadri tondi sono già in `master`. Con i
+   riquadri in modifica andrebbe valutata anche l'evidenza dei punti risolti (0.25.0).
+2. Plugin `asdp` in `dst-claude-skills`:
+   - `main`: **asdp 0.17.0** e asdp-project 0.2.7 (versione solo nel frontespizio, nomi file senza
+     `-vX.Y`, revisioni sullo stesso file, niente Change log nei template), unite da
+     `feature/versione-frontespizio` (`b81ba4d`). Pushato con il tag `0.14.0` della marketplace il
+     2026-11-27.
+   - `feature/asdp-mcp`: lavoro sul server MCP (0.14.0–0.16.2) con `main` unito, **asdp 0.18.0**
+     (`58cdf7b`); il merge futuro in `main` è pulito. Non pushato e **non va portato su `main`**
+     finché `.mcp.json` punta al server di prova. Backup del commit prima della separazione:
+     branch `backup/asdp-mcp-0.17`, da eliminare dopo la verifica.
+   - Da provare: t1-4 via MCP su PSW (stesso percorso, `versione` +1, un solo documento in
+     mappa). Nella sandbox GitLab resta `asdp/requirements/PFS-RequirementsConsolidated-v0.1.md`
+     (`asdp-sandbox/sandbox-test`): da rinominare o cancellare a mano.
 3. Riaccendere il cloud di test per la prova completa: migrazioni (vedi "Da fare sul cloud"),
    nuovo invito di prova, plugin da Claude Desktop (Cowork e chat), poi rispegnere.
 4. Analisi GDPR per l'IT: è la condizione per aprire la parte Microsoft/Teams ad altri utenti e al

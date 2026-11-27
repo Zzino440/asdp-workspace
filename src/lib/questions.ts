@@ -25,6 +25,39 @@ const HEADING = /^#{1,6}\s/;
 export const QUESTION = /^#{2,6}\s+(D\d+)\s*·\s*(.+?)\s*$/;
 const OPTION = /^\s*[-*]\s+\[([ xX])\]\s*(.*)$/;
 
+// Tracce che la skill lascia applicando una risposta ("→ risolto da D2", anche "D2, D3" o "D2 e D3")
+// o una richiesta fatta in chat ("→ aggiornato su indicazione utente"). La stessa D può risolvere
+// più punti: una traccia per punto, in ordine di testo.
+export const TRACE = /→\s*(?:risolto da\s+(D\d+(?:\s*(?:,|e)\s*D\d+)*)|aggiornato su indicazione utente)/i;
+const TRACE_ALL = new RegExp(TRACE.source, "gi");
+const FENCE = /^\s*(```|~~~)/;
+
+// text: la riga senza marcatori Markdown e senza la traccia, per il pannello.
+export type Trace = { kind: "risolta" | "aggiornato"; ids: string[]; text: string };
+
+export const traceIds = (match: RegExpExecArray) => (match[1] ? match[1].match(/D\d+/g)! : []);
+
+export function tracesOf(body: string): Trace[] {
+  const traces: Trace[] = [];
+  let fenced = false;
+  for (const line of body.split(/\r?\n/)) {
+    if (FENCE.test(line)) fenced = !fenced;
+    if (fenced) continue;
+    const text = line
+      .replace(TRACE_ALL, "")
+      .replace(/^[\s>|]*(?:[-*+]|\d+\.)?\s*(?:\[[ xX]\]\s*)?/, "")
+      .replace(/[*_`]/g, "")
+      .replace(/\s*\|\s*/g, " · ")
+      .replace(/[\s·]+$/, "")
+      .trim();
+    for (const match of line.matchAll(TRACE_ALL)) {
+      const ids = traceIds(match);
+      traces.push({ kind: ids.length ? "risolta" : "aggiornato", ids, text });
+    }
+  }
+  return traces;
+}
+
 export function questionsOf(body: string): Question[] {
   const questions: (Question & { checked: string[] })[] = [];
   for (const line of body.split(/\r?\n/)) {

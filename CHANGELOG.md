@@ -25,6 +25,34 @@
 
 ## Storia
 
+## [0.25.0] 2026-11-27 — Punti risolti evidenziati nel documento
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- Pagina del documento, in lettura: i punti con la traccia `→ risolto da D[N]` o
+  `→ aggiornato su indicazione utente` prendono la tinta verde (`--state-approved`, lo stato
+  che segue «Risposta da applicare») e la traccia diventa l'etichetta «Risolta · D1» o
+  «Aggiornato su indicazione utente». Si evidenzia il blocco più vicino: voce d'elenco,
+  paragrafo (anche nelle note in citazione) o cella di tabella.
+- Pannello destro: gruppo «Risolte» sotto le domande, con salto e lampeggio verde (anche in
+  modifica); la colonnina ridotta ha i trattini verdi; il riepilogo «Domande» conta le risolte.
+- Solo nell'app: export PDF/Word, Markdown salvato, skill e MCP invariati.
+- Guida «Rispondere alle domande D[N]» aggiornata.
+- Versione solo nel frontespizio (con il plugin `asdp` 0.17.0): l'istruzione MCP sugli
+  aggiornamenti non cita più `revision_save_mode` e dice che i nomi dei file non contengono la
+  versione. Guide «Aggiornare un documento» (solo due modalità locali, entrambe sullo stesso file;
+  corretto l'avviso sui documenti approvati, che l'app riporta da sola a In corso) e «P1.3».
+
+### Migrazioni e configurazione
+- Nessuna. Nei progetti con file `-vX.Y` va tenuto solo il più recente, rinominato senza versione.
+
+### Test eseguiti
+- `tsc --noEmit`, `pnpm lint`, `pnpm test` (19 test, nuovo `tracesOf`), `pnpm build`: ok.
+- Browser su PSW, P1.3 v0.5 (solo lettura, nessun salvataggio): 7 tracce evidenziate su voci
+  d'elenco, nota «Dipendenze dirette» in citazione e cella NFR, D1 e D2 ripetute su più punti;
+  pannello «Risolte» con salto e lampeggio in lettura e in modifica; console pulita.
+
 ## [0.24.0] 2026-11-27 — A chi tocca il passo, conferme e conflitti più chiari
 
 **Autore**: Lorenzo Belli con Claude Code

@@ -44,6 +44,8 @@ Chi può annullare una richiesta già approvata?
 
 La skill porta ogni risposta dentro l'elemento a cui si riferisce e lascia una traccia, per esempio `→ risolto da D3`. Le domande senza risposta restano come sono.
 
+Nella pagina del documento i punti con la traccia sono evidenziati in verde con l'etichetta **Risolta · D3** (o **Aggiornato su indicazione utente**), così si vede subito cosa è cambiato rispetto al documento di partenza. Il pannello **Risolte**, sotto le domande, li elenca: un clic porta al punto. Nel PDF e nel Word pubblicati resta la traccia come testo.
+
 > **Nota:** la casella puoi spuntarla anche da solo, senza Claude: in **Modifica testo** fai clic sulla casella dell'opzione e poi **Salva**. Chi lavora sui file in Claude Code o in un editor di testo cambia `- [ ]` in `- [x]`.
 
 Puoi anche rispondere in chat, senza spuntare nulla: "REQ-04 vale solo per gli Operatori". La skill applica l'indicazione e lascia la traccia `→ aggiornato su indicazione utente`. Se l'indicazione è ambigua, prima ti chiede.

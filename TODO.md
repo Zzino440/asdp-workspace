@@ -54,6 +54,15 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
 
 ## Framework e permessi
 
+- [ ] **Versione solo nel frontespizio, resti** (dopo `asdp` 0.17.0, 2026-11-27):
+  - plugin `ao`: la stima PERT salva ancora `{progetto}-PERT-v0.1.md` / `.json`;
+  - `linked_items` delle skill con nomi e versioni (`[T1.4 PrenotaSale v0.3]`) invece degli ID
+    (GUIDA-FRONT riga 87);
+  - progetti reali con file `-vX.Y` nella repo documenti: tenere il più recente, rinominato;
+  - le skill in aggiornamento mettono `stato: In corso` e svuotano l'approvazione: per chi non ha
+    il permesso Approva il server rifiuta il salvataggio (`approval_fields`), mentre lasciando
+    Approvato lo riporterebbe da solo a In corso. Allineare skill o server.
+
 - [ ] **RACI del seed diverso dalla Guida ASDP** (`delivery-tech/DST-ASDP-Guida-Framework.md`
   §4.3, confronto del 2026-11-25). Da decidere con il team quale vale, poi correggere la
   migrazione dei permessi oppure la Guida:

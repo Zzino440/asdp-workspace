@@ -20,7 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { Gate } from "@/lib/gates";
 import { changedBlocks, spliceMarkdown } from "@/lib/markdown-splice";
-import { QUESTION_STATUS_LABEL, questionsOf, statusOf, type QuestionStatus } from "@/lib/questions";
+import { QUESTION_STATUS_LABEL, questionsOf, statusOf, tracesOf, type QuestionStatus } from "@/lib/questions";
 import { Markdown } from "@/components/markdown";
 
 const OUTLINE_COLLAPSED_KEY = "asdp:indice-ridotto";
@@ -297,11 +297,15 @@ export function DocumentWorkspace(props: {
   // Domande D[N] del testo corrente (non di una versione aperta dalla cronologia).
   const questions = useMemo(() => (props.versionView ? [] : questionsOf(props.body ?? "")), [props.body, props.versionView]);
   const count = (status: QuestionStatus) => questions.filter((q) => statusOf(q) === status).length;
+  // Punti risolti da una D[N] o aggiornati su indicazione utente ("→ risolto da D1" nel testo).
+  const traces = useMemo(() => (props.versionView ? [] : tracesOf(props.body ?? "")), [props.body, props.versionView]);
+  const resolved = traces.filter((t) => t.kind === "risolta").length;
   const questionSummary = [
     [count("da_correggere"), "da correggere", "da correggere"],
     [count("aperta"), "aperta", "aperte"],
     [count("da_applicare"), "da applicare", "da applicare"],
     [count("rimandata"), "rimandata", "rimandate"],
+    [resolved, "risolta", "risolte"],
   ]
     .filter(([n]) => n)
     .map(([n, one, many]) => `${n} ${n === 1 ? one : many}`)
@@ -360,6 +364,28 @@ export function DocumentWorkspace(props: {
     );
   };
 
+  // Porta all'n-esimo punto risolto e lo fa lampeggiare in verde, come le domande. In lettura è il
+  // blocco dell'etichetta n-esima; nell'editor il blocco più interno con la traccia n-esima.
+  const goToTrace = (event: React.MouseEvent, index: number) => {
+    event.preventDefault();
+    const target = isEditing
+      ? [...(editorRootRef.current?.querySelectorAll<HTMLElement>("li, p, td, th") ?? [])]
+          .filter((b) => b.querySelector("li, p") === null)
+          .flatMap((b) => Array<HTMLElement>((b.textContent ?? "").match(/→\s*(?:risolto da|aggiornato su indicazione utente)/gi)?.length ?? 0).fill(b))[index]
+      : contentRef.current?.querySelectorAll<HTMLElement>("[data-trace]")[index]?.closest<HTMLElement>("[data-trace-block]");
+    if (!target) return;
+    scrollToElement(target);
+    const tint = (percent: number) => `color-mix(in srgb, var(--state-approved-border) ${percent}%, transparent)`;
+    const borderRadius = "var(--radius-md)";
+    target.animate(
+      [
+        { backgroundColor: tint(15), boxShadow: `0 0 0 2px ${tint(70)}`, borderRadius },
+        { backgroundColor: "transparent", boxShadow: "0 0 0 2px transparent", borderRadius },
+      ],
+      { duration: 1800, delay: 300, easing: "ease-in" },
+    );
+  };
+
   // Tornando in lettura (Annulla, o pagina rimontata dopo Salva): stesso blocco nello stesso punto.
   useLayoutEffect(() => {
     const anchor = isEditing ? null : takeAnchor(props.path);
@@ -405,9 +431,34 @@ export function DocumentWorkspace(props: {
           </ul>
         </>
       )}
+      {traces.length > 0 && (
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Risolte</h2>
+            {questions.length === 0 && action}
+          </div>
+          <ul className="flex flex-col gap-0.5 text-sm">
+            {traces.map((t, i) => (
+              <li key={i}>
+                <a
+                  href="#"
+                  onClick={(e) => goToTrace(e, i)}
+                  title={t.text}
+                  className="flex items-center gap-2 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <span aria-hidden className="size-2 shrink-0 rounded-full bg-(--state-approved-border)" />
+                  <span className="truncate">
+                    {t.ids.length ? t.ids.join(", ") : "Indicazione utente"} · {t.text}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">In questa pagina</h2>
-        {questions.length === 0 && action}
+        {questions.length === 0 && traces.length === 0 && action}
       </div>
       <DocumentOutline containerRef={isEditing ? editorRootRef : contentRef} scrollTo={scrollToElement} />
     </>
@@ -492,11 +543,11 @@ export function DocumentWorkspace(props: {
                       </span>
                     )}
                   </Property>
-                  {questions.length > 0 && !isEditing && (
+                  {questions.length + resolved > 0 && !isEditing && (
                     <Property label="Domande">
                       <a
-                        href={`#${firstQuestion}`}
-                        onClick={(e) => goToQuestion(e, firstQuestion)}
+                        href={firstQuestion ? `#${firstQuestion}` : "#"}
+                        onClick={(e) => (firstQuestion ? goToQuestion(e, firstQuestion) : goToTrace(e, traces.findIndex((t) => t.kind === "risolta")))}
                         className="hover:underline"
                       >
                         {questionSummary}
@@ -737,6 +788,13 @@ export function DocumentWorkspace(props: {
                 <ul className="flex flex-col items-end gap-2">
                   {questions.map((q) => (
                     <li key={q.id} className={cn("block h-0.5 w-4 rounded-full", QUESTION_DOT[statusOf(q)])} />
+                  ))}
+                </ul>
+              )}
+              {traces.length > 0 && (
+                <ul className="flex flex-col items-end gap-2">
+                  {traces.map((_, i) => (
+                    <li key={i} className="block h-0.5 w-4 rounded-full bg-(--state-approved-border)" />
                   ))}
                 </ul>
               )}

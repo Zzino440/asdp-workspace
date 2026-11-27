@@ -29,16 +29,16 @@ Nell'Analisi Funzionale il gate A si ripete solo se il cambio tocca la struttura
 
 ## Come salvare la revisione
 
-Prima di salvare la skill ti chiede come. Le opzioni nascono per i file sul tuo computer:
+La revisione va sempre **sullo stesso file**: il nome del file non contiene la versione, che sta solo nel frontespizio. Le versioni precedenti restano in **Cronologia**, dove puoi aprirle e confrontarle.
 
-| Opzione | Cosa fa | Dove la trovi |
-|---|---|---|
-| Nuovo file | Scrive la nuova versione in un file a parte; il precedente resta intatto | Requisiti Consolidati, Analisi Funzionale |
-| Archivia la precedente | Copia la versione attuale con il suo numero e scrive la nuova al suo posto | Backlog, Piano di lavoro, Task + Scaffold |
-| Sovrascrivi e incrementa | Requisiti Consolidati e Analisi Funzionale: scrive un file con la versione successiva nel nome e cancella il vecchio. Negli altri documenti: sostituisce il file e aumenta la versione | Tutte |
-| Stesso file, stessa versione | Sostituisce il file senza cambiare versione; nella Fase 4 solo prima del gate | Tutte |
+**Con l'app** Claude salva l'aggiornamento sullo stesso documento e porta la versione da vX.Y a vX.Y+1, senza chiedere nulla.
 
-**Con l'app chiedi a Claude di salvare l'aggiornamento sullo stesso documento.** La versione sale nel frontespizio, il nome del file resta quello, e le versioni precedenti restano in **Cronologia**, dove puoi aprirle e confrontarle. Dal connettore si possono creare file nuovi ma non cancellarli: **Nuovo file** e **Archivia la precedente** funzionano, mentre in Requisiti Consolidati e Analisi Funzionale **Sovrascrivi e incrementa** (che cancella il file vecchio) non viene proposta.
+**Con i file sul tuo computer** la skill chiede solo se alzare la versione:
+
+| Opzione | Cosa fa |
+|---|---|
+| Sovrascrivi e incrementa | Sostituisce il file e porta la versione a vX.Y+1 |
+| Stesso file, stessa versione | Sostituisce il file senza cambiare versione (correzione minore); nella Fase 4 solo prima del gate |
 
 ## Attenzione alle modifiche manuali
 
@@ -47,4 +47,4 @@ Prima di salvare la skill ti chiede come. Le opzioni nascono per i file sul tuo 
 - **I requisiti si cambiano solo nel consolidato.** Una modifica a un requisito fatta a mano nell'Analisi Funzionale non regge: la skill ti rimanda ai Requisiti Consolidati.
 - **Il CSV del backlog non si riordina** e un ID di User Story non si riassegna: è la chiave verso iceScrum.
 
-> **Attenzione:** oggi l'app non riporta da sola un documento Approvato a In corso. Il salvataggio che azzera l'approvazione riesce solo a chi ha il permesso di approvare quel documento. Per gli altri viene rifiutato: prima di aggiornare un documento approvato, parlane con chi lo approva. Vedi [Stati e frontespizio](/guida/stati).
+> **Attenzione:** se il testo di un documento Approvato cambia, l'app lo riporta da sola a In corso e svuota l'approvazione. Un salvataggio che cambia a mano lo stato o i dati di approvazione riesce invece solo a chi ha il permesso di approvare quel documento: prima di aggiornare un documento approvato, parlane con chi lo approva. Vedi [Stati e frontespizio](/guida/stati).
