@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Download, ExternalLink, Send } from "lucide-react";
+import { ChevronDown, Download, ExternalLink, FolderOpen, Send } from "lucide-react";
 import { publishDocumentAction } from "./actions";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ export type PublicationView = {
   formats: string[];
   items: Partial<Record<string, { web_url: string }>>;
   folder_web_url: string;
+  location_id: string;
   published_at: string;
   outdated: boolean;
 };
@@ -56,20 +58,42 @@ export function ExportMenu(props: { projectId: string; path: string }) {
   );
 }
 
-// Stato della copia su Teams, tra le proprietà sotto il titolo.
-export function PublicationInfo({ publication }: { publication: PublicationView }) {
+// Cartella di pubblicazione nella scheda File del progetto, dentro l'app.
+const filesHref = (projectId: string, locationId: string, phaseFolder: string) =>
+  `/progetti/${projectId}/file?${new URLSearchParams({ file: locationId, cartella: `ASDP/${phaseFolder}` })}`;
+
+// Stato della copia su Teams, tra le proprietà sotto il titolo. I file si aprono su SharePoint
+// (icona ↗, nuova scheda); la cartella si apre nella scheda File dell'app.
+export function PublicationInfo(props: { publication: PublicationView; projectId: string; phaseFolder: string }) {
+  const { publication } = props;
   return (
     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {publication.formats.map((f) => {
         const url = publication.items[f]?.web_url;
         return url ? (
-          <a key={f} href={url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+          <a
+            key={f}
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            title={`Apri il ${label(f)} su SharePoint`}
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
             {label(f)}
+            <ExternalLink className="size-3.5" />
           </a>
         ) : null;
       })}
       <span className="text-muted-foreground">· {dateFormat.format(new Date(publication.published_at))}</span>
       {publication.outdated && <Badge variant="outline">Da ripubblicare</Badge>}
+      <Link
+        href={filesHref(props.projectId, publication.location_id, props.phaseFolder)}
+        title={`Apri la cartella ASDP › ${props.phaseFolder} nella scheda File del progetto`}
+        className="inline-flex items-center gap-1 text-primary hover:underline"
+      >
+        <FolderOpen className="size-4" />
+        Vedi nei File
+      </Link>
     </span>
   );
 }
@@ -123,12 +147,12 @@ export function PublishButton(props: {
       </Button>
 
       <Dialog open={open} onOpenChange={(value) => !value && !pending && setOpen(false)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{done ? "Pubblicato su Teams" : republish ? "Ripubblica su Teams" : "Pubblica su Teams"}</DialogTitle>
             <DialogDescription>
               {done
-                ? "I file sono nella cartella del progetto. Chi ha accesso al canale li trova lì."
+                ? `I file sono in ASDP › ${props.phaseFolder}, nella cartella Teams del progetto. Chi ha accesso al canale li trova lì.`
                 : "Una copia del documento approvato nella cartella Teams del progetto. Ripubblicando, i file vengono sostituiti: il link resta lo stesso e SharePoint tiene le versioni precedenti."}
             </DialogDescription>
           </DialogHeader>
@@ -194,10 +218,16 @@ export function PublishButton(props: {
 
           <DialogFooter>
             {done ? (
-              <a href={done.folder_web_url} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
-                <ExternalLink />
-                Apri la cartella
-              </a>
+              <>
+                <a href={done.folder_web_url} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
+                  <ExternalLink />
+                  Apri su SharePoint
+                </a>
+                <Link href={filesHref(props.projectId, done.location_id, props.phaseFolder)} className={buttonVariants()}>
+                  <FolderOpen />
+                  Vedi nei File del progetto
+                </Link>
+              </>
             ) : (
               <>
                 <Button variant="ghost" onClick={() => setOpen(false)} disabled={pending}>

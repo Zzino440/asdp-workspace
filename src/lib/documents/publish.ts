@@ -19,6 +19,7 @@ export type Publication = {
   formats: ExportFormat[];
   items: Partial<Record<ExportFormat, { item_id: string; web_url: string }>>;
   folder_web_url: string;
+  location_id: string;
   commit_id: string;
   version: string | null;
   published_at: string;
@@ -87,7 +88,7 @@ export async function publishDocument(
       published_by: (await supabase.auth.getClaims()).data?.claims.sub,
       published_at: new Date().toISOString(),
     })
-    .select("formats, items, folder_web_url, commit_id, version, published_at")
+    .select("formats, items, folder_web_url, location_id, commit_id, version, published_at")
     .single<Publication>();
   if (error) throw error;
   return row;
@@ -97,7 +98,7 @@ export async function publishDocument(
 export async function publicationStatus(supabase: SupabaseClient, projectId: string, path: string, lastCommitId: string) {
   const { data } = await supabase
     .from("document_publications")
-    .select("formats, items, folder_web_url, commit_id, version, published_at")
+    .select("formats, items, folder_web_url, location_id, commit_id, version, published_at")
     .eq("project_id", projectId)
     .eq("path", path)
     .maybeSingle<Publication>();

@@ -177,6 +177,12 @@
   stili/logo/sezioni, apertura in Office per il web. Limiti: in PPT niente layout/grafici nuovi
   su deck esistenti, note solo se la slide le ha già; in Word non si toccano immagini, commenti,
   intestazioni. Le skill non citano ancora i tool Office (non servono alle skill ASDP).
+  Stessa versione, 2026-11-27, **non committata**: dialog "Pubblicato su Teams" con "Apri nei File
+  del progetto" (scheda File dell'app, cartella `ASDP/<fase>`) oltre ad "Apri su SharePoint",
+  dialog più largo (`sm:max-w-md`); sotto "Su Teams" nel documento: file con icona ↗ (SharePoint)
+  e "Vedi nei File" con icona cartella (scheda File dell'app, tooltip con il percorso);
+  `location_id` ora letto da `document_publications`.
+  Typecheck, lint, build ok; non provato nel browser (serve una pubblicazione vera, su PSW).
 
 ## Milestone
 

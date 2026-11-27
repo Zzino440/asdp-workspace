@@ -229,7 +229,11 @@ async function DocumentView({
           />
         ) : null
       }
-      publication={publication ? <PublicationInfo publication={publication} /> : null}
+      publication={
+        publication ? (
+          <PublicationInfo publication={publication} projectId={id} phaseFolder={phaseFolderName(type?.phase)} />
+        ) : null
+      }
       history={
         <ol className="flex flex-col gap-1">
           {(versions ?? []).map((v, i) => (
