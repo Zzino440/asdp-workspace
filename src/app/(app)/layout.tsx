@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/sonner";
 import { listToApprove } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/server";
 import { APP_VERSION } from "@/lib/version";
@@ -24,6 +25,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </Suspense>
       </aside>
       <main className="min-w-0 flex-1 p-8">{children}</main>
+      <Toaster position="bottom-right" />
     </div>
   );
 }

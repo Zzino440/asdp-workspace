@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { changeApproval, DocumentError, saveDocument } from "@/lib/documents";
+import { changeApproval, DocumentError, listVersions, saveDocument } from "@/lib/documents";
 import { EXPORT_FORMATS } from "@/lib/documents/export";
 import { type Publication, PublishError, publishDocument } from "@/lib/documents/publish";
 import { MicrosoftError } from "@/lib/microsoft";
@@ -28,6 +28,29 @@ const MESSAGES = {
   missing_front_matter: "Il testo salvato non ha più il frontespizio: niente è stato salvato.",
 };
 
+const savedAt = new Intl.DateTimeFormat("it-IT", {
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Rome",
+});
+
+// Conflitto: dice chi ha salvato l'ultima versione e quando. Se il file è stato spostato o
+// cancellato la cronologia non si legge e resta il messaggio generico.
+async function conflictError(supabase: Awaited<ReturnType<typeof createClient>>, projectId: string, path: string) {
+  try {
+    const last = (await listVersions(supabase, projectId, path))?.[0];
+    if (last) {
+      const via = last.via === "mcp" ? " con Claude" : last.via === "git" ? " da GitLab" : "";
+      return `${last.authorName} ha salvato una nuova versione${via} il ${savedAt.format(new Date(last.authoredDate))}, dopo che l'hai aperto.`;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  return MESSAGES.conflict;
+}
+
 const approvalSchema = z.object({
   projectId: z.guid(),
   path: z.string().min(1),
@@ -49,7 +72,9 @@ export async function changeApprovalAction(input: z.input<typeof approvalSchema>
     const { lastCommitId } = await changeApproval(supabase, { ...parsed.data, via: "app", userId: claims.claims.sub });
     return { error: null, lastCommitId };
   } catch (e) {
-    if (e instanceof DocumentError) return { error: MESSAGES[e.code as keyof typeof MESSAGES], conflict: e.code === "conflict" };
+    if (e instanceof DocumentError && e.code === "conflict")
+      return { error: await conflictError(supabase, parsed.data.projectId, parsed.data.path), conflict: true };
+    if (e instanceof DocumentError) return { error: MESSAGES[e.code as keyof typeof MESSAGES] };
     console.error(e);
     return { error: "Salvataggio non riuscito." };
   }
@@ -67,7 +92,9 @@ export async function saveDocumentAction(input: z.input<typeof saveSchema>): Pro
     return { error: null, lastCommitId };
   } catch (e) {
     // saveDocument lancia solo i codici di MESSAGES; gli altri sono della creazione.
-    if (e instanceof DocumentError) return { error: MESSAGES[e.code as keyof typeof MESSAGES], conflict: e.code === "conflict" };
+    if (e instanceof DocumentError && e.code === "conflict")
+      return { error: await conflictError(supabase, parsed.data.projectId, parsed.data.path), conflict: true };
+    if (e instanceof DocumentError) return { error: MESSAGES[e.code as keyof typeof MESSAGES] };
     console.error(e);
     return { error: "Salvataggio non riuscito." };
   }

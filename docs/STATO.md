@@ -8,17 +8,19 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.23.0 su `master`, non committata)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.24.0 sul branch `feedback-azioni`)
 
 ## Dove siamo
 
 - **Versione**: `0.22.3` su `master` (blocco 1 dell'analisi del 2026-11-27: errori gestiti,
   frontespizio robusto, Vitest), unita da `consolidamento`. `master` e tag `0.22.2`, `0.22.3`
   pushati il 2026-11-27.
+- **Branch `feedback-azioni`** (0.24.0, da `master` a 0.23.0): punto 1 della UX dell'analisi:
+  «Tocca a te» nel prossimo passo, toast di conferma (`sonner`), conflitti con chi e quando.
+  Da unire in `master` e taggare (anche `0.23.0`, committata su `master` ma senza tag e non pushata).
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
-- **In corso** (0.23.0, non committata): editor con menu "/" e menu sulla selezione stile Notion
-  (`milkdown-editor.tsx`, versione e CHANGELOG aggiornati). Da committare e taggare.
+- **0.23.0** (committata su `master`, senza tag): editor con menu "/" e menu sulla selezione.
 - **Ultimo lavoro** (0.21–0.22, pagina del documento): domande D[N] con quattro stati e riquadri
   colorati, pannello Domande, salto e lampeggio; punto di lettura che resta fermo tra lettura e
   modifica, doppio clic per modificare; indice sincronizzato con l'editor e pannello destro
@@ -28,9 +30,10 @@
 
 ## Prossimi passi
 
-0. **Consolidamento** (analisi indipendente del codice del 2026-11-27). Blocco 1 fatto in 0.22.3.
-   Poi da valutare insieme: notifiche (approvatore e autore), dashboard "Tocca a me", prossimo
-   passo per persona, feedback delle azioni, mobile; tipi Supabase generati; reindex più leggero.
+0. **Consolidamento** (analisi indipendente del codice del 2026-11-27). Blocco 1 fatto in 0.22.3,
+   prossimo passo per persona e feedback delle azioni in 0.24.0 (toast solo nella pagina del
+   documento; le altre schermate hanno ancora il testo accanto ai pulsanti). Poi da valutare:
+   dashboard "Tocca a me", notifiche (approvatore e autore), mobile; tipi Supabase generati; reindex più leggero.
    Prima di dare l'app al team: chiudere in RLS le colonne `gitlab_*`/`docs_root` di `projects`
    per il PM e le righe di `documents` scritte a mano dagli editor; redirect `next` al login che
    accetta `/` seguito da backslash; immagini remote nell'export PDF.
@@ -56,6 +59,8 @@
 Funzioni committate ma non provate fino in fondo. Prove con file e Teams **sempre su PSW**
 (Prova Setup Workspace), mai su PFS.
 
+- **«Tocca a te»** (0.24.0): con un utente del seed che ha il ruolo del passo (es. TL su Portale
+  Fornitori) la scheda «Prossimo passo» mostra il badge.
 - **Ruoli diversi da admin**: cambio di fase come PM (0.20.0); pagina Progetti con `pm@`
   (0.13.0); creazione progetto vista da `pm@` e `tl@` (0.12.0); utente senza ruolo PM e link
   GitLab (0.9.0).

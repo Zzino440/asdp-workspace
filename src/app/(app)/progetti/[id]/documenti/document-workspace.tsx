@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { History, PanelRightClose, PanelRightOpen, Pencil, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "cn";
 import { parse } from "yaml";
+import { toast } from "sonner";
 import { saveDocumentAction } from "./actions";
 import { ApprovalActions } from "./approval-actions";
 import { DocumentDetails, toText } from "./document-details";
@@ -270,6 +271,7 @@ export function DocumentWorkspace(props: {
         return;
       }
       clearDraft();
+      toast.success("Documento salvato.");
       rememberAnchor(props.path, anchor);
       leaving.current = true;
       router.refresh();
@@ -585,8 +587,8 @@ export function DocumentWorkspace(props: {
             <AlertTitle>{result.error}</AlertTitle>
             {result.conflict && (
               <AlertDescription className="flex flex-col items-start gap-2">
-                Qualcuno ha salvato una nuova versione mentre lavoravi. Le tue modifiche sono conservate in questo
-                browser: ricarica la pagina e scegli «Modifica con la mia bozza a fianco».
+                Le tue modifiche sono conservate in questo browser: ricarica la pagina e scegli «Modifica con la
+                mia bozza a fianco».
                 <Button
                   size="sm"
                   variant="outline"

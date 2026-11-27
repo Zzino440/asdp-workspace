@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, CheckCheck, Undo2, MessageSquareWarning } from "lucide-react";
+import { toast } from "sonner";
 import { changeApprovalAction } from "./actions";
-import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -50,6 +51,7 @@ export function ApprovalActions(props: {
   const [evidence, setEvidence] = useState("");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function run(next: Step) {
@@ -64,10 +66,15 @@ export function ApprovalActions(props: {
         reason,
       });
       if (response.error) {
-        setError(response.conflict ? `${response.error} Ricarica la pagina e riprova.` : response.error);
+        setError(response.error);
+        setConflict(Boolean(response.conflict));
         return;
       }
+      setError(null);
+      setConflict(false);
       setStep(null);
+      if (next === "complete") toast.success("Segnato come completo: lo vede chi approva.");
+      if (next === "revoke") toast.success("Approvazione revocata: il documento è di nuovo In corso.");
       // Dopo una decisione la pagina propone il prossimo documento da approvare.
       if (next === "approve" || next === "request_changes") {
         router.replace(`${pathname}?esito=${next === "approve" ? "approvato" : "modifiche"}`);
@@ -81,7 +88,15 @@ export function ApprovalActions(props: {
     setEvidence("");
     setReason("");
     setError(null);
+    setConflict(false);
     setStep(next);
+  }
+
+  // Rilegge la pagina: con il nuovo last_commit_id il documento riparte da capo.
+  function refresh() {
+    setError(null);
+    setConflict(false);
+    router.refresh();
   }
 
   const ready =
@@ -120,7 +135,19 @@ export function ApprovalActions(props: {
           Revoca approvazione
         </Button>
       )}
-      {!step && error && <span className="text-xs text-destructive">{error}</span>}
+      {!step && error && (
+        <span className="text-xs text-destructive">
+          {error}
+          {conflict && (
+            <>
+              {" "}
+              <button type="button" className="underline" onClick={refresh}>
+                Aggiorna la pagina
+              </button>
+            </>
+          )}
+        </span>
+      )}
 
       <Dialog open={step !== null} onOpenChange={(value) => !value && !pending && setStep(null)}>
         {step && (
@@ -132,6 +159,14 @@ export function ApprovalActions(props: {
             {error && (
               <Alert variant="destructive">
                 <AlertTitle>{error}</AlertTitle>
+                {conflict && (
+                  <AlertDescription className="flex flex-col items-start gap-2">
+                    Aggiorna per leggere la versione nuova, poi ripeti l&apos;azione.
+                    <Button size="sm" variant="outline" onClick={refresh}>
+                      Aggiorna
+                    </Button>
+                  </AlertDescription>
+                )}
               </Alert>
             )}
             {step === "approve" ? (

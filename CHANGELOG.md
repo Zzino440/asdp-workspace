@@ -25,6 +25,35 @@
 
 ## Storia
 
+## [0.24.0] 2026-11-27 — A chi tocca il passo, conferme e conflitti più chiari
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- Percorso del progetto: la scheda «Prossimo passo» dice a chi tocca. «Tocca a te» se hai un
+  ruolo con permesso di modifica su quel tipo di documento (Amministrazione → Permessi; se
+  nessun ruolo ha la modifica, chi approva); altrimenti le persone del team con quel ruolo, o
+  l'avviso che nel team manca. Solo nell'app: `next_step` dell'MCP non cambia.
+- Pagina del documento: conferme a comparsa (toast) dopo il salvataggio del testo, dei
+  dettagli, «Segna come completo» e la revoca dell'approvazione. Gli errori restano nella
+  pagina. Nuova dipendenza `sonner` (il toast di shadcn), montata nel layout dell'area riservata.
+- Conflitti di salvataggio (testo, dettagli, flusso di approvazione): il messaggio dice chi ha
+  salvato la versione nuova, da dove (app, Claude, GitLab) e quando. Dettagli e approvazione
+  hanno il pulsante «Aggiorna» al posto di «Ricarica la pagina e riprova».
+- MINOR e non PATCH: comportamento nuovo nella mappa e una dipendenza nuova.
+
+### Migrazioni e configurazione
+- Nessuna (`pnpm install` per `sonner`)
+
+### Test eseguiti
+- `tsc --noEmit`, `pnpm lint`, `pnpm test` (18 test), `pnpm build`: ok.
+- Browser: PSW mostra «Tocca a AF: nessuno nel team ha questo ruolo», Portale Fornitori (seed)
+  «Tocca a Giulia Ferri (TL)». «Tocca a te» non provato con un utente non admin.
+- Browser su PSW, file di prova `asdp/allegati/PROVA-conflitto.md` (poi cancellato): commit
+  concorrente dal clone e salvataggio dei dettagli → «Lorenzo Belli ha salvato una nuova
+  versione da GitLab il 27 novembre alle ore 21:22…» con «Aggiorna»; poi toast «Dettagli
+  salvati.» e «Segnato come completo».
+
 ## [0.23.0] 2026-11-27 — Editor: menu "/" e menu sulla selezione
 
 **Autore**: Lorenzo Belli con Claude Code

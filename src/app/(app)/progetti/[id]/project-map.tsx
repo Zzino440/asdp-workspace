@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { cn } from "cn";
 import { DocumentStateBadge } from "@/components/document-state-badge";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PHASES } from "@/lib/labels";
@@ -17,6 +18,8 @@ import { PhaseChangeButton } from "./advance-phase";
 import { CopyPromptButton } from "./copy-prompt-button";
 
 type ProjectInfo = { code: string; nature: string; teams: boolean };
+// A chi tocca il prossimo passo: se all'utente, le persone del team con quei ruoli, i ruoli.
+export type StepTurn = { mine: boolean; people: string[]; roles: string[] };
 
 // Colore del pallino di un documento: i token --state-* del frontespizio.
 const DOT: Record<string, string> = {
@@ -37,6 +40,7 @@ export function ProjectMap({
   features,
   otherFiles,
   next,
+  turn,
   behind,
 }: {
   projectId: string;
@@ -47,6 +51,7 @@ export function ProjectMap({
   features: string[];
   otherFiles: MapDoc[];
   next: NextStep | null;
+  turn: StepTurn | null;
   behind: number;
 }) {
   const [query, setQuery] = useState("");
@@ -90,7 +95,7 @@ export function ProjectMap({
 
   return (
     <div className="flex flex-col gap-5">
-      {next && <NextStepCard project={project} next={next} />}
+      {next && <NextStepCard project={project} next={next} turn={turn} />}
       {behind > 0 && (
         <p className="flex flex-wrap gap-x-1.5 text-sm text-muted-foreground">
           <button type="button" onClick={showBehind} className="text-left hover:text-foreground hover:underline">
@@ -208,7 +213,7 @@ export function ProjectMap({
   );
 }
 
-function NextStepCard({ project, next }: { project: ProjectInfo; next: NextStep }) {
+function NextStepCard({ project, next, turn }: { project: ProjectInfo; next: NextStep; turn: StepTurn | null }) {
   const where = `Fase ${next.phase} · ${PHASES[next.phase].name}${next.feature ? ` · Feature ${next.feature}` : ""}`;
   const prompt = stepPrompt(project, {
     code: next.code,
@@ -220,7 +225,10 @@ function NextStepCard({ project, next }: { project: ProjectInfo; next: NextStep 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-primary bg-primary/10 p-5 sm:flex-row sm:items-center">
       <div className="flex flex-1 flex-col gap-1">
-        <span className="text-xs font-medium text-primary">Prossimo passo · {where}</span>
+        <span className="flex flex-wrap items-center gap-2 text-xs font-medium text-primary">
+          Prossimo passo · {where}
+          {turn?.mine && <Badge>Tocca a te</Badge>}
+        </span>
         <span className="text-lg font-medium">
           {next.doc ? `Completa ${next.name}` : `Crea ${next.name}`}
           {next.perFeature && !next.feature ? " della prima Feature" : ""}
@@ -238,6 +246,15 @@ function NextStepCard({ project, next }: { project: ProjectInfo; next: NextStep 
           )}{" "}
           <GuideLink code={next.code} />
         </span>
+        {turn && !turn.mine && (
+          <span className="text-sm text-muted-foreground">
+            {turn.people.length > 0
+              ? `Tocca a ${turn.people.join(", ")}.`
+              : turn.roles.length > 0
+                ? `Tocca a ${turn.roles.join(" o ")}: nessuno nel team ha questo ruolo.`
+                : "Nessun ruolo può modificare questo tipo di documento (Amministrazione → Permessi)."}
+          </span>
+        )}
         {next.doc?.changesRequested && (
           <span className="text-sm">
             <span className="text-destructive">Modifiche richieste da {next.doc.changesRequested.by}:</span>{" "}

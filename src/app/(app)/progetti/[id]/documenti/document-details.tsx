@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "cn";
+import { toast } from "sonner";
 import { saveDocumentAction } from "./actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ export function DocumentDetails(props: {
   const initial = Object.fromEntries(Object.entries(front).map(([k, v]) => [k, toText(v)]));
   const [fields, setFields] = useState(initial);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
   const [tab, setTab] = useState(GROUPS[0].title);
   const [pending, startTransition] = useTransition();
 
@@ -84,6 +86,7 @@ export function DocumentDetails(props: {
     if (!open) {
       setFields(initial);
       setError(null);
+      setConflict(false);
     }
     props.onOpenChange(open);
   }
@@ -106,9 +109,13 @@ export function DocumentDetails(props: {
         message: `Aggiorna i dettagli: ${changed.map(label).join(", ")}`,
       });
       if (response.error) {
-        setError(response.conflict ? `${response.error} Ricarica la pagina e riprova.` : response.error);
+        setError(response.error);
+        setConflict(Boolean(response.conflict));
         return;
       }
+      setError(null);
+      setConflict(false);
+      toast.success("Dettagli salvati.");
       props.onOpenChange(false);
       router.refresh();
     });
@@ -196,6 +203,22 @@ export function DocumentDetails(props: {
             {error && (
               <Alert variant="destructive">
                 <AlertTitle>{error}</AlertTitle>
+                {conflict && (
+                  <AlertDescription className="flex flex-col items-start gap-2">
+                    Aggiorna per leggere la versione nuova, poi rifai la modifica.
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setError(null);
+                        setConflict(false);
+                        router.refresh();
+                      }}
+                    >
+                      Aggiorna
+                    </Button>
+                  </AlertDescription>
+                )}
               </Alert>
             )}
             {current.title === "Stato e date" && front.stato === "Approvato" && props.readOnlyReason === null && !props.canApprove && (
