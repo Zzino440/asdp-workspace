@@ -25,6 +25,20 @@
 
 ## Storia
 
+## [0.27.1] 2026-11-27 — Il CSV del backlog non blocca più il passo T4.1
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Percorso e MCP**: solo i file Markdown contano come documenti di un passo. Il `T4.1-BACKLOG.csv`, senza frontespizio né stato, compariva come secondo documento Backlog vuoto e teneva il passo T4.1 sempre aperto: T4.2 restava bloccata e la fase 4 non arrivava mai al 100%. Ora il CSV sta tra gli «Altri file nella cartella del progetto».
+- **Progetti**: l'avanzamento della fase segue la stessa regola.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint, unit test e build.
+
 ## [0.27.0] 2026-11-27 — Claude legge la Guida
 
 **Autore**: Lorenzo Belli con Claude Code

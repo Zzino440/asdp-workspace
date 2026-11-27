@@ -138,7 +138,9 @@ async function Projects() {
     const mapTypes = (types ?? []).map((t) => ({
       phase: t.phase as number,
       perFeature: t.per_feature as boolean,
-      docs: docs.filter((d) => d.document_type === t.code).map((d) => ({ state: d.stato, feature: featureOf(d.path) })),
+      docs: docs
+        .filter((d) => d.document_type === t.code && d.path.endsWith(".md"))
+        .map((d) => ({ state: d.stato, feature: featureOf(d.path) })),
     }));
     const features = [...new Set(mapTypes.filter((t) => t.perFeature).flatMap((t) => t.docs.map((d) => d.feature ?? "")))].sort();
     const progress = phaseProgress(mapTypes, features, p.current_phase);

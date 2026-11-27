@@ -86,6 +86,9 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
     };
   };
 
+  // Il passo conta solo i Markdown (con frontespizio e stato); file come il CSV del backlog
+  // restano tra gli altri file, altrimenti senza stato terrebbero il passo sempre aperto.
+  const isStepDoc = (d: (typeof documents)[number]) => d.path.endsWith(".md");
   const mapTypes: MapType[] = (types ?? []).map((t) => ({
     code: t.code,
     name: t.name,
@@ -93,10 +96,12 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
     skill: t.skill_name as string,
     perFeature: t.per_feature,
     requires: t.requires ?? [],
-    docs: documents.filter((d) => d.document_type === t.code).map(toDoc),
+    docs: documents.filter((d) => d.document_type === t.code && isStepDoc(d)).map(toDoc),
   }));
   const catalog = new Set(mapTypes.map((t) => t.code));
-  const otherFiles = documents.filter((d) => !d.document_type || !catalog.has(d.document_type)).map(toDoc);
+  const otherFiles = documents
+    .filter((d) => !d.document_type || !catalog.has(d.document_type) || !isStepDoc(d))
+    .map(toDoc);
   const features = [
     ...new Set(mapTypes.filter((t) => t.perFeature).flatMap((t) => t.docs.map((d) => d.feature ?? ""))),
   ].sort();
