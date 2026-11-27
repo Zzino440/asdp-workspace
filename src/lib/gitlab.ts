@@ -6,8 +6,10 @@ import "server-only";
 type TreeEntry = { path: string; type: "blob" | "tree" };
 type FileResponse = { content: string; last_commit_id: string };
 
+// Senza risposta entro 30 s la chiamata fallisce invece di lasciare la pagina in attesa.
 async function gitlab(path: string, init?: RequestInit) {
   const response = await fetch(`${process.env.GITLAB_URL}/api/v4${path}`, {
+    signal: AbortSignal.timeout(30_000),
     ...init,
     headers: { "PRIVATE-TOKEN": process.env.GITLAB_TOKEN!, ...init?.headers },
     cache: "no-store",
