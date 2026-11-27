@@ -15,7 +15,7 @@ import {
   TextRun,
   WidthType,
 } from "docx";
-import type { List, PhrasingContent, RootContent, TableRow as MdTableRow } from "mdast";
+import type { List, PhrasingContent, Root, RootContent, TableRow as MdTableRow } from "mdast";
 import type { ExportSource } from "./index";
 
 // Markdown (mdast) → Word: titoli, paragrafi, elenchi, tabelle, codice, citazioni, link.
@@ -170,9 +170,16 @@ export async function documentDocx({ cover, tree }: ExportSource) {
     }),
   ];
 
+  return pack(cover.title, [...header, ...blocks(tree.children)]);
+}
+
+// Word da Markdown senza frontespizio ASDP (file di progetto creati via MCP).
+export const markdownDocx = (tree: Root, title: string) => pack(title, blocks(tree.children));
+
+async function pack(title: string, children: (Paragraph | Table)[]) {
   const document = new Document({
     creator: "ASDP Workspace",
-    title: cover.title,
+    title,
     styles: { default: { document: { run: { font: "Calibri", size: 21 } } } },
     numbering: {
       config: [
@@ -188,7 +195,7 @@ export async function documentDocx({ cover, tree }: ExportSource) {
         },
       ],
     },
-    sections: [{ children: [...header, ...blocks(tree.children)] }],
+    sections: [{ children }],
   });
   return new Uint8Array(await Packer.toBuffer(document));
 }

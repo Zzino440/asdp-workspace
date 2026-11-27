@@ -111,7 +111,11 @@ export async function graphClient(supabase: SupabaseClient) {
       cache: "no-store",
     });
     if (init?.redirect === "manual") return response as T;
-    if (!response.ok) throw new MicrosoftError(response.status, `Graph ${response.status} su ${path}`);
+    if (!response.ok) {
+      // Il messaggio di Graph (es. intervallo Excel non valido) serve a capire cosa correggere.
+      const detail = await response.json().then((b) => b?.error?.message as string | undefined, () => undefined);
+      throw new MicrosoftError(response.status, detail ?? `Graph ${response.status} su ${path}`);
+    }
     // 202: operazione asincrona accettata (copia), senza corpo.
     if (response.status === 204 || response.status === 202) return undefined as T;
     return (await response.json()) as T;
@@ -126,6 +130,7 @@ export type DriveItem = {
   id: string;
   name: string;
   webUrl: string;
+  eTag?: string;
   size?: number;
   folder?: { childCount: number };
   file?: { mimeType: string };
@@ -134,7 +139,7 @@ export type DriveItem = {
   parentReference: { driveId: string; id?: string; path?: string };
 };
 
-const ITEM_FIELDS = "id,name,webUrl,size,folder,file,lastModifiedDateTime,lastModifiedBy,parentReference";
+const ITEM_FIELDS = "id,name,webUrl,eTag,size,folder,file,lastModifiedDateTime,lastModifiedBy,parentReference";
 
 export async function listTeams(graph: Graph) {
   const { value } = await graph<{ value: Team[] }>("/me/joinedTeams?$select=id,displayName");
@@ -272,14 +277,34 @@ export const moveItem = (graph: Graph, driveId: string, itemId: string, parentId
   graph<DriveItem>(`/drives/${driveId}/items/${itemId}`, json("PATCH", { parentReference: { id: parentId }, name }));
 
 // Copia asincrona: SharePoint la accetta (202) e la completa da solo; un nome già presente la fa fallire.
-export const copyItem = (graph: Graph, driveId: string, itemId: string, parentId: string) =>
-  graph<void>(`/drives/${driveId}/items/${itemId}/copy`, json("POST", { parentReference: { driveId, id: parentId } }));
+// name: nome della copia (di default quello dell'originale).
+export const copyItem = (graph: Graph, driveId: string, itemId: string, parentId: string, name?: string) =>
+  graph<void>(`/drives/${driveId}/items/${itemId}/copy`, json("POST", { parentReference: { driveId, id: parentId }, name }));
 
-// File di testo piccolo (fino a 4 MB) in una richiesta sola; se il nome esiste già fallisce (409).
-export const uploadSmallFile = (graph: Graph, driveId: string, parentId: string, fileName: string, content: string) =>
+// Attende che la copia compaia nella cartella (fino a ~30 s) e la restituisce.
+export async function waitForItem(graph: Graph, driveId: string, parentId: string, name: string) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await getItem(graph, driveId, parentId, name);
+    } catch (error) {
+      if (!(error instanceof MicrosoftError && error.status === 404) || attempt >= 30) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+}
+
+// File piccolo (fino a 4 MB) in una richiesta sola; se il nome esiste già fallisce (409).
+export const uploadSmallFile = (
+  graph: Graph,
+  driveId: string,
+  parentId: string,
+  fileName: string,
+  content: string | Uint8Array,
+  mime = "text/plain; charset=utf-8",
+) =>
   graph<DriveItem>(
     `/drives/${driveId}/items/${parentId}:/${encodeURIComponent(fileName)}:/content?@microsoft.graph.conflictBehavior=fail`,
-    { method: "PUT", headers: { "Content-Type": "text/plain; charset=utf-8" }, body: content },
+    { method: "PUT", headers: { "Content-Type": mime }, body: typeof content === "string" ? content : new Blob([content.slice()]) },
   );
 
 // Nel cestino del sito SharePoint: si recupera da lì.
@@ -302,6 +327,38 @@ export async function createUploadSession(
     json("POST", { item: { "@microsoft.graph.conflictBehavior": conflict } }),
   );
   return uploadUrl;
+}
+
+// Invia i byte a una sessione di caricamento, a pezzi; restituisce l'elemento caricato.
+async function sendChunks(uploadUrl: string, bytes: Uint8Array) {
+  for (let start = 0; ; start += CHUNK) {
+    const end = Math.min(start + CHUNK, bytes.length);
+    // uploadUrl è già autorizzato: niente token Graph.
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Range": `bytes ${start}-${end - 1}/${bytes.length}` },
+      body: new Blob([bytes.slice(start, end)]),
+    });
+    if (!response.ok) throw new MicrosoftError(response.status, `Graph ${response.status} sul caricamento`);
+    if (end === bytes.length) return (await response.json()) as DriveItem;
+  }
+}
+
+// Nuova versione di un file esistente modificato dal server. eTag: quello letto prima della
+// modifica; se nel frattempo il file è cambiato Graph risponde 412 e non salva niente.
+export async function replaceContent(graph: Graph, driveId: string, itemId: string, bytes: Uint8Array, mime: string, eTag: string) {
+  if (bytes.length <= SMALL_UPLOAD) {
+    return graph<DriveItem>(`/drives/${driveId}/items/${itemId}/content`, {
+      method: "PUT",
+      headers: { "Content-Type": mime, "If-Match": eTag },
+      body: new Blob([bytes.slice()]),
+    });
+  }
+  const { uploadUrl } = await graph<{ uploadUrl: string }>(`/drives/${driveId}/items/${itemId}/createUploadSession`, {
+    ...json("POST", { item: { "@microsoft.graph.conflictBehavior": "replace" } }),
+    headers: { "Content-Type": "application/json", "If-Match": eTag },
+  });
+  return sendChunks(uploadUrl, bytes);
 }
 
 // --- Pubblicazione dei documenti approvati (milestone 6) ---
@@ -337,16 +394,5 @@ export async function uploadFile(graph: Graph, driveId: string, parentId: string
       { method: "PUT", headers: { "Content-Type": mime }, body: body(0, bytes.length) },
     );
   }
-  const uploadUrl = await createUploadSession(graph, driveId, parentId, fileName, "replace");
-  for (let start = 0; ; start += CHUNK) {
-    const end = Math.min(start + CHUNK, bytes.length);
-    // uploadUrl è già autorizzato: niente token Graph.
-    const response = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Range": `bytes ${start}-${end - 1}/${bytes.length}` },
-      body: body(start, end),
-    });
-    if (!response.ok) throw new MicrosoftError(response.status, `Graph ${response.status} sul caricamento`);
-    if (end === bytes.length) return (await response.json()) as DriveItem;
-  }
+  return sendChunks(await createUploadSession(graph, driveId, parentId, fileName, "replace"), bytes);
 }

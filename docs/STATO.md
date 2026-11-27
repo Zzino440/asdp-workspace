@@ -6,7 +6,7 @@
 > Architettura e milestone: `docs/ARCHITETTURA.md`. Cose da fare non pianificate: `TODO.md`.
 > Rilasci: `CHANGELOG.md`.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.16.0, Esporta e Pubblica su Teams, **non committata** su feature/miglioramenti-progetto)
+**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.17.0, Word/Excel/PowerPoint via MCP, committata su feature/int-mcp, **da provare su PSW**)
 
 ## Versione
 
@@ -144,10 +144,23 @@
   se il testo estratto da Office perde parti o è troncato, senza tool chiede di allegare il file;
   README e CHANGELOG. `claude plugin validate --strict` ok; da provare su una cartella Teams di
   test. Analisi in chat: oggi l'MCP non crea né modifica Word/Excel/PPT (lettura solo come testo
-  da PDF, upload solo testo senza sovrascrittura). Proposta in attesa di ok di Lorenzo: tool lato
-  server con Excel via API Workbook, Word a blocchi (OOXML), PPT slide per slide, copia con nome
-  nuovo, controllo eTag; ordine Excel → Word → PPT. In `TODO.md`: «Importa da link via MCP»
+  da PDF, upload solo testo senza sovrascrittura). In `TODO.md`: «Importa da link via MCP»
   (`publish_document` c'era già).
+
+- `0.17.0` (2026-11-27, branch `feature/int-mcp`, committata, non pushata): **Word, Excel e
+  PowerPoint via MCP** nelle cartelle Teams collegate (vedi CHANGELOG). `read_project_file`
+  strutturato con `etag`; nuovi `create_office_file`, `edit_word_file` (con `track_changes`),
+  `edit_powerpoint_file`, `edit_excel_file` (API Workbook); `copy_project_file` con `new_name`.
+  Codice in `src/lib/office/`. Decisioni di Lorenzo: Word con revisioni a scelta (default
+  diretto), PowerPoint anche da zero (`pptxgenjs`). Typecheck, lint, build ok; moduli Office
+  provati in locale con LibreOffice. **Da provare end to end** sul progetto **PSW** e sulla
+  cartella del suo canale Teams (sottocartella `Prova MCP Office`, mai PFS): serve il server MCP
+  locale, oggi non registrato in Claude Code (`claude mcp add --transport http asdp-local
+  http://localhost:4100/api/mcp`, poi login da `/mcp`), con dev server da `localhost` e account
+  Microsoft collegato. Non provati: Excel (tutto passa da Graph), conflitto etag, file reali con
+  stili/logo/sezioni, apertura in Office per il web. Limiti: in PPT niente layout/grafici nuovi
+  su deck esistenti, note solo se la slide le ha già; in Word non si toccano immagini, commenti,
+  intestazioni. Le skill non citano ancora i tool Office (non servono alle skill ASDP).
 
 ## Milestone
 

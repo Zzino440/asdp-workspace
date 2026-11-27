@@ -25,6 +25,41 @@
 
 ## Storia
 
+## [0.17.0] 2026-11-27 — Word, Excel e PowerPoint via MCP nelle cartelle Teams
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **MCP, `read_project_file`**: Word a blocchi numerati (titoli, stili, tabelle con righe e
+  colonne), PowerPoint per slide (forme con id, paragrafi, note), Excel per foglio dall'API
+  Workbook (celle per riga, formule, tabelle; `sheet` e `range` opzionali). Restituisce l'`etag`.
+  Gli altri formati come prima.
+- **MCP, nuovi tool**: `create_office_file` (.docx da Markdown, .xlsx da fogli e righe con
+  formule, .pptx da scaletta con grafica di base); `edit_word_file` (sostituisci/inserisci/elimina
+  blocchi, celle, trova e sostituisci; `track_changes` per le revisioni di Word a nome
+  dell'utente); `edit_powerpoint_file` (testi delle forme, note, duplica/sposta/elimina slide,
+  sezioni tenute in ordine); `edit_excel_file` (intervalli, formule, fogli, righe di tabella, sul
+  file aperto). Word e PowerPoint si salvano solo se l'`etag` è ancora quello letto (nuova
+  versione su SharePoint).
+- **MCP, `copy_project_file`**: `new_name` per creare un file nuovo da uno esistente; attende la
+  fine della copia e restituisce il file.
+- Codice in `src/lib/office/` (pacchetti OOXML con fflate e xmldom, Excel con Graph);
+  `src/lib/project-files.ts` e `src/lib/mcp/server.ts` come adapter. Export Word: costruttore
+  senza frontespizio condiviso (`markdownDocx`).
+- Tutto solo con la funzione Microsoft attiva (oggi solo Lorenzo in locale).
+
+### Migrazioni e configurazione
+- Nessuna migrazione. Dipendenze nuove: `@xmldom/xmldom`, `pptxgenjs`, `fflate` (prima solo
+  indiretta).
+
+### Test eseguiti
+- Typecheck, lint, build.
+- Moduli Office in locale (script fuori repo): .docx generato, letto, modificato in modo diretto e
+  con revisioni; .pptx generato, testi/note cambiati, slide duplicata, spostata, eliminata; .xlsx
+  generato con formula. Tutti aperti con LibreOffice (revisioni visibili, slide corrette).
+- **Da fare**: prova end to end via MCP sulla cartella Teams di PSW (Excel dall'API Workbook,
+  etag e conflitti, file reali con stili e logo, apertura in Office per il web).
+
 ## [0.16.0] 2026-11-27 — Esporta e Pubblica su Teams i documenti ASDP
 
 **Autore**: Lorenzo Belli con Claude Code

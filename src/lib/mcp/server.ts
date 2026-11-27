@@ -13,7 +13,10 @@ import {
 } from "@/lib/documents";
 import { microsoftEnabled } from "@/lib/microsoft";
 import { type MapDoc, nextStep, projectSteps } from "@/lib/project-steps";
-import { FilesError, projectFiles, type FilesErrorCode } from "@/lib/project-files";
+import type { ExcelOperation } from "@/lib/office/excel";
+import type { PowerPointOperation } from "@/lib/office/powerpoint";
+import type { WordOperation } from "@/lib/office/word";
+import { FilesError, projectFiles, type FilesErrorCode, type OfficeContent } from "@/lib/project-files";
 import { loadSetupState, missingSteps, TEAMS_FOLDERS } from "@/lib/workspace";
 
 // Tool MCP dell'app: adattatori sottili sopra src/lib/documents/, sempre col client dell'utente.
@@ -376,7 +379,7 @@ function registerFileTools(server: McpServer, clientFor: ClientFor) {
         return text((await operation(files, args)) ?? { done: true });
       } catch (e) {
         if (!(e instanceof FilesError)) throw e;
-        return failure(FILE_ERRORS[e.code]);
+        return failure(e.detail ? `${FILE_ERRORS[e.code]} ${e.detail}` : FILE_ERRORS[e.code]);
       }
     };
 
@@ -414,13 +417,25 @@ function registerFileTools(server: McpServer, clientFor: ClientFor) {
     {
       title: "Leggi file Teams",
       description:
-        "Testo di un file della cartella Teams del progetto: txt, md, vtt, srt, csv, json così come sono; PDF, Word, " +
-        "PowerPoint ed Excel come testo estratto (impaginazione persa). Massimo 10 MB; oltre 150.000 caratteri il " +
-        "testo è troncato e truncated è true.",
-      inputSchema: z.object({ project: projectArg, location: locationArg, path: pathArg("Percorso del file") }),
+        "Contenuto di un file della cartella Teams del progetto, con etag per le modifiche. Word (.docx): blocchi " +
+        "numerati [b0], [b1]… (titoli in Markdown, {stile}, tabelle con righe e colonne da 0), da usare con " +
+        "edit_word_file. PowerPoint (.pptx): slide numerate da 1 con le forme [shape N], i paragrafi e le note, da " +
+        "usare con edit_powerpoint_file. Excel (.xlsx): fogli e tabelle, poi celle per riga con numero di riga e " +
+        "colonne (formule mostrate come =…), da usare con edit_excel_file; sheet e range limitano la lettura. " +
+        "txt, md, vtt, srt, csv, json così come sono; PDF e altri Office (doc, ppt, xls…) come testo estratto. " +
+        "Massimo 10 MB (Excel escluso); oltre il limite il testo è troncato e truncated è true.",
+      inputSchema: z.object({
+        project: projectArg,
+        location: locationArg,
+        path: pathArg("Percorso del file"),
+        sheet: z.string().optional().describe("Solo Excel: foglio da leggere (di default tutti)"),
+        range: z.string().optional().describe('Solo Excel, con sheet: intervallo, es. "A1:F40" (di default le celle usate)'),
+      }),
       annotations: { readOnlyHint: true },
     },
-    withFiles((files, { path }: { project: string; location?: string; path: string }) => files.readText(path)),
+    withFiles((files, { path, sheet, range }: { project: string; location?: string; path: string; sheet?: string; range?: string }) =>
+      files.readText(path, { sheet, range }),
+    ),
   );
 
   server.registerTool(
@@ -478,8 +493,10 @@ function registerFileTools(server: McpServer, clientFor: ClientFor) {
     {
       title: "Copia file Teams",
       description:
-        "Copia un file o una cartella in un'altra cartella del progetto, con lo stesso nome. SharePoint completa la " +
-        "copia in pochi secondi; se il nome esiste già nella destinazione la copia non avviene.",
+        "Copia un file o una cartella in una cartella del progetto, con lo stesso nome o con new_name (es. per un " +
+        "documento o una presentazione nuova basata su una esistente, da modificare poi con edit_word_file / " +
+        "edit_powerpoint_file / edit_excel_file). Attende che SharePoint completi la copia e restituisce il nuovo " +
+        "file; se il nome esiste già nella destinazione la copia non avviene.",
       inputSchema: z.object({
         project: projectArg,
         location: locationArg,
@@ -487,10 +504,169 @@ function registerFileTools(server: McpServer, clientFor: ClientFor) {
         to_folder: z
           .string()
           .describe('Cartella di destinazione, relativa alla cartella collegata ("" = la cartella stessa)'),
+        new_name: z.string().optional().describe('Nome della copia, es. "Offerta v2.pptx" (di default lo stesso)'),
       }),
     },
-    withFiles((files, { from, to_folder }: { project: string; location?: string; from: string; to_folder: string }) =>
-      files.copy(from, to_folder),
+    withFiles(
+      (files, { from, to_folder, new_name }: { project: string; location?: string; from: string; to_folder: string; new_name?: string }) =>
+        files.copy(from, to_folder, new_name),
+    ),
+  );
+
+  const cellValue = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+  const matrix = z.array(z.array(cellValue));
+  const etagArg = z.string().describe("etag restituito dall'ultima read_project_file del file");
+
+  server.registerTool(
+    "create_office_file",
+    {
+      title: "Crea file Office Teams",
+      description:
+        "Crea un file Word, Excel o PowerPoint nuovo nella cartella Teams del progetto (anche non ASDP). Il tipo " +
+        "viene dall'estensione: .docx da markdown (titoli, elenchi, tabelle, grassetto, link); .xlsx da sheets " +
+        '(righe di celle; una stringa che inizia con "=" è una formula; header: prima riga in grassetto); .pptx da ' +
+        "slides (titolo, punti e note, grafica di base 16:9). Per partire da un file esistente (modello, grafica " +
+        "aziendale) usa invece copy_project_file con new_name e poi le edit_*. Se il nome esiste già non salva. " +
+        "I documenti ASDP vanno su GitLab con create_document.",
+      inputSchema: z.object({
+        project: projectArg,
+        location: locationArg,
+        path: pathArg('Percorso del nuovo file, es. "Verbali/Verbale 12-11.docx"'),
+        markdown: z.string().optional().describe("Solo .docx: testo in Markdown"),
+        sheets: z
+          .array(z.object({ name: z.string(), rows: matrix.optional(), header: z.boolean().optional() }))
+          .optional()
+          .describe("Solo .xlsx: fogli in ordine"),
+        slides: z
+          .array(z.object({ title: z.string(), bullets: z.array(z.string()).optional(), notes: z.string().optional() }))
+          .optional()
+          .describe("Solo .pptx: slide in ordine; la prima senza punti fa da copertina"),
+      }),
+    },
+    withFiles((files, { path, ...content }: { project: string; location?: string; path: string } & OfficeContent) =>
+      files.createOffice(path, content),
+    ),
+  );
+
+  server.registerTool(
+    "edit_word_file",
+    {
+      title: "Modifica Word Teams",
+      description:
+        "Modifica un .docx della cartella Teams del progetto e salva una nuova versione (SharePoint tiene le " +
+        "precedenti). Prima read_project_file: gli id dei blocchi (b0, b1…) e l'etag vengono da lì e valgono " +
+        "tutti per lo stato letto, anche dopo inserimenti ed eliminazioni nella stessa chiamata. Cambia solo il " +
+        "testo: stili, numerazione, immagini, intestazioni restano. track_changes true = revisioni di Word " +
+        "(accetta/rifiuta) a nome dell'utente: usalo se l'utente lo chiede o il documento è del cliente. Se il " +
+        "file è cambiato dopo la lettura il salvataggio viene rifiutato: rileggi e riprova.",
+      inputSchema: z.object({
+        project: projectArg,
+        location: locationArg,
+        path: pathArg("Percorso del .docx"),
+        etag: etagArg,
+        track_changes: z.boolean().optional().describe("Modifiche come revisioni di Word (di default no)"),
+        operations: z
+          .array(
+            z.discriminatedUnion("op", [
+              z.object({ op: z.literal("replace_block"), block: z.string(), text: z.string() }),
+              z.object({
+                op: z.literal("insert_after"),
+                block: z.string(),
+                paragraphs: z.array(
+                  z.object({
+                    text: z.string(),
+                    style: z.string().optional().describe('Stile di paragrafo, es. "Heading 2" (di default quello del blocco)'),
+                  }),
+                ),
+              }),
+              z.object({ op: z.literal("delete_block"), block: z.string() }),
+              z.object({ op: z.literal("set_cell"), block: z.string(), row: z.number().int().min(0), col: z.number().int().min(0), text: z.string() }),
+              z.object({
+                op: z.literal("find_replace"),
+                find: z.string().min(1),
+                replace: z.string(),
+                block: z.string().optional().describe("Solo in questo blocco (di default tutto il documento)"),
+              }),
+            ]),
+          )
+          .min(1),
+      }),
+      annotations: { destructiveHint: true },
+    },
+    withFiles(
+      (
+        files,
+        { path, etag, operations, track_changes }: { project: string; location?: string; path: string; etag: string; operations: WordOperation[]; track_changes?: boolean },
+      ) => files.editWord(path, etag, operations, track_changes ?? false),
+    ),
+  );
+
+  server.registerTool(
+    "edit_powerpoint_file",
+    {
+      title: "Modifica PowerPoint Teams",
+      description:
+        "Modifica un .pptx della cartella Teams del progetto e salva una nuova versione. Prima read_project_file: " +
+        "numeri di slide (da 1), id delle forme ed etag vengono da lì e valgono per lo stato letto. set_text " +
+        "sostituisce i paragrafi di una forma tenendone il formato; set_notes le note (solo se la slide le ha); " +
+        "duplicate_slide copia una slide (dopo after, di default dopo sé stessa; 0 = in testa); move_slide la sposta " +
+        "dopo after; delete_slide la toglie. Grafica e layout restano quelli del file. Se il file è cambiato dopo la " +
+        "lettura il salvataggio viene rifiutato.",
+      inputSchema: z.object({
+        project: projectArg,
+        location: locationArg,
+        path: pathArg("Percorso del .pptx"),
+        etag: etagArg,
+        operations: z
+          .array(
+            z.discriminatedUnion("op", [
+              z.object({ op: z.literal("set_text"), slide: z.number().int().min(1), shape: z.number().int(), paragraphs: z.array(z.string()) }),
+              z.object({ op: z.literal("set_notes"), slide: z.number().int().min(1), text: z.string() }),
+              z.object({ op: z.literal("duplicate_slide"), slide: z.number().int().min(1), after: z.number().int().min(0).optional() }),
+              z.object({ op: z.literal("delete_slide"), slide: z.number().int().min(1) }),
+              z.object({ op: z.literal("move_slide"), slide: z.number().int().min(1), after: z.number().int().min(0) }),
+            ]),
+          )
+          .min(1),
+      }),
+      annotations: { destructiveHint: true },
+    },
+    withFiles(
+      (files, { path, etag, operations }: { project: string; location?: string; path: string; etag: string; operations: PowerPointOperation[] }) =>
+        files.editPowerPoint(path, etag, operations),
+    ),
+  );
+
+  server.registerTool(
+    "edit_excel_file",
+    {
+      title: "Modifica Excel Teams",
+      description:
+        "Modifica un .xlsx della cartella Teams del progetto direttamente in Excel (formattazione e grafici restano, " +
+        "chi lo ha aperto vede le modifiche). Prima read_project_file per fogli, tabelle e celle. set_range scrive " +
+        'values o formulas (matrice delle stesse dimensioni di address, es. "B2:D4"); clear_range svuota i valori; ' +
+        "append_table_rows aggiunge righe a una tabella di Excel; add_sheet, rename_sheet, delete_sheet per i fogli.",
+      inputSchema: z.object({
+        project: projectArg,
+        location: locationArg,
+        path: pathArg("Percorso del .xlsx"),
+        operations: z
+          .array(
+            z.discriminatedUnion("op", [
+              z.object({ op: z.literal("set_range"), sheet: z.string(), address: z.string(), values: matrix.optional(), formulas: matrix.optional() }),
+              z.object({ op: z.literal("clear_range"), sheet: z.string(), address: z.string() }),
+              z.object({ op: z.literal("add_sheet"), name: z.string() }),
+              z.object({ op: z.literal("rename_sheet"), sheet: z.string(), name: z.string() }),
+              z.object({ op: z.literal("delete_sheet"), sheet: z.string() }),
+              z.object({ op: z.literal("append_table_rows"), table: z.string(), values: matrix }),
+            ]),
+          )
+          .min(1),
+      }),
+      annotations: { destructiveHint: true },
+    },
+    withFiles((files, { path, operations }: { project: string; location?: string; path: string; operations: ExcelOperation[] }) =>
+      files.editExcel(path, operations),
     ),
   );
 
@@ -523,8 +699,10 @@ const FILE_ERRORS: Record<FilesErrorCode, string> = {
     'Percorso non valido: relativo alla cartella collegata, senza ".." e con un nome senza " * : < > ? \\ | né ' +
     "punto finale.",
   unreadable:
-    "Formato non supportato: si leggono testo, PDF, Word, PowerPoint ed Excel; si caricano solo file di testo.",
-  too_large: "File troppo grande (lettura fino a 10 MB, caricamento fino a 4 MB).",
+    "Formato non supportato: si leggono testo, PDF, Word, PowerPoint ed Excel; si caricano solo file di testo (Word, Excel e PowerPoint si creano con create_office_file).",
+  too_large: "File troppo grande (lettura e modifica fino a 10 MB, caricamento e creazione fino a 4 MB).",
+  conflict: "Il file è cambiato dopo l'ultima lettura: rileggilo con read_project_file e riapplica le modifiche.",
+  invalid_op: "Operazione non valida:",
   unavailable: "Microsoft non risponde: riprova tra poco.",
 };
 
