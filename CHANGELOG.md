@@ -25,6 +25,24 @@
 
 ## Storia
 
+## [0.28.0] 2026-11-27 — Allegati dei documenti: il CSV del backlog dentro il Backlog
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- **Allegati**: un file non Markdown con lo stesso nome di un documento (oggi il `T4.1-BACKLOG.csv` accanto al `T4.1-BACKLOG.md`) è un suo allegato. Non compare più come voce a sé né nella mappa, né in «Altri file», né nell'albero della pagina del documento.
+- **Pagina del documento**: accanto a Cronologia ed Esporta c'è un pulsante per ogni allegato; per il backlog si chiama «Tabella US (CSV)».
+- **Pagina del CSV**: al posto di "anteprima non disponibile" mostra «Allegato di …» con il link al documento, una spiegazione, il pulsante Scarica e la tabella in sola lettura (senza le colonne vuote in tutte le righe, es. stima e sprint). Nell'albero resta evidenziato il documento a cui appartiene.
+- **Albero della pagina del documento**: nei passi solo i Markdown, come nella mappa (prima il CSV compariva come secondo Backlog vuoto).
+- **MCP**: `get_project` e `list_documents` elencano ancora gli allegati sotto il loro tipo, così le skill T4.2 e T4.3 trovano il CSV.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- Typecheck, lint, unit test (nuovi test per allegati e parser CSV) e build.
+- In locale su PSW: pulsante «Tabella US (CSV)» nel Backlog, pagina del CSV con link, Scarica e tabella; una sola voce Backlog nell'albero; `list_documents` via MCP elenca ancora il CSV.
+
 ## [0.27.1] 2026-11-27 — Il CSV del backlog non blocca più il passo T4.1
 
 **Autore**: Lorenzo Belli con Claude Code

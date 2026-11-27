@@ -14,6 +14,7 @@ const doc = (state: string, feature: string | null = null): MapDoc => ({
   deadline: null,
   questions: [],
   changesRequested: null,
+  attachments: [],
 });
 
 const type = (code: string, phase: number, requires: string[], docs: MapDoc[] = [], perFeature = false): MapType => ({

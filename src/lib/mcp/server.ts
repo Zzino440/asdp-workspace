@@ -174,7 +174,11 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         const profile = m.profiles as unknown as { full_name: string; email: string } | null;
         return { name: profile?.full_name || profile?.email, email: profile?.email, roles: m.roles };
       });
-      const documents = [...steps.mapTypes.flatMap((t) => t.docs), ...steps.otherFiles];
+      // Allegati (es. il CSV del backlog) elencati sotto il loro tipo: le skill li leggono.
+      const documents = [...steps.mapTypes.flatMap((t) => t.docs), ...steps.otherFiles].flatMap((d) => [
+        d,
+        ...d.attachments,
+      ]);
       const { next, behind, parallel } = nextStep(steps.open, info?.current_phase ?? 0);
       const step = (s: NonNullable<typeof next>) => ({
         type: s.code,
@@ -227,7 +231,10 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       if (!id) return failure(NOT_FOUND);
       const { mapTypes, otherFiles } = await projectSteps(supabase, id);
       return text(
-        [...mapTypes.flatMap((t) => t.docs), ...otherFiles].sort((a, b) => a.path.localeCompare(b.path)).map(docInfo),
+        [...mapTypes.flatMap((t) => t.docs), ...otherFiles]
+          .flatMap((d) => [d, ...d.attachments])
+          .sort((a, b) => a.path.localeCompare(b.path))
+          .map(docInfo),
       );
     },
   );

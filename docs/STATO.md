@@ -22,6 +22,7 @@
   - Da fare: `supabase test db` dopo un `db reset` (oggi 4 file falliscono per dati locali oltre il seed); merge e tag su indicazione.
 - **0.26.1** e **0.27.0** su `feat/percorso-parallelo`, committate, non unite né pushate. 0.26.1: testi «Puoi anticipare». 0.27.0: tool MCP `read_guide` (Claude legge la Guida, istruzione del server per usarlo sulle domande sul framework), testi della Guida inclusi nella route `/api/mcp` (`next.config.ts`). Check, build e prova dal connettore di sviluppo OK.
 - **0.27.1** su `feat/percorso-parallelo`, committata, non unita né pushata: solo i `.md` contano come documenti di un passo (il CSV del backlog teneva T4.1 sempre aperto e bloccava T4.2); il CSV va in «Altri file». Check e build OK.
+- **0.28.0** su `feat/percorso-parallelo`, committata, non unita né pushata: allegati dei documenti (file con lo stesso nome di un `.md`, es. il CSV del backlog): pulsante «Tabella US (CSV)» nel Backlog, pagina del CSV con tabella e Scarica, niente voci a sé in mappa e albero; l'MCP li elenca ancora. Check, build e prova su PSW OK.
 
 - **Versione**: `0.22.3` su `master` (blocco 1 dell'analisi del 2026-11-27: errori gestiti,
   frontespizio robusto, Vitest), unita da `consolidamento`. `master` e tag `0.22.2`, `0.22.3`

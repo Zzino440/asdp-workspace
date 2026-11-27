@@ -1,13 +1,15 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ChevronRight, CircleHelp } from "lucide-react";
+import { ArrowLeft, ChevronRight, CircleHelp, Download, Sheet } from "lucide-react";
 import { cn } from "cn";
 import { DocumentWorkspace } from "../document-workspace";
 import { ExportMenu } from "../publish-actions";
 import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { attachmentParent, parseCsv } from "@/lib/attachments";
 import { documentLevel, listDocuments, listToApprove, listVersions, readDocument, readVersion } from "@/lib/documents";
 import { phaseFolderName, publicationStatus } from "@/lib/documents/publish";
 import { gateFor } from "@/lib/gates";
@@ -35,6 +37,15 @@ const STATE_DOT: Record<string, string> = {
   Completo: "bg-(--state-complete-border)",
   Approvato: "bg-(--state-approved-border)",
 };
+
+// Allegati (file con lo stesso nome del documento, es. il CSV del backlog): etichetta e spiegazione.
+const isBacklogCsv = (path: string, type: string | null) => type === "T4.1" && path.endsWith(".csv");
+const attachmentLabel = (path: string, type: string | null) =>
+  isBacklogCsv(path, type) ? "Tabella US (CSV)" : path.split("/").pop()!;
+const attachmentHint = (path: string, type: string | null) =>
+  isBacklogCsv(path, type)
+    ? "Tabella delle User Story per l'import in iceScrum, scritta dalla skill insieme al documento."
+    : "File scritto dalla skill insieme al documento.";
 
 type DocType = {
   code: string;
@@ -91,9 +102,18 @@ async function DocumentView({
       />
     ) : null;
 
-  // Titolo: frontespizio, poi il primo titolo del testo, poi il nome del tipo o del file.
+  // Allegati: quelli di questo documento e, se questo è un allegato, il documento a cui appartiene.
+  const paths = documents.map((d) => d.path);
+  const parentPath = attachmentParent(document.path, paths);
+  const parent = parentPath ? documents.find((d) => d.path === parentPath) : undefined;
+  const attachments = documents.filter((d) => attachmentParent(d.path, paths) === document.path);
+  const currentPath = parentPath ?? document.path;
+  const fileName = document.path.split("/").pop()!;
+
+  // Titolo: frontespizio, poi il primo titolo del testo, poi il nome del tipo; per i file non Markdown il nome del file.
   const firstHeading = /^# +(.+?)\s*$/m.exec((document.body ?? "").trimStart().split("\n")[0] ?? "")?.[1] ?? null;
-  const title = String(document.frontMatter.titolo || firstHeading || type?.name || document.path.split("/").pop());
+  const title =
+    document.body === null ? fileName : String(document.frontMatter.titolo || firstHeading || type?.name || fileName);
   const latest = versions?.[0];
 
   // Pubblica su Teams: documento Approvato, livello approve, funzione Microsoft attiva e cartella collegata.
@@ -103,6 +123,14 @@ async function DocumentView({
 
   const docTitle = (d: (typeof documents)[number]) =>
     String(d.front_matter?.titolo || (types.find((t) => t.code === d.document_type && !t.per_feature)?.name ?? d.path.split("/").pop()));
+  // Albero: nei passi solo i Markdown; gli allegati stanno nella pagina del loro documento, gli
+  // altri file non Markdown di un passo tra gli altri file (come nella mappa del progetto).
+  const otherFiles = documents.filter(
+    (d) =>
+      attachmentParent(d.path, paths) === null &&
+      (!types.some((t) => t.code === d.document_type) ||
+        (!d.path.endsWith(".md") && types.some((t) => t.code === d.document_type && t.phase !== null))),
+  );
 
   return (
     <DocumentWorkspace
@@ -132,7 +160,32 @@ async function DocumentView({
       }
       readView={
         document.body === null ? (
-          <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>
+          <div className="flex flex-col gap-4">
+            {parent && (
+              <p className="text-sm text-muted-foreground">
+                Allegato di{" "}
+                <Link href={hrefOf(parent.path)} className="font-medium text-foreground hover:underline">
+                  {docTitle(parent)}
+                </Link>
+                . {attachmentHint(document.path, document.documentType)}
+              </p>
+            )}
+            {document.path.endsWith(".csv") ? (
+              <>
+                <a
+                  href={`data:text/csv;charset=utf-8,${encodeURIComponent(document.content)}`}
+                  download={fileName}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }), "self-start")}
+                >
+                  <Download />
+                  Scarica {fileName}
+                </a>
+                <CsvTable content={document.content} />
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">File non Markdown: anteprima non disponibile.</p>
+            )}
+          </div>
         ) : (
           <Markdown
             answersPrompt={
@@ -188,7 +241,7 @@ async function DocumentView({
               {types
                 .filter((t) => t.phase === phase.n)
                 .flatMap((t) => {
-                  const docs = documents.filter((d) => d.document_type === t.code);
+                  const docs = documents.filter((d) => d.document_type === t.code && d.path.endsWith(".md"));
                   if (docs.length === 0)
                     return t.per_feature
                       ? []
@@ -202,10 +255,10 @@ async function DocumentView({
                     <Link
                       key={d.path}
                       href={hrefOf(d.path)}
-                      aria-current={d.path === document.path ? "page" : undefined}
+                      aria-current={d.path === currentPath ? "page" : undefined}
                       className={cn(
                         "flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted",
-                        d.path === document.path && "bg-accent font-medium",
+                        d.path === currentPath && "bg-accent font-medium",
                       )}
                     >
                       <span
@@ -220,33 +273,44 @@ async function DocumentView({
                 })}
             </div>
           ))}
-          {documents.some((d) => !types.some((t) => t.code === d.document_type)) && (
+          {otherFiles.length > 0 && (
             <div className="flex flex-col gap-0.5">
               <span className="px-2 pb-1 text-xs font-medium text-muted-foreground">Altri file</span>
-              {documents
-                .filter((d) => !types.some((t) => t.code === d.document_type))
-                .map((d) => (
-                  <Link
-                    key={d.path}
-                    href={hrefOf(d.path)}
-                    className={cn("truncate rounded-md px-2 py-1 hover:bg-muted", d.path === document.path && "bg-accent font-medium")}
-                  >
-                    {docTitle(d)}
-                  </Link>
-                ))}
+              {otherFiles.map((d) => (
+                <Link
+                  key={d.path}
+                  href={hrefOf(d.path)}
+                  className={cn("truncate rounded-md px-2 py-1 hover:bg-muted", d.path === document.path && "bg-accent font-medium")}
+                >
+                  {docTitle(d)}
+                </Link>
+              ))}
             </div>
           )}
         </div>
       }
       exportMenu={
         isMarkdown ? (
-          <ExportMenu
-            projectId={id}
-            path={document.path}
-            publish={canPublish ? { locations: locations ?? [] } : null}
-            publication={publication}
-            phaseFolder={phaseFolderName(type?.phase)}
-          />
+          <>
+            {attachments.map((a) => (
+              <Link
+                key={a.path}
+                href={hrefOf(a.path)}
+                title={attachmentHint(a.path, a.document_type)}
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+              >
+                <Sheet />
+                {attachmentLabel(a.path, a.document_type)}
+              </Link>
+            ))}
+            <ExportMenu
+              projectId={id}
+              path={document.path}
+              publish={canPublish ? { locations: locations ?? [] } : null}
+              publication={publication}
+              phaseFolder={phaseFolderName(type?.phase)}
+            />
+          </>
         ) : null
       }
       history={
@@ -318,6 +382,36 @@ async function VersionView(props: {
         <DiffView diff={version.diff} />
       )}
     </div>
+  );
+}
+
+// CSV in sola lettura; le colonne vuote in tutte le righe (es. stima, sprint) non si mostrano.
+function CsvTable({ content }: { content: string }) {
+  const [header = [], ...rows] = parseCsv(content);
+  const columns = header.map((_, i) => i).filter((i) => rows.length === 0 || rows.some((r) => (r[i] ?? "") !== ""));
+  // Colonne di testo lungo (es. i_want, note) più larghe, così non vanno a capo a ogni parola.
+  const wide = new Set(columns.filter((i) => rows.some((r) => (r[i] ?? "").length > 40)));
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {columns.map((i) => (
+            <TableHead key={i}>{header[i]}</TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row, r) => (
+          <TableRow key={r}>
+            {columns.map((i) => (
+              <TableCell key={i} className={cn("align-top whitespace-normal", wide.has(i) ? "min-w-64" : "min-w-24")}>
+                {row[i]}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 

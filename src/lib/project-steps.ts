@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { listActivity, listDocuments } from "@/lib/documents";
+import { attachmentParent } from "@/lib/attachments";
 import { featureOf } from "@/lib/features";
 import { isDone } from "@/lib/phase-progress";
 import type { Question } from "@/lib/questions";
@@ -21,6 +22,7 @@ export type MapDoc = {
   deadline: string | null;
   questions: Question[];
   changesRequested: { by: string; reason: string } | null;
+  attachments: MapDoc[];
 };
 export type MapType = {
   code: string;
@@ -83,12 +85,19 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
         state === "In corso" && review?.title.startsWith("Richiede modifiche")
           ? { by: review.author_name, reason: review.detail ?? "" }
           : null,
+      attachments: [],
     };
   };
 
-  // Il passo conta solo i Markdown (con frontespizio e stato); file come il CSV del backlog
-  // restano tra gli altri file, altrimenti senza stato terrebbero il passo sempre aperto.
-  const isStepDoc = (d: (typeof documents)[number]) => d.path.endsWith(".md");
+  // Il passo conta solo i Markdown (con frontespizio e stato). Un file con lo stesso nome di un
+  // Markdown (es. il CSV del backlog) è un suo allegato; gli altri file non Markdown restano tra
+  // gli altri file: senza stato terrebbero il passo sempre aperto.
+  const paths = documents.map((d) => d.path);
+  const parents = new Map(documents.map((d) => [d.path, attachmentParent(d.path, paths)]));
+  const withAttachments = (d: (typeof documents)[number]): MapDoc => ({
+    ...toDoc(d),
+    attachments: documents.filter((a) => parents.get(a.path) === d.path).map(toDoc),
+  });
   const mapTypes: MapType[] = (types ?? []).map((t) => ({
     code: t.code,
     name: t.name,
@@ -96,12 +105,15 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
     skill: t.skill_name as string,
     perFeature: t.per_feature,
     requires: t.requires ?? [],
-    docs: documents.filter((d) => d.document_type === t.code && isStepDoc(d)).map(toDoc),
+    docs: documents.filter((d) => d.document_type === t.code && d.path.endsWith(".md")).map(withAttachments),
   }));
   const catalog = new Set(mapTypes.map((t) => t.code));
   const otherFiles = documents
-    .filter((d) => !d.document_type || !catalog.has(d.document_type) || !isStepDoc(d))
-    .map(toDoc);
+    .filter(
+      (d) =>
+        !parents.get(d.path) && (!d.document_type || !catalog.has(d.document_type) || !d.path.endsWith(".md")),
+    )
+    .map(withAttachments);
   const features = [
     ...new Set(mapTypes.filter((t) => t.perFeature).flatMap((t) => t.docs.map((d) => d.feature ?? ""))),
   ].sort();
