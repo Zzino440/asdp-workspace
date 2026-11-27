@@ -88,10 +88,15 @@ export async function indexProject(supabase: SupabaseClient, projectId: string) 
   const { data: types } = await supabase.from("document_types").select("code, folder");
   const paths = await listFiles(repo, project.gitlab_branch, docsRoot);
 
+  // File con frontespizio YAML non valido: indicizzati senza frontespizio e segnalati.
+  const invalid: string[] = [];
   const rows = await Promise.all(
     paths.map(async (path) => {
       const file = await readFile(repo, project.gitlab_branch, path);
-      const { frontMatter, body } = path.endsWith(".md") ? splitFrontMatter(file.content) : { frontMatter: {}, body: "" };
+      const { frontMatter, frontMatterError, body } = path.endsWith(".md")
+        ? splitFrontMatter(file.content)
+        : { frontMatter: {}, frontMatterError: null, body: "" };
+      if (frontMatterError) invalid.push(path);
       return {
         project_id: project.id,
         path,
@@ -115,7 +120,7 @@ export async function indexProject(supabase: SupabaseClient, projectId: string) 
     .not("path", "in", `(${paths.map((p) => `"${p}"`).join(",") || '""'})`);
   if (deleteError) throw new Error("Impossibile aggiornare l'indice.");
 
-  return rows.length;
+  return { count: rows.length, invalid };
 }
 
 // Elenco visibile all'utente (filtrato dalla RLS secondo la matrice permessi).
@@ -182,7 +187,7 @@ export async function readDocument(supabase: SupabaseClient, projectId: string, 
     content: file.content,
     ...(path.endsWith(".md")
       ? splitFrontMatter(file.content)
-      : { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, body: null }),
+      : { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, frontMatterError: null, body: null }),
   };
 }
 
@@ -206,7 +211,8 @@ export class DocumentError extends Error {
       | "invalid_path"
       | "unknown_type"
       | "invalid_state"
-      | "incomplete",
+      | "incomplete"
+      | "invalid_front_matter",
   ) {
     super(code);
   }
@@ -276,6 +282,7 @@ export async function saveDocument(
   if (input.path.endsWith(".md")) {
     const before = splitFrontMatter(previous);
     const after = splitFrontMatter(input.content);
+    if (after.frontMatterError) throw new DocumentError("invalid_front_matter");
     if (level !== "approve" && changesApproval(before.frontMatter, after.frontMatter)) {
       throw new DocumentError("approval_fields");
     }
@@ -461,9 +468,10 @@ export async function createDocument(
     throw new DocumentError("invalid_path");
   }
 
-  const { frontMatter, body } = input.path.endsWith(".md")
+  const { frontMatter, frontMatterError, body } = input.path.endsWith(".md")
     ? splitFrontMatter(input.content)
-    : { frontMatter: {}, body: "" };
+    : { frontMatter: {}, frontMatterError: null, body: "" };
+  if (frontMatterError) throw new DocumentError("invalid_front_matter");
   const documentType = detectType(input.path, docsRoot, frontMatter, types ?? []);
   if (!documentType) throw new DocumentError("unknown_type");
 
@@ -600,7 +608,9 @@ export async function readVersion(
   ]);
   return {
     diff,
-    ...(path.endsWith(".md") ? splitFrontMatter(file.content) : { frontMatter: {}, frontMatterSource: null, body: null }),
+    ...(path.endsWith(".md")
+      ? splitFrontMatter(file.content)
+      : { frontMatter: {}, frontMatterSource: null, frontMatterError: null, body: null }),
   };
 }
 

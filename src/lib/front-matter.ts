@@ -28,14 +28,24 @@ export function setFrontMatterFields(source: string, changes: Record<string, Fie
   return missing.length > 0 ? `${out.replace(/\s*$/, "")}${newline}${missing.join(newline)}` : out;
 }
 
-// Frontespizio GUIDA-FRONT: blocco YAML tra due righe "---" in testa al file.
+// Frontespizio GUIDA-FRONT: blocco YAML tra due righe "---" in testa al file (anche dopo un BOM).
+// YAML non valido: frontMatter vuoto e frontMatterError col messaggio del parser, così un file
+// rotto non blocca l'indice né la pagina; il salvataggio lo rifiuta.
 export function splitFrontMatter(content: string) {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(content);
-  if (!match) return { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, body: content };
-  const parsed: unknown = parse(match[1]);
+  const match = /^﻿?---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(content);
+  if (!match)
+    return { frontMatter: {} as Record<string, unknown>, frontMatterSource: null, frontMatterError: null, body: content };
+  let parsed: unknown = null;
+  let frontMatterError: string | null = null;
+  try {
+    parsed = parse(match[1]);
+  } catch (error) {
+    frontMatterError = error instanceof Error ? error.message : String(error);
+  }
   return {
     frontMatter: (parsed && typeof parsed === "object" ? parsed : {}) as Record<string, unknown>,
     frontMatterSource: match[1],
+    frontMatterError,
     body: content.slice(match[0].length),
   };
 }

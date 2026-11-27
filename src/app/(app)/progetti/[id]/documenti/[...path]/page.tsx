@@ -112,9 +112,10 @@ async function DocumentView({
       title={title}
       hideFirstHeading={firstHeading !== null && title.startsWith(firstHeading)}
       frontMatterSource={document.frontMatterSource}
+      frontMatterError={document.frontMatterError}
       body={document.body}
       lastCommitId={document.lastCommitId}
-      canEdit={document.body !== null && (level === "edit" || level === "approve")}
+      canEdit={document.body !== null && !document.frontMatterError && (level === "edit" || level === "approve")}
       canApprove={level === "approve"}
       gate={gateFor(document.documentType)}
       outcome={

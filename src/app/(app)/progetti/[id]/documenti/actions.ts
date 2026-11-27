@@ -24,6 +24,7 @@ const MESSAGES = {
   approval_fields: "Solo chi approva il documento può cambiarne lo stato Approvato o i dati di approvazione.",
   invalid_state: "Lo stato del documento è cambiato: ricarica la pagina.",
   incomplete: "Completa la checklist e i campi obbligatori.",
+  invalid_front_matter: "Il frontespizio YAML del documento non è valido: correggilo su GitLab e riprova.",
 };
 
 const approvalSchema = z.object({

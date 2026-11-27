@@ -249,6 +249,8 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         type: document.documentType,
         last_commit_id: document.lastCommitId,
         front_matter: document.frontMatter,
+        // Solo se il YAML non è valido: va corretto prima di salvare.
+        ...(document.frontMatterError && { front_matter_error: document.frontMatterError }),
         questions: questionsOf(document.body ?? ""),
         content: document.content,
       });
@@ -776,4 +778,7 @@ const SAVE_ERRORS = {
   // Solo del flusso di approvazione, che oggi non ha tool MCP.
   invalid_state: "Lo stato del documento non permette questo passo.",
   incomplete: "Checklist o campi obbligatori incompleti.",
+  invalid_front_matter:
+    "Il frontespizio YAML (tra le due righe \"---\") non è valido. Correggilo (chiavi duplicate, rientri, " +
+    "virgolette) e riprova; niente è stato salvato.",
 };

@@ -17,6 +17,11 @@ export function ReindexButton({ projectId }: { projectId: string }) {
       {!pending && result && !result.error && (
         <span className="text-sm text-muted-foreground">{result.count} file indicizzati.</span>
       )}
+      {!pending && result?.invalid && result.invalid.length > 0 && (
+        <span className="text-sm text-destructive">
+          Frontespizio non valido, da correggere su GitLab: {result.invalid.join(", ")}
+        </span>
+      )}
       {!pending && result?.warning && <span className="text-sm text-destructive">{result.warning}</span>}
       <Button
         variant="outline"

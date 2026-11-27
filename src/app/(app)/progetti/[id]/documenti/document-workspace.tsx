@@ -73,6 +73,8 @@ export function DocumentWorkspace(props: {
   path: string;
   title: string;
   frontMatterSource: string | null;
+  // Messaggio del parser se il YAML del frontespizio non è valido.
+  frontMatterError: string | null;
   body: string | null;
   lastCommitId: string;
   canEdit: boolean;
@@ -97,8 +99,9 @@ export function DocumentWorkspace(props: {
   const newline = crlf ? "\r\n" : "\n";
   const originalBody = useMemo(() => (props.body ?? "").replace(/\r\n/g, "\n"), [props.body]);
   const front = useMemo(
-    () => (props.frontMatterSource ? (parse(props.frontMatterSource) as Record<string, unknown>) : {}),
-    [props.frontMatterSource],
+    () =>
+      props.frontMatterSource && !props.frontMatterError ? (parse(props.frontMatterSource) as Record<string, unknown>) : {},
+    [props.frontMatterSource, props.frontMatterError],
   );
 
   const [editing, setEditing] = useState(false);
@@ -255,7 +258,7 @@ export function DocumentWorkspace(props: {
   }
 
   // Dati chiave sempre visibili sotto il titolo.
-  const hasFront = props.frontMatterSource !== null;
+  const hasFront = props.frontMatterSource !== null && !props.frontMatterError;
   const state = front.stato ? String(front.stato) : null;
   const owner = [toText(front.autore), front.ruolo_owner ? `(${toText(front.ruolo_owner)})` : ""].filter(Boolean).join(" ");
   const deadline = toText(front.scadenza);
@@ -505,6 +508,17 @@ export function DocumentWorkspace(props: {
                   : null
             }
           />
+        )}
+
+        {props.frontMatterError && (
+          <Alert variant="destructive">
+            <AlertTitle>Frontespizio non valido</AlertTitle>
+            <AlertDescription>
+              Il YAML tra le due righe «---» in testa al file non si legge, quindi stato e dettagli non sono
+              disponibili e il documento non si può modificare qui. Correggilo su GitLab o nella copia locale.
+              <code className="mt-1 block font-mono text-xs whitespace-pre-wrap">{props.frontMatterError}</code>
+            </AlertDescription>
+          </Alert>
         )}
 
         {props.outcome && !isEditing && (

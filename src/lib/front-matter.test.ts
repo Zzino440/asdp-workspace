@@ -16,7 +16,26 @@ describe("splitFrontMatter", () => {
   });
 
   it("senza frontespizio restituisce tutto come corpo", () => {
-    expect(splitFrontMatter("# Solo corpo\n")).toEqual({ frontMatter: {}, frontMatterSource: null, body: "# Solo corpo\n" });
+    expect(splitFrontMatter("# Solo corpo\n")).toEqual({
+      frontMatter: {},
+      frontMatterSource: null,
+      frontMatterError: null,
+      body: "# Solo corpo\n",
+    });
+  });
+
+  it("riconosce il frontespizio dopo un BOM", () => {
+    const r = splitFrontMatter("﻿---\nstato: Da fare\n---\nCorpo");
+    expect(r.frontMatter).toEqual({ stato: "Da fare" });
+    expect(r.body).toBe("Corpo");
+  });
+
+  it("con YAML non valido non lancia: frontespizio vuoto ed errore", () => {
+    const r = splitFrontMatter("---\nstato: In corso\nstato: Completo\n---\nCorpo");
+    expect(r.frontMatter).toEqual({});
+    expect(r.frontMatterSource).toBe("stato: In corso\nstato: Completo");
+    expect(r.frontMatterError).toMatch(/unique|duplicate/i);
+    expect(r.body).toBe("Corpo");
   });
 });
 

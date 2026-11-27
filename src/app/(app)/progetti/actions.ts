@@ -245,18 +245,18 @@ export async function saveTeam(
   return { error: null, ok: true };
 }
 
-export type ReindexResult = { error: string | null; count?: number; warning?: string | null };
+export type ReindexResult = { error: string | null; count?: number; invalid?: string[]; warning?: string | null };
 
 // Ricostruisce l'indice dei documenti e ricrea il webhook GitLab se manca. La RLS su
 // documents lo permette solo ad admin e PM.
 export async function reindexDocuments(projectId: string): Promise<ReindexResult> {
   const supabase = await createClient();
   try {
-    const count = await indexProject(supabase, projectId);
+    const { count, invalid } = await indexProject(supabase, projectId);
     await syncCodeRepositories(supabase, projectId);
     const warning = await ensureProjectWebhook(supabase, projectId);
     refresh();
-    return { error: null, count, warning };
+    return { error: null, count, invalid, warning };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Indicizzazione non riuscita." };
   }
