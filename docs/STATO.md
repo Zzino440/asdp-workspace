@@ -17,7 +17,7 @@
   - Mappa con «Puoi già iniziare anche» e «Serve prima».
   - MCP `parallel_steps` / `requires_missing`.
   - Guida «Cosa si può fare in parallelo».
-  - Va insieme al plugin `asdp` 0.18.0 (`dst-claude-skills`, branch `feature/percorso-parallelo` da `main` `b81ba4d`, separato da `feature/asdp-mcp`, commit `07905d0`, unito in `main` con `183b2a2`, non pushato e senza tag). `feature/asdp-mcp` usa già 0.18.0 in locale: quando unirà `main` passerà a una versione sopra.
+  - Va insieme al plugin `asdp` 0.18.0 (`dst-claude-skills`, branch `feature/percorso-parallelo` da `main` `b81ba4d`, separato da `feature/asdp-mcp`, commit `07905d0`, unito in `main` con `183b2a2`, pushato con tag marketplace `0.15.0`). `feature/asdp-mcp` usa già 0.18.0 in locale: quando unirà `main` passerà a una versione sopra.
   - Migration applicata solo al DB locale (`migration up`), non al cloud.
   - Da fare: `supabase test db` dopo un `db reset` (oggi 4 file falliscono per dati locali oltre il seed); merge e tag su indicazione.
 
