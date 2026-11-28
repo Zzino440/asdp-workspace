@@ -8,7 +8,7 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (0.26.0 e 0.27.0 sul branch `ccr-88cd4cbd-ityukw`, 0.28.0 su `feat/file-supporto`, non unite in `master`; checklist «Prova in locale della pila feat/»)
+**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (lista delle priorità in `docs/ROADMAP.md`, prima voce il profilo progetto Nuovo/Evolutiva; 0.26.0 e 0.27.0 sul branch `ccr-88cd4cbd-ityukw`, 0.28.0 su `feat/file-supporto`, non unite in `master`; checklist «Prova in locale della pila feat/»)
 
 ## Dove siamo
 
@@ -49,6 +49,9 @@
 - **Integrazione Microsoft/Teams**: attiva solo per Lorenzo in locale (condizione dell'IT).
 
 ## Prossimi passi
+
+**Lista ordinata delle priorità: [`docs/ROADMAP.md`](ROADMAP.md)** (dal 2026-11-28; prima voce il
+profilo progetto Nuovo/Evolutiva). Qui sotto il dettaglio dei lavori già avviati.
 
 0. **Consolidamento** (analisi indipendente del codice del 2026-11-27). Blocco 1 fatto in 0.22.3,
    prossimo passo per persona e feedback delle azioni in 0.24.0 (toast solo nella pagina del

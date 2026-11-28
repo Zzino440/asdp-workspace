@@ -1,12 +1,12 @@
 # TODO — ASDP Workspace
 
-Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITETTURA.md` (§7 o
-§8) quando vengono prese in carico.
+Cose da fare non ancora pianificate in una milestone. Quando una voce entra tra le priorità si
+sposta nella lista ordinata di `docs/ROADMAP.md`; quando viene presa in carico, in
+`docs/ARCHITETTURA.md` (§7 o §8).
 
 ## Documenti ASDP e Teams (dopo 0.16.0)
 
-- [ ] **Ricerca unica nel progetto**: una casella nell'intestazione del progetto che cerca insieme
-  documenti ASDP (titolo, codice, percorso) e file Teams delle cartelle collegate.
+- **Ricerca unica nel progetto**: spostata in `docs/ROADMAP.md` (voce 8).
 - [ ] **"Documenti ASDP" nella scheda File**, accanto alle cartelle Teams, con l'albero per fase
   (si sovrappone in parte al Percorso: da valutare).
 - [ ] **Pubblica via MCP** (`publish_document`) e **Rimuovi da Teams**.
@@ -85,7 +85,8 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   di recente (milestone 7, sotto) e un contatore «Tocca a te» nella barra laterale, se serve
   (oggi c'è solo quello di Approvazioni: calcolarlo a ogni pagina costa una lettura per progetto).
 - [ ] **Approvazione assistita da AI e MCP** (milestone 3, passo 2; il flusso manuale c'è da
-  0.6.0). Claude non approva mai: prepara, l'approvatore decide.
+  0.6.0; primo passo in `docs/ROADMAP.md`, voce 7). Claude non approva mai: prepara,
+  l'approvatore decide.
   - tool MCP `check_gate`: restituisce gate, checklist (`src/lib/gates.ts`) e documento, perché
     Claude prepari un esito voce per voce con le prove trovate nel testo;
   - tool MCP per i passi del flusso (`changeApproval`: complete, request_changes, approve, revoke),
@@ -136,14 +137,9 @@ l'analisi GDPR per l'IT.
 
 ## Interfaccia
 
-- [ ] **Guscio dell'app responsive**: in `src/app/(app)/layout.tsx` la sidebar resta larga 240 px
-  anche sul telefono (a 375 px al contenuto restano circa 100 px). Serve una sidebar a scomparsa
-  (menu) sotto `md` e un padding più piccolo.
-- [ ] **Riquadri D[N] e "Da chiarire" anche nell'editor** (dopo 0.22.1 la spaziatura è uguale
-  alla lettura, i colori no): plugin di decorazioni ProseMirror che riusa `questionsOf`, senza
-  toccare il Markdown salvato. Da decidere dopo la prova della pagina del documento.
-- [ ] Descrizione e date del progetto (migrazione `project_details`) da mostrare
-  nell'intestazione del progetto (in `get_project` dell'MCP ci sono da 0.14.0).
+- **Guscio dell'app responsive**: spostato in `docs/ROADMAP.md` (voce 6).
+- **Riquadri D[N] e "Da chiarire" anche nell'editor**: spostati in `docs/ROADMAP.md` (voce 11).
+- **Descrizione e date del progetto nell'intestazione**: spostate in `docs/ROADMAP.md` (voce 9).
 
 ## Distribuzione
 

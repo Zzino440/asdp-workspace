@@ -14,7 +14,8 @@ Web app that manages DST projects through the ASDP framework. Read `docs/ARCHITE
 before any non-trivial change: it defines the sources of truth, the flows and the milestones.
 
 **Work log**: read `docs/STATO.md` at the start of every session: it says where the work stopped,
-what is in progress and what comes next. Update it at the end of every step (also in the middle
+what is in progress and what comes next; `docs/ROADMAP.md` holds the ordered priority list
+(one item at a time, top first). Update it at the end of every step (also in the middle
 of a plan), including decisions, environments touched and what is not committed yet. Unplanned
 items go to `TODO.md`.
 
@@ -159,6 +160,7 @@ supabase/tests/database/  pgTAP RLS tests
 supabase/templates/       auth email templates (invite)
 docs/ARCHITETTURA.md      architecture and milestones
 docs/STATO.md             work log: current step, open plan, environments (read first, keep updated)
+docs/ROADMAP.md           ordered priority list (Italian), checked off one item at a time
 TODO.md                   unplanned items (Italian)
 CHANGELOG.md              release notes (Italian), one entry per version
 DESIGN.md                 design system pulled from Stitch (generated, do not edit)
