@@ -85,3 +85,45 @@ export function questionsOf(body: string): Question[] {
       return { id, title, answered: true, answer: checked[0], status: "da_applicare" };
     });
 }
+
+// Righe della domanda `id` (dal suo titolo al titolo successivo, come in questionsOf), con le
+// opzioni "- [ ]" e la loro posizione. null se la domanda non c'è.
+function questionBlock(lines: string[], id: string) {
+  const start = lines.findIndex((line) => QUESTION.exec(line.replace(/\r$/, ""))?.[1] === id);
+  if (start === -1) return null;
+  const options: { line: number; text: string }[] = [];
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i].replace(/\r$/, "");
+    if (HEADING.test(line)) break;
+    const option = OPTION.exec(line);
+    if (option) options.push({ line: i, text: option[2].trim() });
+  }
+  return options;
+}
+
+// Testo delle opzioni della domanda, nell'ordine del documento (vuoto se la domanda non c'è).
+export const optionsOf = (body: string, id: string) => questionBlock(body.split("\n"), id)?.map((o) => o.text) ?? [];
+
+// "Altro: ___" con o senza testo: è l'opzione da completare a mano.
+export const isOtherOption = (text: string) => /^altro:/i.test(text);
+
+// Risponde alla domanda `id` come fa l'utente in Modifica testo: spunta solo l'opzione n. `index`
+// e toglie la spunta alle altre. Per "Altro:" il testo `other` prende il posto dei trattini. Il
+// resto del documento resta identico (anche gli a capo \r\n). null se domanda o opzione non ci
+// sono, o se "Altro:" non ha testo.
+export function answerQuestion(content: string, id: string, index: number, other?: string) {
+  const lines = content.split("\n");
+  const options = questionBlock(lines, id);
+  const chosen = options?.[index];
+  if (!options || !chosen) return null;
+  const otherText = other?.replace(/\s+/g, " ").trim();
+  if (isOtherOption(chosen.text) && !otherText) return null;
+  for (const [i, option] of options.entries()) {
+    const line = lines[option.line];
+    const cr = line.endsWith("\r") ? "\r" : "";
+    let next = line.slice(0, line.length - cr.length).replace(/\[[ xX]\]/, i === index ? "[x]" : "[ ]");
+    if (i === index && isOtherOption(option.text)) next = next.replace(/(\[x\]\s*altro:).*$/i, (_, start) => `${start} ${otherText}`);
+    lines[option.line] = next + cr;
+  }
+  return lines.join("\n");
+}

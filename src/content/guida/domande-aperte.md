@@ -31,13 +31,13 @@ Chi può annullare una richiesta già approvata?
 
 ## Come si risponde oggi
 
-1. Leggi la domanda nel documento, nell'app, e scegli la risposta.
-2. Chiedi a Claude collegato di spuntare **una sola** casella per domanda, per esempio:
+1. Leggi la domanda nel documento, nell'app, e premi **Rispondi** accanto al suo titolo (lo vede chi può modificare il documento).
+2. Scegli **una sola** opzione e premi **Salva la risposta**. Se nessuna opzione va bene, scegli **Altro** e scrivi la risposta. La domanda diventa **Risposta da applicare**; per cambiare idea c'è **Cambia risposta**.
+3. L'app spunta la casella e salva il documento: è un commit a tuo nome, visibile in **Cronologia**.
+
+   In alternativa puoi chiedere a Claude collegato di spuntare la casella, per esempio:
 
    > Nei Requisiti Consolidati del progetto ABC spunta la seconda opzione della D3.
-
-   Se nessuna opzione va bene, chiedi di spuntare **Altro:** e detta il testo della risposta.
-3. Claude salva il documento: è un commit a tuo nome, visibile in **Cronologia**.
 4. Quando hai risposto alle domande che ti servono, rilancia la skill in [aggiornamento](/guida/aggiornare-documento), per esempio:
 
    > Nel progetto ABC ho risposto ad alcune domande D[N] dei Requisiti Consolidati. Aggiorna il documento con le risposte, senza toccare le domande ancora aperte.
@@ -46,7 +46,7 @@ La skill porta ogni risposta dentro l'elemento a cui si riferisce e lascia una t
 
 Nella pagina del documento i punti con la traccia sono evidenziati in verde con l'etichetta **Risolta · D3** (o **Aggiornato su indicazione utente**), così si vede subito cosa è cambiato rispetto al documento di partenza. Il pannello **Risolte**, sotto le domande, li elenca: un clic porta al punto. Nel PDF e nel Word pubblicati resta la traccia come testo.
 
-> **Nota:** la casella puoi spuntarla anche da solo, senza Claude: in **Modifica testo** fai clic sulla casella dell'opzione e poi **Salva**. Chi lavora sui file in Claude Code o in un editor di testo cambia `- [ ]` in `- [x]`.
+> **Nota:** la casella si spunta anche in **Modifica testo**: fai clic sulla casella dell'opzione e poi **Salva**. Chi lavora sui file in Claude Code o in un editor di testo cambia `- [ ]` in `- [x]`. Nell'Analisi Funzionale **Rispondi** non c'è: le domande si rispondono nei Requisiti Consolidati.
 
 Puoi anche rispondere in chat, senza spuntare nulla: "REQ-04 vale solo per gli Operatori". La skill applica l'indicazione e lascia la traccia `→ aggiornato su indicazione utente`. Se l'indicazione è ambigua, prima ti chiede.
 

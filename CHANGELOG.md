@@ -25,6 +25,34 @@
 
 ## Storia
 
+## [0.27.0] 2026-11-28 — Risposta alle D[N] con un clic
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- Pagina del documento, in lettura: accanto all'etichetta di ogni D[N] c'è **Rispondi**
+  (**Cambia risposta** se la risposta è già da applicare), per chi può modificare il documento.
+  Apre una finestra con le opzioni della domanda; si sceglie una sola opzione (per «Altro» si
+  scrive il testo) e l'app spunta quella casella, toglie le altre e salva con un commit a nome
+  dell'utente («Risponde a D3 · titolo», con l'opzione scelta). Conflitti come negli altri
+  salvataggi (chi e quando, pulsante Aggiorna).
+- Il resto del file resta identico: cambiano solo le righe delle opzioni della domanda (anche con
+  a capo `\r\n`). Le regole sono quelle della skill: una sola casella, «Altro» con testo.
+- Nell'Analisi Funzionale (T1.4) il pulsante non c'è: le domande copiate dal consolidato si
+  rispondono nei Requisiti Consolidati.
+- Servizio: `answerQuestion` in `src/lib/documents/` (passa da `saveDocument`, quindi stessi
+  permessi "edit" e stessi controlli), funzione pura in `src/lib/questions.ts`. MCP invariato.
+- Guida «Rispondere alle domande D[N]» aggiornata.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- `tsc --noEmit`, `pnpm lint`, `pnpm test` (30 test, nuovi `optionsOf` e `answerQuestion`),
+  `pnpm build`: ok.
+- Non provata nel browser: da provare su PSW (risposta, Altro, Cambia risposta, conflitto con un
+  salvataggio da un'altra scheda).
+
 ## [0.26.0] 2026-11-28 — Dashboard «Tocca a me»
 
 **Autore**: Lorenzo Belli con Claude Code

@@ -100,6 +100,7 @@ async function DocumentView({
   const canPublish =
     microsoftEnabled() && level === "approve" && document.frontMatter.stato === "Approvato" && (locations ?? []).length > 0;
   const isMarkdown = document.body !== null;
+  const canEdit = document.body !== null && !document.frontMatterError && (level === "edit" || level === "approve");
 
   const docTitle = (d: (typeof documents)[number]) =>
     String(d.front_matter?.titolo || (types.find((t) => t.code === d.document_type && !t.per_feature)?.name ?? d.path.split("/").pop()));
@@ -115,7 +116,7 @@ async function DocumentView({
       frontMatterError={document.frontMatterError}
       body={document.body}
       lastCommitId={document.lastCommitId}
-      canEdit={document.body !== null && !document.frontMatterError && (level === "edit" || level === "approve")}
+      canEdit={canEdit}
       canApprove={level === "approve"}
       gate={gateFor(document.documentType)}
       outcome={
@@ -140,6 +141,8 @@ async function DocumentView({
                 ? answersPrompt(project, { name: type.name, skill: type.skill_name, docPath: document.path })
                 : undefined
             }
+            // Nell'Analisi Funzionale le D[N] sono copiate dal consolidato: si risponde lì.
+            answerable={canEdit && document.documentType !== "T1.4"}
           >
             {document.body}
           </Markdown>

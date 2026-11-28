@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { questionsOf, tracesOf } from "./questions";
+import { answerQuestion, optionsOf, questionsOf, tracesOf } from "./questions";
 
 const body = `## Domande aperte
 
@@ -65,5 +65,54 @@ describe("tracesOf", () => {
       { kind: "risolta", ids: ["D6"], text: "⚠️ Assunzione — orario 8-18" },
       { kind: "risolta", ids: ["D7"], text: "NFR-01 — Tempo · 2 s · Prestazioni" },
     ]);
+  });
+});
+
+describe("answerQuestion", () => {
+  const doc = [
+    "#### D1 · Prima",
+    "",
+    "- [ ] Sì",
+    "- [x] No",
+    "- [ ] Altro: ___________",
+    "",
+    "#### D2 · Seconda",
+    "",
+    "- [ ] A",
+    "- [ ] B",
+    "",
+    "## Dopo",
+    "- [ ] non è un'opzione",
+  ].join("\n");
+
+  it("elenca le opzioni di una domanda", () => {
+    expect(optionsOf(doc, "D2")).toEqual(["A", "B"]);
+    expect(optionsOf(doc, "D9")).toEqual([]);
+  });
+
+  it("spunta solo l'opzione scelta e lascia il resto identico", () => {
+    const out = answerQuestion(doc, "D1", 0)!;
+    expect(out.split("\n").slice(2, 5)).toEqual(["- [x] Sì", "- [ ] No", "- [ ] Altro: ___________"]);
+    expect(out.split("\n").slice(5)).toEqual(doc.split("\n").slice(5));
+    expect(questionsOf(out)[0]).toMatchObject({ status: "da_applicare", answer: "Sì" });
+  });
+
+  it("non tocca le caselle dopo il titolo successivo", () => {
+    expect(answerQuestion(doc, "D2", 1)!.split("\n").at(-1)).toBe("- [ ] non è un'opzione");
+  });
+
+  it("Altro: scrive il testo e lo richiede", () => {
+    expect(answerQuestion(doc, "D1", 2, "  Solo gli Operatori ")!.split("\n")[4]).toBe("- [x] Altro: Solo gli Operatori");
+    expect(answerQuestion(doc, "D1", 2, " ")).toBeNull();
+  });
+
+  it("domanda o opzione inesistenti: null", () => {
+    expect(answerQuestion(doc, "D9", 0)).toBeNull();
+    expect(answerQuestion(doc, "D2", 5)).toBeNull();
+  });
+
+  it("mantiene gli a capo \\r\\n", () => {
+    const crlf = doc.replace(/\n/g, "\r\n");
+    expect(answerQuestion(crlf, "D2", 0)).toBe(answerQuestion(doc, "D2", 0)!.replace(/\n/g, "\r\n"));
   });
 });

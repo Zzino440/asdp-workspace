@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { changeApproval, DocumentError, listVersions, saveDocument } from "@/lib/documents";
+import { answerQuestion, changeApproval, DocumentError, listVersions, saveDocument } from "@/lib/documents";
 import { EXPORT_FORMATS } from "@/lib/documents/export";
 import { type Publication, PublishError, publishDocument } from "@/lib/documents/publish";
 import { MicrosoftError } from "@/lib/microsoft";
@@ -94,6 +94,36 @@ export async function saveDocumentAction(input: z.input<typeof saveSchema>): Pro
     // saveDocument lancia solo i codici di MESSAGES; gli altri sono della creazione.
     if (e instanceof DocumentError && e.code === "conflict")
       return { error: await conflictError(supabase, parsed.data.projectId, parsed.data.path), conflict: true };
+    if (e instanceof DocumentError) return { error: MESSAGES[e.code as keyof typeof MESSAGES] };
+    console.error(e);
+    return { error: "Salvataggio non riuscito." };
+  }
+}
+
+const answerSchema = z.object({
+  projectId: z.guid(),
+  path: z.string().min(1),
+  lastCommitId: z.string().min(1),
+  questionId: z.string().regex(/^D\d+$/),
+  option: z.number().int().min(0),
+  other: z.string().max(500).optional(),
+});
+
+export async function answerQuestionAction(input: z.input<typeof answerSchema>): Promise<SaveResult> {
+  const parsed = answerSchema.safeParse(input);
+  if (!parsed.success) return { error: "Dati non validi." };
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims) return { error: "Sessione scaduta: rifai il login." };
+  try {
+    const { lastCommitId } = await answerQuestion(supabase, { ...parsed.data, via: "app", userId: claims.claims.sub });
+    return { error: null, lastCommitId };
+  } catch (e) {
+    if (e instanceof DocumentError && e.code === "conflict")
+      return { error: await conflictError(supabase, parsed.data.projectId, parsed.data.path), conflict: true };
+    if (e instanceof DocumentError && e.code === "incomplete")
+      return { error: "Scegli un'opzione; per «Altro» scrivi la risposta." };
     if (e instanceof DocumentError) return { error: MESSAGES[e.code as keyof typeof MESSAGES] };
     console.error(e);
     return { error: "Salvataggio non riuscito." };

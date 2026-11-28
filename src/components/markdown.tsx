@@ -24,7 +24,9 @@ const BORDER: Record<QuestionStatus, string> = {
 // D[N] va dal suo titolo al titolo successivo, come in questionsOf.
 // answersPrompt: se c'è, l'etichetta "Risposta da applicare" è un pulsante che lo copia (il clic lo
 // gestisce la pagina del documento, tramite data-copy-prompt).
-function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?: string) {
+// answerable: accanto all'etichetta c'è «Rispondi», che apre la scelta dell'opzione (anche questo
+// clic lo gestisce la pagina, tramite data-answer-question).
+function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?: string, answerable?: boolean) {
   return () => (tree: Root) => {
     const out: RootContent[] = [];
     let section: { children: RootContent[] } | null = null;
@@ -70,6 +72,24 @@ function remarkOpenPoints(statuses: Map<string, QuestionStatus>, answersPrompt?:
                   hChildren: [{ type: "text", value: QUESTION_STATUS_LABEL[status] }],
                 },
         });
+        if (answerable) {
+          node.children.push({
+            type: "text",
+            value: "",
+            data: {
+              hName: "button",
+              hProperties: {
+                type: "button",
+                dataAnswerQuestion: match[1],
+                title: "Scegli la risposta: la casella si spunta con un salvataggio a tuo nome",
+                className: [
+                  "ml-2 cursor-pointer rounded border border-border px-1.5 py-0.5 align-middle text-xs font-medium text-foreground hover:bg-muted",
+                ],
+              },
+              hChildren: [{ type: "text", value: status === "da_applicare" ? "Cambia risposta" : "Rispondi" }],
+            },
+          });
+        }
         // Il "❓ Da chiarire" subito prima fa parte della domanda: stesso punto di arrivo dei link.
         // Se la domanda precedente non è chiusa da un titolo, la nota è in coda al suo blocco.
         const pool = section?.children ?? out;
@@ -202,10 +222,18 @@ const components: Components = {
   td: (props) => <td className="border border-border px-2 py-1 align-top" {...props} />,
 };
 
-export function Markdown({ children, answersPrompt }: { children: string; answersPrompt?: string }) {
+export function Markdown({
+  children,
+  answersPrompt,
+  answerable,
+}: {
+  children: string;
+  answersPrompt?: string;
+  answerable?: boolean;
+}) {
   const statuses = new Map(questionsOf(children).map((q) => [q.id, q.status ?? "aperta"]));
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkOpenPoints(statuses, answersPrompt), remarkTraces]} components={components}>
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkOpenPoints(statuses, answersPrompt, answerable), remarkTraces]} components={components}>
       {children}
     </ReactMarkdown>
   );

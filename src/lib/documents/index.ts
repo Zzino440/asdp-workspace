@@ -15,7 +15,7 @@ import {
 import { type FieldValue, setFrontMatterFields, splitFrontMatter } from "@/lib/front-matter";
 import { gateFor } from "@/lib/gates";
 import { type AsdpRole, ROLE_LABELS } from "@/lib/labels";
-import { questionsOf } from "@/lib/questions";
+import { answerQuestion as withAnswer, optionsOf, questionsOf } from "@/lib/questions";
 
 // Livello di servizio unico per i documenti: lo usano le server action della UI e i tool MCP.
 // Riceve sempre un client Supabase: quello dell'utente (RLS) oppure, solo nel webhook, quello
@@ -450,6 +450,54 @@ export async function changeApproval(
     content: withFrontMatter(previous, frontMatterSource, changes),
     lastCommitId: input.lastCommitId,
     message,
+    via: input.via,
+    userId: input.userId,
+  });
+}
+
+// Risponde a una domanda D[N] spuntando una sola opzione (come in Modifica testo) e salva con
+// saveDocument: stessi controlli di permesso ("edit") e di conflitto. La risposta va poi applicata
+// rilanciando la skill, come prima.
+export async function answerQuestion(
+  supabase: SupabaseClient,
+  input: {
+    projectId: string;
+    path: string;
+    lastCommitId: string;
+    questionId: string;
+    option: number;
+    other?: string;
+    via: "app" | "mcp";
+    userId: string;
+  },
+) {
+  const { data: indexed } = await supabase
+    .from("documents")
+    .select("path")
+    .eq("project_id", input.projectId)
+    .eq("path", input.path)
+    .maybeSingle();
+  const { data: project } = await loadProject(supabase, input.projectId);
+  if (!indexed || !project?.repo || !input.path.endsWith(".md")) throw new DocumentError("not_found");
+
+  let previous: string;
+  try {
+    previous = (await readFile(project.repo, input.lastCommitId, input.path)).content;
+  } catch (error) {
+    if (error instanceof GitLabError && error.status === 404) throw new DocumentError("conflict");
+    throw error;
+  }
+  const content = withAnswer(previous, input.questionId, input.option, input.other);
+  if (content === null) throw new DocumentError("incomplete");
+  const question = questionsOf(splitFrontMatter(content).body).find((q) => q.id === input.questionId);
+  const chosen = optionsOf(content, input.questionId)[input.option];
+
+  return saveDocument(supabase, {
+    projectId: input.projectId,
+    path: input.path,
+    content,
+    lastCommitId: input.lastCommitId,
+    message: `Risponde a ${input.questionId}${question ? ` · ${question.title}` : ""}\n\n${chosen}`,
     via: input.via,
     userId: input.userId,
   });

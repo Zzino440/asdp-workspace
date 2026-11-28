@@ -8,6 +8,7 @@ import { cn } from "cn";
 import { parse } from "yaml";
 import { toast } from "sonner";
 import { saveDocumentAction } from "./actions";
+import { AnswerQuestionDialog } from "./answer-question";
 import { ApprovalActions } from "./approval-actions";
 import { DocumentDetails, toText } from "./document-details";
 import { DocumentOutline } from "./document-outline";
@@ -20,7 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { Gate } from "@/lib/gates";
 import { changedBlocks, spliceMarkdown } from "@/lib/markdown-splice";
-import { QUESTION_STATUS_LABEL, questionsOf, statusOf, tracesOf, type QuestionStatus } from "@/lib/questions";
+import { optionsOf, QUESTION_STATUS_LABEL, questionsOf, statusOf, tracesOf, type QuestionStatus } from "@/lib/questions";
 import { Markdown } from "@/components/markdown";
 
 const OUTLINE_COLLAPSED_KEY = "asdp:indice-ridotto";
@@ -314,8 +315,13 @@ export function DocumentWorkspace(props: {
   const firstQuestion = (
     questions.find((q) => ["da_correggere", "aperta"].includes(statusOf(q))) ?? questions[0]
   )?.id.toLowerCase();
+  // Clic su «Rispondi» nel riquadro di una D[N]: apre la scelta dell'opzione.
+  const [answering, setAnswering] = useState<string | null>(null);
+  const answeringQuestion = questions.find((q) => q.id === answering);
   // Clic su "Risposta da applicare · copia prompt" nel testo: copia la richiesta per Claude.
   const copyAnswersPrompt = async (event: React.MouseEvent) => {
+    const answer = (event.target as HTMLElement).closest<HTMLElement>("[data-answer-question]");
+    if (answer) return setAnswering(answer.dataset.answerQuestion!);
     const button = (event.target as HTMLElement).closest<HTMLElement>("[data-copy-prompt]");
     if (!button) return;
     const prompt = button.dataset.copyPrompt!;
@@ -733,7 +739,7 @@ export function DocumentWorkspace(props: {
                   onDoubleClick={(e) => {
                     const target = e.target as HTMLElement;
                     const block = target.closest<HTMLElement>("[data-block]");
-                    if (!props.canEdit || !block || target.closest("[data-copy-prompt]")) return;
+                    if (!props.canEdit || !block || target.closest("[data-copy-prompt], [data-answer-question]")) return;
                     window.getSelection()?.removeAllRanges();
                     startEditing(null, { x: e.clientX, y: e.clientY, block });
                   }}
@@ -812,6 +818,16 @@ export function DocumentWorkspace(props: {
             </div>
           </div>
         </aside>
+      )}
+      {answeringQuestion && (
+        <AnswerQuestionDialog
+          projectId={props.projectId}
+          path={props.path}
+          lastCommitId={props.lastCommitId}
+          question={answeringQuestion}
+          options={optionsOf(props.body ?? "", answeringQuestion.id)}
+          onClose={() => setAnswering(null)}
+        />
       )}
     </div>
   );
