@@ -80,14 +80,10 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   - il kickoff della skill controlla 5 output obbligatori su 9.
 - [ ] **Guida nell'app: cose che oggi non si possono fare** (le pagine lo dicono):
   - il guscio dell'app non è responsive (barra laterale fissa da 240 px).
-- [ ] **Dashboard «Tocca a me»** (milestone 3b). Confine con Approvazioni: Approvazioni tiene solo
-  le decisioni di gate (da approvare, approvati); la Dashboard è la panoramica personale:
-  - i miei documenti Completo in attesa di altri (e di chi);
-  - i documenti rimandati a me con il motivo (serve un campo nell'indice: oggi il motivo è solo
-    nel commit);
-  - scadenze vicine o passate, avanzamento dei miei progetti per fase;
-  - solo un contatore «N da approvare» con link ad Approvazioni (`listToApprove`), senza ripetere
-    la coda.
+- [x] **Dashboard «Tocca a me»** (milestone 3b): fatta in 0.26.0. Il motivo del rimando si legge
+  da `document_events` (non è servito un campo nell'indice). Resta per dopo: file Teams modificati
+  di recente (milestone 7, sotto) e un contatore «Tocca a te» nella barra laterale, se serve
+  (oggi c'è solo quello di Approvazioni: calcolarlo a ogni pagina costa una lettura per progetto).
 - [ ] **Approvazione assistita da AI e MCP** (milestone 3, passo 2; il flusso manuale c'è da
   0.6.0). Claude non approva mai: prepara, l'approvatore decide.
   - tool MCP `check_gate`: restituisce gate, checklist (`src/lib/gates.ts`) e documento, perché

@@ -8,7 +8,7 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-27 — Lorenzo Belli con Claude Code (0.25.0 su `master`, non committata)
+**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (0.26.0 e 0.27.0 sul branch `ccr-88cd4cbd-ityukw`, non unite in `master`)
 
 ## Dove siamo
 
@@ -18,9 +18,16 @@
 - **0.24.0** su `master` (da `feedback-azioni`, unito, si può eliminare): punto 1 della UX
   dell'analisi: «Tocca a te» nel prossimo passo, toast di conferma (`sonner`), conflitti con chi e
   quando. Tag `0.23.0` e `0.24.0` creati e pushati con `master` il 2026-11-27.
-- **0.25.0** su `master`, **non committata**: punti risolti evidenziati nella pagina del documento
-  (tracce `→ risolto da D[N]` / `→ aggiornato su indicazione utente` in verde, gruppo «Risolte»
-  nel pannello); istruzione MCP e guide allineate alla versione solo nel frontespizio. Da fare: commit, tag `0.25.0`, push.
+- **0.25.0** su `master` (commit `ae90628`, pushato): punti risolti evidenziati nella pagina del
+  documento; istruzione MCP e guide allineate alla versione solo nel frontespizio. **Tag `0.25.0`
+  da creare.**
+- **Branch `ccr-88cd4cbd-ityukw`** (da `master` `ae90628`, pushato, **non unito**), un commit per
+  sviluppo:
+  - CI GitHub Actions (`.github/workflows/ci.yml`): typegen, tsc, lint, test, build a ogni push;
+  - **0.26.0** Dashboard «Tocca a me», pagina d'arrivo dopo l'accesso; «a chi tocca» in
+    `src/lib/turn.ts` (lo usa anche il Prossimo passo del Percorso);
+  - **0.27.0** risposta alle D[N] con un clic («Rispondi» nel riquadro della domanda).
+  Da fare: prova nel browser (vedi "Da provare"), merge in `master`, tag `0.26.0` e `0.27.0`.
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
 - **0.23.0** su `master`: editor con menu "/" e menu sulla selezione.
@@ -35,8 +42,9 @@
 
 0. **Consolidamento** (analisi indipendente del codice del 2026-11-27). Blocco 1 fatto in 0.22.3,
    prossimo passo per persona e feedback delle azioni in 0.24.0 (toast solo nella pagina del
-   documento; le altre schermate hanno ancora il testo accanto ai pulsanti). Poi da valutare:
-   dashboard "Tocca a me", notifiche (approvatore e autore), mobile; tipi Supabase generati; reindex più leggero.
+   documento; le altre schermate hanno ancora il testo accanto ai pulsanti), dashboard «Tocca a
+   me» in 0.26.0 e risposta alle D[N] con un clic in 0.27.0 (branch da unire). Poi da valutare:
+   notifiche (approvatore e autore), mobile; tipi Supabase generati; reindex più leggero.
    Prima di dare l'app al team: chiudere in RLS le colonne `gitlab_*`/`docs_root` di `projects`
    per il PM e le righe di `documents` scritte a mano dagli editor; redirect `next` al login che
    accetta `/` seguito da backslash; immagini remote nell'export PDF.
@@ -61,13 +69,24 @@
 4. Analisi GDPR per l'IT: è la condizione per aprire la parte Microsoft/Teams ad altri utenti e al
    cloud (punti in `TODO.md`, "File di progetto da Teams").
 5. Roadmap funzionale (ordine deciso il 2026-11-25): ponte passo → Claude (prompt MCP per passo,
-   pagina "Collega Claude"), risposta alle D[N] con un clic, approvazione assistita da AI/MCP,
-   dashboard "Tocca a me". Dettagli in `docs/ARCHITETTURA.md` §7 e in `TODO.md`.
+   pagina "Collega Claude"), approvazione assistita da AI/MCP. Risposta alle D[N] con un clic e
+   dashboard «Tocca a me» fatte il 2026-11-28 (0.26.0–0.27.0). Da allineare prima del ponte: le
+   skill in aggiornamento svuotano l'approvazione e il server rifiuta il salvataggio a chi non
+   approva (`TODO.md`, "Framework e permessi"). Dettagli in `docs/ARCHITETTURA.md` §7.
 
 ## Da provare
 
 Funzioni committate ma non provate fino in fondo. Prove con file e Teams **sempre su PSW**
 (Prova Setup Workspace), mai su PFS.
+
+- **Dashboard** (0.26.0): con `af@`, `tl@`, `pm@` del seed controllare le quattro sezioni (Tocca a
+  te, In attesa di altri, Scadenze, I tuoi progetti) e che «Tocca a te» coincida con il badge del
+  Prossimo passo; un «Richiedi modifiche» deve comparire con motivo a chi scrive il documento;
+  utente senza progetti (`nessuno@`): messaggio vuoto; accesso che arriva su `/dashboard`.
+- **Rispondi alle D[N]** (0.27.0) su PSW: risposta semplice, «Altro» con testo, «Cambia
+  risposta», «Da decidere» (rimandata), conflitto con un salvataggio da un'altra scheda; diff in
+  Cronologia solo sulle righe delle opzioni; pulsante assente nella T1.4 e per chi ha solo "view".
+- **CI**: primo run su GitHub dopo il push del branch.
 
 - **«Tocca a te»** (0.24.0): con un utente del seed che ha il ruolo del passo (es. TL su Portale
   Fornitori) la scheda «Prossimo passo» mostra il badge.
@@ -123,7 +142,11 @@ Funzioni committate ma non provate fino in fondo. Prove con file e Teams **sempr
   intestazione, sul 423 chiedere conferma e riprovare (`force` nell'MCP, dialog nell'app). Voce in
   `TODO.md`, "Codice da sistemare".
 - **Tag mancanti**: le versioni `0.12.0`, `0.14.0`, `0.16.0`–`0.19.2` sono su `master` senza tag
-  (e `0.21.0`, che non ha un commit suo). Da decidere se taggarle sui commit di rilascio.
+  (e `0.21.0`, che non ha un commit suo); manca anche `0.25.0` (`ae90628`). Da decidere se
+  taggarle sui commit di rilascio.
+- **Sessioni cloud di Claude Code**: Docker parte, ma le immagini di Supabase non si scaricano
+  (registri bloccati dalla rete dell'ambiente), quindi niente Supabase locale né prove nel
+  browser con dati: le prove si fanno in locale.
 - **Segreto dell'app `ASDP` in Entra**: scade 6 mesi dopo la creazione (fine maggio 2027); se il
   login Microsoft dà errore sul segreto, crearne uno nuovo.
 - **Vercel**: un deploy è finito una volta `BLOCKED` ("Vercel Account Unavailable"), poi è passato.
@@ -170,8 +193,8 @@ Tabella completa in `docs/ARCHITETTURA.md` §7.
 | 2e — Guida nell'app | Fatta (0.3.0); manca la rilettura dei testi da parte del team |
 | 2f — ponte passo → Claude | In parte: "Copia prompt", `next_step` in `get_project`. Mancano prompt MCP per passo e pagina "Collega Claude" |
 | 3 — gate e approvazioni | Flusso manuale e coda `/approvazioni` fatti; mancano AI/MCP ed evidenza in Storage |
-| 3b | Fase modificabile fatta (0.20.0); dashboard "Tocca a me" e profilo progetto da fare |
-| 5 | D[N] evidenziate e con stati (0.21.0); risposta con un clic da fare |
+| 3b | Fase modificabile fatta (0.20.0); dashboard «Tocca a me» fatta (0.26.0, da unire); profilo progetto da fare |
+| 5 | D[N] evidenziate e con stati (0.21.0); risposta con un clic fatta (0.27.0, da unire) |
 | 6 | Esporta e Pubblica su Teams fatti (0.16.0); login Microsoft fatto in locale |
 | 7 — file Teams | 7a, 7b, 7c fatti (tool MCP dei file e Office), solo per Lorenzo in locale |
 
