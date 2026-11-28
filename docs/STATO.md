@@ -8,7 +8,7 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (0.26.0 e 0.27.0 sul branch `ccr-88cd4cbd-ityukw`, non unite in `master`)
+**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (0.26.0 e 0.27.0 sul branch `ccr-88cd4cbd-ityukw`, 0.28.0 su `feat/file-supporto`, non unite in `master`)
 
 ## Dove siamo
 
@@ -33,7 +33,11 @@
   merge (voce «[da numerare]»), tranne per l'MCP. Pila attuale:
   `master` → `ccr-88cd4cbd-ityukw` → **`feat/skill-approvati-t43`** (le skill in aggiornamento
   su un documento Approvato non vengono più rifiutate a chi non approva; file `T4.3-F…-US…`
-  riconosciuti come `T4.3-part`).
+  riconosciuti come `T4.3-part`) → **`feat/file-supporto`** (**0.28.0**, numero subito perché
+  cambia l'MCP: file di supporto Markdown in `asdp/supporto/`, navigatore nella scheda File,
+  tool MCP `move_document` / `delete_document`; migrazione `20261128150000_support_files.sql`).
+- **Punto 3 dei funzionali urgenti fermo** (decisione del 2026-11-28): RACI di T3.1, T4.1 e T1.4
+  (seed o Guida ASDP?) da decidere col team prima della migrazione dei permessi.
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
 - **0.23.0** su `master`: editor con menu "/" e menu sulla selezione.
@@ -99,6 +103,14 @@ Funzioni committate ma non provate fino in fondo. Prove con file e Teams **sempr
   essere rifiutato.
 - **File T4.3 per User Story** (`feat/skill-approvati-t43`): un `T4.3-F01-US01.md` senza
   `template_origine`, dopo «Reindicizza», compare nella Fase 4 sotto Task + Scaffold.
+- **File di supporto** (0.28.0, `feat/file-supporto`), dopo `supabase db reset` e su PSW:
+  scheda File → File di supporto con e senza Microsoft attivo; Nuovo file `riunioni/kickoff`
+  (crea `asdp/supporto/riunioni/kickoff.md` e apre l'editor); modifica con `af@` senza pulsanti
+  di approvazione né stato; Rinomina o sposta in `archivio/kickoff.md`, Elimina (commit su
+  GitLab a nome dell'utente, indice e attività aggiornati); percorso in testa al file che torna
+  alla cartella; il file non compare più tra gli «Altri file» del Percorso. MCP:
+  `create_document` / `update_document` / `move_document` / `delete_document` su un file di
+  supporto; `move_document` su una T1.4 rifiutato. pgTAP `support_files.test.sql` da eseguire.
 
 - **«Tocca a te»** (0.24.0): con un utente del seed che ha il ruolo del passo (es. TL su Portale
   Fornitori) la scheda «Prossimo passo» mostra il badge.
@@ -131,7 +143,8 @@ Funzioni committate ma non provate fino in fondo. Prove con file e Teams **sempr
 - **Migrazioni**: sul cloud ci sono solo le prime 5 (fino a `20261122000000_document_edit.sql`).
   Applicare tutte le successive con `pnpm exec supabase db push --remote`, poi "Reindicizza" su
   ogni progetto (serve per `documents.questions` e il numero GitLab delle repo). Tra queste
-  `20261127170350_phase_back_admin_only.sql` (solo l'admin torna a una fase precedente).
+  `20261127170350_phase_back_admin_only.sql` (solo l'admin torna a una fase precedente) e
+  `20261128150000_support_files.sql` (file di supporto).
 - **Ultimo deploy**: controllare che sia `master` attuale (Vercel era in pausa durante alcuni
   push); se no, Redeploy.
 - **Invito**: nuovo invito di prova; sbloccare `belluzzino@gmail.com` con "Reimposta password" o

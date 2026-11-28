@@ -40,7 +40,7 @@ Il canale Teams si crea in un Team che esiste già, con le cartelle Input client
 Sotto il nome del progetto ci sono tre schede:
 
 - **Percorso**: la mappa dei documenti al centro; a destra l'area di lavoro, il team e i collegamenti (repo su GitLab, cartelle Teams, come collegare Claude).
-- **File**: i file della cartella Teams del progetto, dove disponibile.
+- **File**: i file della cartella Teams del progetto, dove disponibile, e i **File di supporto** della repo documenti (vedi sotto).
 - **Impostazioni** (amministratore e PM): dati del progetto, team, repository e cartelle Teams.
 
 Il **Percorso** è la mappa dei documenti del progetto.
@@ -66,7 +66,16 @@ Nella [Fase 4](/guida/fase-4) l'Analisi Tecnica, il Piano di lavoro e i Task + S
 
 ### Ricerca e altri file
 
-La casella **Cerca un documento** filtra per nome, codice o titolo; premi **/** per andarci subito. **Reindicizza da GitLab** è il pulsante in alto a destra, accanto al nome del progetto. In fondo, **Altri file nella cartella del progetto** raccoglie i file che non corrispondono a un tipo di documento ASDP.
+La casella **Cerca un documento** filtra per nome, codice o titolo; premi **/** per andarci subito. **Reindicizza da GitLab** è il pulsante in alto a destra, accanto al nome del progetto. In fondo, **Altri file nella cartella del progetto** raccoglie i file che non corrispondono a un tipo di documento ASDP (tranne i file di supporto, che stanno nella scheda File).
+
+### File di supporto
+
+Nella scheda **File** → **File di supporto** ci sono note, checklist, verbali e appunti in Markdown, salvati su GitLab nella cartella `asdp/supporto/` della repo documenti. Sono fuori dal flusso ASDP: non hanno stato, approvazione né domande D[N], e non contano nelle fasi. Li può modificare ogni membro del progetto.
+
+- Le cartelle si aprono con un clic; **Nuovo file** crea un file `.md` nella cartella corrente (con «/» nel nome crei anche le sottocartelle, per esempio `riunioni/kickoff`).
+- Un clic sul file lo apre con lo stesso editor dei documenti ASDP: **Modifica testo**, **Cronologia**, salvataggio con commit a tuo nome.
+- Dal **⋯** della riga: **Rinomina o sposta** (il percorso dentro i file di supporto) ed **Elimina**. Un file eliminato resta nello storico di GitLab.
+- Claude li legge e li scrive con il connettore, come i documenti: per esempio «salva questi appunti come file di supporto del progetto PFS».
 
 ### Dati del progetto, team e repository
 

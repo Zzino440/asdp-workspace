@@ -16,7 +16,7 @@ Problemi che risolve (call Lorenzo–Denis del 2026-11-18):
 | Skill da installare sul PC | Le skill partono dall'app (cloud) oppure da Claude Code in locale, a scelta |
 | Framework copiato in ogni progetto | Una sola fonte versionata (plugin `asdp`); ogni progetto dichiara la versione |
 | Documenti ASDP da trovare anche in Teams | GitLab resta la fonte (decisione del 2026-11-27: spostarli su SharePoint è bloccato dal GDPR e rompe permessi RLS ed evidenza delle approvazioni); "Pubblica su Teams" mette copie degli approvati (PDF, Word, .md) nella cartella del progetto; "Esporta" scarica gli stessi formati |
-| File di progetto sparsi tra Teams, OneDrive e GitLab | Navigatore unico per progetto: documenti ASDP da GitLab, gli altri file (Word, Excel, PDF…) dalla cartella Teams/SharePoint del progetto via Microsoft Graph |
+| File di progetto sparsi tra Teams, OneDrive e GitLab | Navigatore unico per progetto: documenti ASDP da GitLab, gli altri file (Word, Excel, PDF…) dalla cartella Teams/SharePoint del progetto via Microsoft Graph, i file di supporto in Markdown (note, checklist) da `asdp/supporto/` su GitLab |
 | File sensibili (`reserved`) | Area Riservati fuori da Git, mai inviata all'AI |
 | Troppe domande sparse nei documenti | Vista unica delle `D[N]` di progetto, risposte in blocco, rigenerazione in aggiornamento |
 
@@ -64,6 +64,10 @@ meno.
   viene spostata; il percorso serve per i link e "Reindicizza" lo riallinea.
 - `projects.docs_root` (default `asdp/`) è la cartella dei documenti; per i progetti esistenti
   con i documenti dentro una repo di codice si punta a quella repo e cartella.
+- `<docs_root>supporto/` contiene i **file di supporto**: Markdown liberi fuori dal flusso ASDP
+  (tipo `SUPPORTO`, senza fase né skill, `edit` a tutti i ruoli). Si leggono e si modificano
+  con lo stesso editor e livello servizi dei documenti; solo loro si rinominano, spostano ed
+  eliminano dall'app e dall'MCP (`moveDocument`, `deleteDocument`).
 - Le repo di codice sono registrate in `project_repositories` (percorso, ruolo, branch): servono
   alle skill che leggono il codice e all'MCP per indicare a Claude quali repo aprire.
 
