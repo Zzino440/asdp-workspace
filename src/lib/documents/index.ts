@@ -14,6 +14,7 @@ import {
 } from "@/lib/gitlab";
 import { type FieldValue, setFrontMatterFields, splitFrontMatter } from "@/lib/front-matter";
 import { changesApproval, clearedApproval, withdrawsApproval } from "@/lib/approval-fields";
+import { detectType } from "@/lib/document-type";
 import { gateFor } from "@/lib/gates";
 import { type AsdpRole, ROLE_LABELS } from "@/lib/labels";
 import { answerQuestion as withAnswer, optionsOf, questionsOf } from "@/lib/questions";
@@ -22,7 +23,6 @@ import { answerQuestion as withAnswer, optionsOf, questionsOf } from "@/lib/ques
 // Riceve sempre un client Supabase: quello dell'utente (RLS) oppure, solo nel webhook, quello
 // con la service role.
 
-type DocumentType = { code: string; folder: string };
 type Project = {
   id: string;
   gitlab_project_id: number | null;
@@ -30,29 +30,6 @@ type Project = {
   gitlab_branch: string;
   docs_root: string;
 };
-
-// Tipo del documento: prefisso del nome file (es. "T4.3-INDEX-…"), poi template_origine del
-// frontespizio, infine la cartella se un solo tipo la usa.
-function detectType(
-  path: string,
-  docsRoot: string,
-  frontMatter: Record<string, unknown>,
-  types: DocumentType[],
-) {
-  const byLength = [...types].sort((a, b) => b.code.length - a.code.length);
-  const fileName = path.split("/").pop()!.toUpperCase();
-  const fromName = byLength.find((t) => fileName.startsWith(t.code.toUpperCase()));
-  if (fromName) return fromName.code;
-
-  const origin = String(frontMatter.template_origine ?? "").split(" ")[0];
-  const fromOrigin = types.find((t) => t.code === origin);
-  if (fromOrigin) return fromOrigin.code;
-
-  // Le cartelle del catalogo sono scritte con la radice predefinita "asdp/".
-  const relative = path.slice(docsRoot.length);
-  const inFolder = types.filter((t) => relative.startsWith(`${t.folder.replace(/^asdp\//, "")}/`));
-  return inFolder.length === 1 ? inFolder[0].code : null;
-}
 
 // repo: riferimento per le chiamate a GitLab, il numero se c'è (non cambia se la repo viene
 // spostata), altrimenti il percorso. Il percorso resta per i link.

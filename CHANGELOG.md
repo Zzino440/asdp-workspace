@@ -37,12 +37,18 @@ al merge in `master`)
   automatico a In corso che c'era già; il commit lo dice («Approvazione annullata»). Senza cambi
   al testo, o con i dati di approvazione ancora pieni, resta riservato a chi approva. Regole in
   `src/lib/approval-fields.ts`.
+- Indice: i file Task + Scaffold per User Story (`T4.3-F02-US01.md`) sono riconosciuti come
+  `T4.3-part` anche senza `template_origine` nel frontespizio. Prima finivano in «Altri file», e
+  la Fase 4 del Percorso, il Prossimo passo e la Dashboard non li contavano. Regole del tipo in
+  `src/lib/document-type.ts`.
 
 ### Migrazioni e configurazione
-- Nessuna.
+- Nessuna. Nei progetti che hanno già file `T4.3-F…-US…` va lanciato «Reindicizza» (o basta il
+  prossimo push sulla repo documenti).
 
 ### Test eseguiti
-- `tsc --noEmit`, `pnpm lint`, `pnpm test` (35 test, nuovo `approval-fields.test.ts`): ok.
+- `tsc --noEmit`, `pnpm lint`, `pnpm test` (39 test, nuovi `approval-fields.test.ts` e
+  `document-type.test.ts`), `pnpm build`: ok.
 
 ## [0.27.0] 2026-11-28 — Risposta alle D[N] con un clic
 

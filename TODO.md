@@ -160,9 +160,8 @@ l'analisi GDPR per l'IT.
 
 ## Codice da sistemare
 
-- [ ] **File T4.3 per US non riconosciuti**: `detectType` in `src/lib/documents/` non riconosce i
-  file `T4.3-F{nn}-US{nn}.md` (non iniziano con `T4.3-part`, cartella condivisa da 3 tipi) se il
-  frontespizio non ha `template_origine: T4.3-part`: finiscono in "Altri file".
+- [x] **File T4.3 per US non riconosciuti**: `T4.3-F{nn}-US{nn}.md` ora vale `T4.3-part` anche senza
+  `template_origine` (branch `feat/skill-approvati-t43`).
 - [ ] **Blocco di Word per il web su elimina/sposta/rinomina**: oggi `Prefer: bypass-shared-lock`
   scavalca il blocco anche con il file aperto, senza avviso. Fare prima la chiamata senza
   intestazione e, sul 423, chiedere conferma e riprovare (`force` nell'MCP, dialog nell'app).
