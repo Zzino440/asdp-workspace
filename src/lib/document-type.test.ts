@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectType } from "./document-type";
+import { detectType, isSupportPath, validSupportPath } from "./document-type";
 
 const types = [
   { code: "T4.2", folder: "asdp/delivery" },
@@ -28,5 +28,30 @@ describe("detectType", () => {
 
   it("senza T4.3-part nel catalogo il nome US non basta", () => {
     expect(detectType("asdp/x/T4.3-F02-US01.md", root, {}, types.filter((t) => t.code !== "T4.3-part"))).toBeNull();
+  });
+});
+
+describe("file di supporto", () => {
+  const withSupport = [...types, { code: "SUPPORTO", folder: "asdp/supporto" }];
+
+  it("la cartella supporto vince anche sul prefisso del nome", () => {
+    expect(detectType("asdp/supporto/note/riunione.md", root, {}, withSupport)).toBe("SUPPORTO");
+    expect(detectType("asdp/supporto/T1.4-appunti.md", root, { template_origine: "T1.4" }, withSupport)).toBe("SUPPORTO");
+    expect(detectType("asdp/supporto/note.md", root, {}, types)).toBeNull();
+  });
+
+  it("riconosce solo i percorsi sotto <docs_root>supporto/", () => {
+    expect(isSupportPath("asdp/supporto/a.md", "asdp")).toBe(true);
+    expect(isSupportPath("docs/supporto/a.md", "docs/")).toBe(true);
+    expect(isSupportPath("asdp/supporto-vecchio/a.md", root)).toBe(false);
+    expect(isSupportPath("supporto/a.md", root)).toBe(false);
+  });
+
+  it("percorso valido: Markdown, niente .. o barre doppie", () => {
+    expect(validSupportPath("asdp/supporto/note/riunione.md", root)).toBe(true);
+    expect(validSupportPath("asdp/supporto/a.csv", root)).toBe(false);
+    expect(validSupportPath("asdp/supporto/../T1.4.md", root)).toBe(false);
+    expect(validSupportPath("asdp/supporto//a.md", root)).toBe(false);
+    expect(validSupportPath("asdp/supporto/a\\b.md", root)).toBe(false);
   });
 });

@@ -3,6 +3,17 @@
 
 export type DocumentType = { code: string; folder: string };
 
+// File di supporto: Markdown liberi in <docs_root>supporto/, fuori dal flusso ASDP.
+export const SUPPORT_TYPE = "SUPPORTO";
+export const SUPPORT_FOLDER = "supporto/";
+
+export const isSupportPath = (path: string, docsRoot: string) =>
+  path.startsWith(`${docsRoot.replace(/\/?$/, "/")}${SUPPORT_FOLDER}`);
+
+// Percorso valido per un file di supporto: Markdown dentro la cartella, senza "..", "//" o "\\".
+export const validSupportPath = (path: string, docsRoot: string) =>
+  isSupportPath(path, docsRoot) && /\.md$/i.test(path) && !/(^|\/)\.\.?(\/|$)|\/\/|\\/.test(path);
+
 // Tipo del documento: prefisso del nome file (es. "T4.3-INDEX-…"), poi template_origine del
 // frontespizio, infine la cartella se un solo tipo la usa.
 export function detectType(
@@ -11,6 +22,8 @@ export function detectType(
   frontMatter: Record<string, unknown>,
   types: DocumentType[],
 ) {
+  // Prima di tutto la cartella dei file di supporto, anche se il nome comincia con un codice ASDP.
+  if (isSupportPath(path, docsRoot) && types.some((t) => t.code === SUPPORT_TYPE)) return SUPPORT_TYPE;
   const byLength = [...types].sort((a, b) => b.code.length - a.code.length);
   const fileName = path.split("/").pop()!.toUpperCase();
   const fromName = byLength.find((t) => fileName.startsWith(t.code.toUpperCase()));
