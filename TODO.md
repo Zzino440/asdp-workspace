@@ -59,9 +59,9 @@ Cose da fare non ancora pianificate in una milestone. Spostarle in `docs/ARCHITE
   - `linked_items` delle skill con nomi e versioni (`[T1.4 PrenotaSale v0.3]`) invece degli ID
     (GUIDA-FRONT riga 87);
   - progetti reali con file `-vX.Y` nella repo documenti: tenere il più recente, rinominato;
-  - le skill in aggiornamento mettono `stato: In corso` e svuotano l'approvazione: per chi non ha
-    il permesso Approva il server rifiuta il salvataggio (`approval_fields`), mentre lasciando
-    Approvato lo riporterebbe da solo a In corso. Allineare skill o server.
+  - ~~le skill in aggiornamento mettono `stato: In corso` e svuotano l'approvazione: il server
+    rifiutava il salvataggio a chi non approva~~: allineato il server (branch
+    `feat/skill-approvati-t43`), le skill restano come sono.
 
 - [ ] **RACI del seed diverso dalla Guida ASDP** (`delivery-tech/DST-ASDP-Guida-Framework.md`
   §4.3, confronto del 2026-11-25). Da decidere con il team quale vale, poi correggere la

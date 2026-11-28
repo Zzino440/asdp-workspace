@@ -25,6 +25,25 @@
 
 ## Storia
 
+## [da numerare] 2026-11-28 — Correzioni: skill sui documenti approvati, file T4.3 per User Story
+
+**Autore**: Lorenzo Belli con Claude Code (branch `feat/skill-approvati-t43`; numero di versione
+al merge in `master`)
+
+### Cosa è cambiato
+- Salvataggio (app e MCP): una skill in aggiornamento su un documento **Approvato**, che lo
+  riporta a In corso con i dati di approvazione vuoti e cambia il testo, non viene più rifiutata
+  a chi non ha il permesso Approva (`approval_fields`). Ha lo stesso effetto del ritorno
+  automatico a In corso che c'era già; il commit lo dice («Approvazione annullata»). Senza cambi
+  al testo, o con i dati di approvazione ancora pieni, resta riservato a chi approva. Regole in
+  `src/lib/approval-fields.ts`.
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- `tsc --noEmit`, `pnpm lint`, `pnpm test` (35 test, nuovo `approval-fields.test.ts`): ok.
+
 ## [0.27.0] 2026-11-28 — Risposta alle D[N] con un clic
 
 **Autore**: Lorenzo Belli con Claude Code

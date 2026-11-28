@@ -13,6 +13,7 @@ import {
   updateFile,
 } from "@/lib/gitlab";
 import { type FieldValue, setFrontMatterFields, splitFrontMatter } from "@/lib/front-matter";
+import { changesApproval, clearedApproval, withdrawsApproval } from "@/lib/approval-fields";
 import { gateFor } from "@/lib/gates";
 import { type AsdpRole, ROLE_LABELS } from "@/lib/labels";
 import { answerQuestion as withAnswer, optionsOf, questionsOf } from "@/lib/questions";
@@ -219,23 +220,6 @@ export class DocumentError extends Error {
   }
 }
 
-// Campi del frontespizio gestiti dal flusso di approvazione: solo chi ha "approve" li cambia.
-const APPROVAL_FIELDS = ["approvato_da", "approvato_il", "versione_approvata", "evidenza_approvazione"];
-
-function changesApproval(before: Record<string, unknown>, after: Record<string, unknown>) {
-  const same = (key: string) => JSON.stringify(before[key] ?? null) === JSON.stringify(after[key] ?? null);
-  const approvedBefore = before.stato === "Approvato";
-  const approvedAfter = after.stato === "Approvato";
-  return approvedBefore !== approvedAfter || !APPROVAL_FIELDS.every(same);
-}
-
-// Stato In corso e dati di approvazione svuotati, solo sulle chiavi già presenti nel frontespizio.
-function clearedApproval(front: Record<string, unknown>) {
-  const changes: Record<string, FieldValue> = { stato: "In corso" };
-  for (const key of [...APPROVAL_FIELDS, "gate"]) if (key in front) changes[key] = null;
-  return changes;
-}
-
 const withFrontMatter = (content: string, source: string, changes: Record<string, FieldValue>) =>
   content.replace(source, () => setFrontMatterFields(source, changes));
 
@@ -288,15 +272,19 @@ export async function saveDocument(
     if (before.frontMatterSource !== null && after.frontMatterSource === null) {
       throw new DocumentError("missing_front_matter");
     }
-    if (level !== "approve" && changesApproval(before.frontMatter, after.frontMatter)) {
+    const bodyChanged = before.body !== after.body;
+    if (level !== "approve" && changesApproval(before.frontMatter, after.frontMatter, bodyChanged)) {
       throw new DocumentError("approval_fields");
+    }
+    if (withdrawsApproval(before.frontMatter, after.frontMatter, bodyChanged)) {
+      note = "\n\nApprovazione annullata: il testo è cambiato, il documento torna In corso.";
     }
     // GUIDA-FRONT: cambiare il testo di un documento Approvato ne annulla l'approvazione.
     if (
       before.frontMatter.stato === "Approvato" &&
       after.frontMatter.stato === "Approvato" &&
       after.frontMatterSource !== null &&
-      before.body !== after.body
+      bodyChanged
     ) {
       content = withFrontMatter(input.content, after.frontMatterSource, clearedApproval(after.frontMatter));
       note = "\n\nApprovazione annullata: il testo è cambiato, il documento torna In corso.";
