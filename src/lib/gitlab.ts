@@ -123,6 +123,57 @@ export async function createFile(
   return created.id;
 }
 
+// Commit che rinomina o sposta un file (contenuto invariato); GitLab rifiuta se è cambiato dopo
+// last_commit_id o se la destinazione esiste già.
+export async function moveFile(
+  projectPath: string,
+  branch: string,
+  file: { from: string; to: string; lastCommitId: string },
+  commit: { message: string; authorName: string; authorEmail: string },
+) {
+  return commitAction(projectPath, branch, commit, {
+    action: "move",
+    previous_path: file.from,
+    file_path: file.to,
+    last_commit_id: file.lastCommitId,
+  });
+}
+
+// Commit che elimina un file; GitLab rifiuta se è cambiato dopo last_commit_id.
+export async function deleteFile(
+  projectPath: string,
+  branch: string,
+  file: { path: string; lastCommitId: string },
+  commit: { message: string; authorName: string; authorEmail: string },
+) {
+  return commitAction(projectPath, branch, commit, {
+    action: "delete",
+    file_path: file.path,
+    last_commit_id: file.lastCommitId,
+  });
+}
+
+async function commitAction(
+  projectPath: string,
+  branch: string,
+  commit: { message: string; authorName: string; authorEmail: string },
+  action: Record<string, string>,
+) {
+  const response = await gitlab(`${project(projectPath)}/repository/commits`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      branch,
+      commit_message: commit.message,
+      author_name: commit.authorName,
+      author_email: commit.authorEmail,
+      actions: [action],
+    }),
+  });
+  const created = (await response.json()) as { id: string };
+  return created.id;
+}
+
 type CommitResponse ={ id: string; message: string; author_name: string; authored_date: string };
 
 // Commit che hanno toccato un file, dal più recente (fino a 100).

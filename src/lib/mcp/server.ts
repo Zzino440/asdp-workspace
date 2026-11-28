@@ -784,4 +784,7 @@ const SAVE_ERRORS = {
   missing_front_matter:
     "Il content non ha il frontespizio (le righe \"---\" in testa) che il documento aveva: forse è troncato. " +
     "Rileggi il documento con read_document e ripassa il file intero; niente è stato salvato.",
+  not_supported:
+    "Si possono spostare o eliminare solo i file di supporto (cartella supporto/ dentro docs_root); i documenti " +
+    "ASDP restano dove li prevede la Guida.",
 };

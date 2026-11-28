@@ -4,17 +4,19 @@ import {
   branchExists,
   compareFile,
   createFile,
+  deleteFile,
   ensurePushWebhook,
   getProject,
   GitLabError,
   listFileCommits,
   listFiles,
+  moveFile,
   readFile,
   updateFile,
 } from "@/lib/gitlab";
 import { type FieldValue, setFrontMatterFields, splitFrontMatter } from "@/lib/front-matter";
 import { changesApproval, clearedApproval, withdrawsApproval } from "@/lib/approval-fields";
-import { detectType } from "@/lib/document-type";
+import { detectType, SUPPORT_TYPE, validSupportPath } from "@/lib/document-type";
 import { gateFor } from "@/lib/gates";
 import { type AsdpRole, ROLE_LABELS } from "@/lib/labels";
 import { answerQuestion as withAnswer, optionsOf, questionsOf } from "@/lib/questions";
@@ -191,7 +193,8 @@ export class DocumentError extends Error {
       | "invalid_state"
       | "incomplete"
       | "invalid_front_matter"
-      | "missing_front_matter",
+      | "missing_front_matter"
+      | "not_supported",
   ) {
     super(code);
   }
@@ -546,6 +549,119 @@ export async function createDocument(
   });
 
   return { documentType, lastCommitId: commitId };
+}
+
+// File di supporto su cui l'utente ha "edit", con progetto e autore per il commit. Rinomina,
+// spostamento ed eliminazione valgono solo per questi: i documenti ASDP restano dove li vuole la Guida.
+async function editableSupportFile(supabase: SupabaseClient, projectId: string, path: string, userId: string) {
+  const [{ data: indexed }, { data: project }, { data: profile }] = await Promise.all([
+    supabase.from("documents").select("document_type, front_matter, questions").eq("project_id", projectId).eq("path", path).maybeSingle(),
+    loadProject(supabase, projectId),
+    supabase.from("profiles").select("full_name, email").eq("id", userId).single(),
+  ]);
+  if (!indexed || !project?.repo || !profile) throw new DocumentError("not_found");
+  if (indexed.document_type !== SUPPORT_TYPE) throw new DocumentError("not_supported");
+  const level = await documentLevel(supabase, projectId, SUPPORT_TYPE);
+  if (level !== "edit" && level !== "approve") throw new DocumentError("forbidden");
+  const docsRoot = project.docs_root.replace(/\/?$/, "/");
+  return {
+    indexed,
+    project: { ...project, repo: project.repo },
+    docsRoot,
+    author: { authorName: profile.full_name || profile.email, authorEmail: profile.email },
+  };
+}
+
+// Rinomina o sposta un file di supporto dentro la cartella supporto/, con un commit a nome dell'utente.
+export async function moveDocument(
+  supabase: SupabaseClient,
+  input: { projectId: string; from: string; to: string; lastCommitId: string; via: "app" | "mcp"; userId: string },
+) {
+  const { indexed, project, docsRoot, author } = await editableSupportFile(supabase, input.projectId, input.from, input.userId);
+  if (!validSupportPath(input.to, docsRoot) || input.to === input.from) throw new DocumentError("invalid_path");
+  const { data: existing } = await supabase
+    .from("documents")
+    .select("path")
+    .eq("project_id", input.projectId)
+    .eq("path", input.to)
+    .maybeSingle();
+  if (existing) throw new DocumentError("exists");
+
+  const message = `Sposta ${input.from.slice(docsRoot.length)} in ${input.to.slice(docsRoot.length)}`;
+  let commitId: string;
+  try {
+    commitId = await moveFile(
+      project.repo,
+      project.gitlab_branch,
+      { from: input.from, to: input.to, lastCommitId: input.lastCommitId },
+      { message: `${message}\n\nVia: ${input.via}`, ...author },
+    );
+  } catch (error) {
+    if (error instanceof GitLabError && error.isConflict) throw new DocumentError("conflict");
+    if (error instanceof GitLabError && error.isExisting) throw new DocumentError("exists");
+    throw error;
+  }
+
+  // Indice aggiornato subito; se fallisce lo ripara il webhook (o «Reindicizza»).
+  const { error: insertError } = await supabase.from("documents").insert({
+    project_id: input.projectId,
+    path: input.to,
+    document_type: SUPPORT_TYPE,
+    front_matter: indexed.front_matter,
+    questions: indexed.questions,
+    last_commit_id: commitId,
+    indexed_at: new Date().toISOString(),
+  });
+  const { error: deleteError } = await supabase
+    .from("documents")
+    .delete()
+    .eq("project_id", input.projectId)
+    .eq("path", input.from);
+  if (insertError || deleteError) console.error("Indice non aggiornato dopo lo spostamento", insertError ?? deleteError);
+  await recordEvent(supabase, {
+    project_id: input.projectId,
+    path: input.to,
+    document_type: SUPPORT_TYPE,
+    commit_id: commitId,
+    author_name: author.authorName,
+    via: input.via,
+    message,
+  });
+  return { path: input.to, lastCommitId: commitId };
+}
+
+// Elimina un file di supporto con un commit a nome dell'utente (resta nello storico di GitLab).
+export async function deleteDocument(
+  supabase: SupabaseClient,
+  input: { projectId: string; path: string; lastCommitId: string; via: "app" | "mcp"; userId: string },
+) {
+  const { project, docsRoot, author } = await editableSupportFile(supabase, input.projectId, input.path, input.userId);
+  const message = `Elimina ${input.path.slice(docsRoot.length)}`;
+  let commitId: string;
+  try {
+    commitId = await deleteFile(
+      project.repo,
+      project.gitlab_branch,
+      { path: input.path, lastCommitId: input.lastCommitId },
+      { message: `${message}\n\nVia: ${input.via}`, ...author },
+    );
+  } catch (error) {
+    if (error instanceof GitLabError && error.isConflict) throw new DocumentError("conflict");
+    throw error;
+  }
+
+  const { error } = await supabase.from("documents").delete().eq("project_id", input.projectId).eq("path", input.path);
+  if (error) console.error("Indice non aggiornato dopo l'eliminazione", error);
+  await recordEvent(supabase, {
+    project_id: input.projectId,
+    path: input.path,
+    document_type: SUPPORT_TYPE,
+    commit_id: commitId,
+    author_name: author.authorName,
+    via: input.via,
+    message,
+  });
+  return { lastCommitId: commitId };
 }
 
 // Progetto del documento, solo se la RLS rende visibile la riga d'indice all'utente.
