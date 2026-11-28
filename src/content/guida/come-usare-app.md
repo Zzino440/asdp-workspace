@@ -1,5 +1,16 @@
 ASDP Workspace è il posto dove vivono i documenti ASDP dei tuoi progetti. Qui li trovi, li leggi, li modifichi e vedi a che punto è ogni fase. Questa pagina spiega le schermate principali e cosa l'app fa oggi.
 
+## Dashboard
+
+È la prima pagina dopo l'accesso e risponde a una domanda: cosa tocca a me? Raccoglie i progetti aperti di cui fai parte:
+
+- **Tocca a te**: i documenti per cui ti hanno chiesto modifiche, con chi l'ha chiesto e il motivo, e i progetti in cui il prossimo passo spetta a un tuo ruolo.
+- **In attesa di altri**: i tuoi documenti Completo che aspettano l'approvazione, con chi li approva.
+- **Scadenze**: i tuoi documenti non ancora pronti con la scadenza passata o nei prossimi 7 giorni.
+- **I tuoi progetti**: fase attuale, documenti pronti nella fase, prossimo passo e a chi tocca.
+
+Un documento è "tuo" quando il tuo ruolo nel progetto può modificarne il tipo (se nessun ruolo può modificarlo, vale chi lo approva). È la stessa regola di «Tocca a te» nel Prossimo passo. Se qualcosa ti aspetta in Approvazioni, in alto c'è un avviso con il numero e il link.
+
 ## Elenco progetti
 
 La pagina **Progetti** mostra solo i progetti di cui fai parte, con cliente, natura, stato, fase e versione del framework. Se non vedi un progetto, chiedi al PM di aggiungerti al team.
@@ -93,8 +104,6 @@ L'app conserva i documenti, le versioni e lo stato. **Le skill non partono dall'
 - Per usare una skill: [Lanciare una skill](/guida/lanciare-skill).
 
 La voce **Approvazioni** del menu, con il numero dei documenti che ti aspettano, raccoglie quelli da approvare divisi per progetto, con filtri, e quelli approvati negli ultimi 30 giorni. Dettagli in [Gate](/guida/gate).
-
-> **Nota:** la **Dashboard** è in arrivo.
 
 ## Permessi per ruolo
 

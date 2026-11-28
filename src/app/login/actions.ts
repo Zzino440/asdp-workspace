@@ -32,7 +32,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   // Solo percorsi interni: niente redirect verso altri siti.
   const next = String(formData.get("next") ?? "");
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/progetti");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
 }
 
 // Accesso con Microsoft (provider azure di Supabase Auth): al primo accesso crea l'utente, se

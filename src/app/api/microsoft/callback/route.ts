@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const saved = cookieStore.get("ms_oauth")?.value;
   cookieStore.delete({ name: "ms_oauth", path: "/api/microsoft" });
-  const { state, verifier, next = "/progetti" } = saved ? JSON.parse(saved) : {};
+  const { state, verifier, next = "/dashboard" } = saved ? JSON.parse(saved) : {};
 
   let error = params.get("error_description") ?? params.get("error");
   if (!error) {

@@ -1,9 +1,9 @@
 import { cache } from "react";
-import { ASDP_ROLES, type AsdpRole, ROLE_LABELS } from "@/lib/labels";
 import { nextStep, projectSteps } from "@/lib/project-steps";
 import { createClient } from "@/lib/supabase/server";
+import { type StepTurn, turnOf, workerRoles } from "@/lib/turn";
 import { loadProject } from "./project-data";
-import { ProjectMap, type StepTurn } from "./project-map";
+import { ProjectMap } from "./project-map";
 
 // Percorso del progetto per la mappa e per il pulsante "Passa alla fase" dell'intestazione
 // (cache: una sola lettura per richiesta).
@@ -40,21 +40,13 @@ export async function DocumentList({
   );
 }
 
-// A chi tocca un passo: ai ruoli con permesso di modifica sul tipo di documento (Amministrazione →
-// Permessi); se nessuno ce l'ha, a chi approva (che può anche modificare).
+// A chi tocca il prossimo passo (regola in src/lib/turn.ts).
 async function stepTurn(projectId: string, documentType: string): Promise<StepTurn> {
   const supabase = await createClient();
   const [{ members }, { data: claims }, { data: permissions }] = await Promise.all([
     loadProject(projectId),
     supabase.auth.getClaims(),
-    supabase.from("role_permissions").select("role, level").eq("document_type", documentType).in("level", ["edit", "approve"]),
+    supabase.from("role_permissions").select("role, document_type, level").eq("document_type", documentType),
   ]);
-  const editors = (permissions ?? []).filter((p) => p.level === "edit");
-  const roles = new Set((editors.length > 0 ? editors : (permissions ?? [])).map((p) => p.role as AsdpRole));
-  const people = members.filter((m) => m.roles.some((r) => roles.has(r)));
-  return {
-    mine: people.some((m) => m.user_id === claims?.claims.sub),
-    people: people.map((m) => `${m.name} (${m.roles.filter((r) => roles.has(r)).map((r) => ROLE_LABELS[r]).join(", ")})`),
-    roles: ASDP_ROLES.filter((r) => roles.has(r)).map((r) => ROLE_LABELS[r]),
-  };
+  return turnOf(members, workerRoles(permissions ?? [], documentType), claims?.claims.sub);
 }

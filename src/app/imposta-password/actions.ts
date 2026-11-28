@@ -20,5 +20,5 @@ export async function setPassword(_prev: PasswordState, formData: FormData): Pro
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { error: "Impossibile impostare la password. Riapri il link dell'invito." };
 
-  redirect("/progetti");
+  redirect("/dashboard");
 }

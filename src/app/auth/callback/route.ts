@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     // Solo percorsi interni: niente redirect verso altri siti.
-    if (!error) redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/progetti");
+    if (!error) redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
   }
 
   redirect("/login?error=microsoft");

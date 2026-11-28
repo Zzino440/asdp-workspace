@@ -25,6 +25,34 @@
 
 ## Storia
 
+## [0.26.0] 2026-11-28 — Dashboard «Tocca a me»
+
+**Autore**: Lorenzo Belli con Claude Code
+
+### Cosa è cambiato
+- Dashboard (`/dashboard`, prima un segnaposto) e pagina d'arrivo dopo l'accesso (anche da
+  invito, password e Microsoft) al posto di Progetti. Sui progetti aperti di cui l'utente fa
+  parte mostra:
+  - **Tocca a te**: documenti con «Richiede modifiche» ancora In corso (chi e motivo, letti
+    dall'attività già registrata) e prossimi passi che spettano a un ruolo dell'utente;
+  - **In attesa di altri**: suoi documenti Completo, con chi li approva;
+  - **Scadenze**: suoi documenti non pronti con scadenza passata o entro 7 giorni;
+  - **I tuoi progetti**: fase, pronti/attesi nella fase, prossimo passo, a chi tocca;
+  - avviso con il numero dei documenti da approvare e link ad Approvazioni (la coda resta lì).
+- «A chi tocca» in un modulo unico (`src/lib/turn.ts`) usato da Dashboard e Prossimo passo del
+  Percorso, che quindi dicono la stessa cosa; servizio della Dashboard in `src/lib/my-work.ts`.
+- Guida «Come usare l'app»: nuova sezione Dashboard.
+- Sviluppo: CI su GitHub Actions (`.github/workflows/ci.yml`: typegen, tsc, lint, test, build a
+  ogni push e pull request).
+
+### Migrazioni e configurazione
+- Nessuna.
+
+### Test eseguiti
+- `tsc --noEmit`, `pnpm lint`, `pnpm test` (24 test, nuovo `turn.test.ts`), `pnpm build`: ok.
+- Non provata nel browser con dati veri: nella sessione cloud le immagini Docker di Supabase
+  non si scaricano. Da provare in locale con gli utenti del seed (vedi `docs/STATO.md`).
+
 ## [0.25.0] 2026-11-27 — Punti risolti evidenziati nel documento
 
 **Autore**: Lorenzo Belli con Claude Code

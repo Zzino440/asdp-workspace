@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const { url, state, verifier } = authorizeRequest();
   (await cookies()).set(
     "ms_oauth",
-    JSON.stringify({ state, verifier, next: /^\/(?![/\\])/.test(next) ? next : "/progetti" }),
+    JSON.stringify({ state, verifier, next: /^\/(?![/\\])/.test(next) ? next : "/dashboard" }),
     { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/api/microsoft" },
   );
   redirect(url);

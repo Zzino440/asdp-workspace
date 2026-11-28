@@ -14,12 +14,11 @@ import { isDone, phaseProgress } from "@/lib/phase-progress";
 import { answersPrompt, stepPrompt } from "@/lib/prompts";
 import { QUESTION_STATUS_LABEL, statusOf, type QuestionStatus } from "@/lib/questions";
 import type { MapDoc, MapType, NextStep } from "@/lib/project-steps";
+import type { StepTurn } from "@/lib/turn";
 import { PhaseChangeButton } from "./advance-phase";
 import { CopyPromptButton } from "./copy-prompt-button";
 
 type ProjectInfo = { code: string; nature: string; teams: boolean };
-// A chi tocca il prossimo passo: se all'utente, le persone del team con quei ruoli, i ruoli.
-export type StepTurn = { mine: boolean; people: string[]; roles: string[] };
 
 // Colore del pallino di un documento: i token --state-* del frontespizio.
 const DOT: Record<string, string> = {
