@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { documentLevel, listDocuments, listToApprove, listVersions, readDocument, readVersion } from "@/lib/documents";
 import { phaseFolderName, publicationStatus } from "@/lib/documents/publish";
+import { SUPPORT_FOLDER, SUPPORT_TYPE } from "@/lib/document-type";
 import { gateFor } from "@/lib/gates";
 import { guidaHrefForType } from "@/lib/guida";
 import { PHASES } from "@/lib/labels";
@@ -97,8 +98,16 @@ async function DocumentView({
   const latest = versions?.[0];
 
   // Pubblica su Teams: documento Approvato, livello approve, funzione Microsoft attiva e cartella collegata.
+  // Flusso ASDP (stato, approvazione, gate, D[N]) solo per i tipi con una skill: allegati, file di
+  // supporto e file non riconosciuti si leggono e si modificano e basta.
+  const inFlow = Boolean(type?.skill_name);
+  const support = document.documentType === SUPPORT_TYPE;
+  // Cartella del file dentro supporto/ ("note/riunioni"), per tornare lì dalla scheda File.
+  const supportFolder = support
+    ? document.path.slice(document.path.indexOf(SUPPORT_FOLDER) + SUPPORT_FOLDER.length, document.path.lastIndexOf("/") + 1).replace(/\/$/, "")
+    : "";
   const canPublish =
-    microsoftEnabled() && level === "approve" && document.frontMatter.stato === "Approvato" && (locations ?? []).length > 0;
+    inFlow && microsoftEnabled() && level === "approve" && document.frontMatter.stato === "Approvato" && (locations ?? []).length > 0;
   const isMarkdown = document.body !== null;
   const canEdit = document.body !== null && !document.frontMatterError && (level === "edit" || level === "approve");
 
@@ -117,7 +126,8 @@ async function DocumentView({
       body={document.body}
       lastCommitId={document.lastCommitId}
       canEdit={canEdit}
-      canApprove={level === "approve"}
+      canApprove={inFlow && level === "approve"}
+      inFlow={inFlow}
       gate={gateFor(document.documentType)}
       outcome={
         esito && {
@@ -142,7 +152,7 @@ async function DocumentView({
                 : undefined
             }
             // Nell'Analisi Funzionale le D[N] sono copiate dal consolidato: si risponde lì.
-            answerable={canEdit && document.documentType !== "T1.4"}
+            answerable={inFlow && canEdit && document.documentType !== "T1.4"}
           >
             {document.body}
           </Markdown>
@@ -161,8 +171,17 @@ async function DocumentView({
             {project?.name ?? "Progetto"}
           </Link>
           <ChevronRight className="size-3.5" aria-hidden />
-          <span>{type?.phase != null ? `Fase ${type.phase} · ${PHASES[type.phase]?.name}` : "Altri file"}</span>
-          {type && (
+          {support ? (
+            <Link
+              href={`/progetti/${id}/file${supportFolder ? `?supporto=${encodeURIComponent(supportFolder)}` : ""}`}
+              className="hover:text-foreground hover:underline"
+            >
+              File di supporto
+            </Link>
+          ) : (
+            <span>{type?.phase != null ? `Fase ${type.phase} · ${PHASES[type.phase]?.name}` : "Altri file"}</span>
+          )}
+          {type && !support && (
             <>
               <ChevronRight className="size-3.5" aria-hidden />
               <span aria-current="page" className="text-foreground">

@@ -88,6 +88,8 @@ export function DocumentWorkspace(props: {
   lastCommitId: string;
   canEdit: boolean;
   canApprove: boolean;
+  // false per i file fuori dal flusso ASDP (supporto, allegati): niente stato né approvazione.
+  inFlow: boolean;
   gate: Gate;
   // Esito dell'ultima decisione di approvazione, con il prossimo documento della coda.
   outcome: { esito: "approvato" | "modifiche"; next: { title: string; project: string; href: string } | null } | null;
@@ -503,7 +505,7 @@ export function DocumentWorkspace(props: {
                     Cronologia
                   </Button>
                   {!props.versionView && props.exportMenu}
-                  {!props.versionView && props.body !== null && (
+                  {!props.versionView && props.body !== null && props.inFlow && (
                     <ApprovalActions
                       projectId={props.projectId}
                       path={props.path}
@@ -526,7 +528,7 @@ export function DocumentWorkspace(props: {
           </div>
           {(hasFront || meta.length > 0) && (
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
-              {hasFront && (
+              {hasFront && props.inFlow && (
                 <dl className="flex flex-wrap items-center gap-x-6 gap-y-2">
                   <Property label="Stato">
                     <DocumentStateBadge state={state} />
