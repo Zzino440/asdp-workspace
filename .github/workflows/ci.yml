@@ -1,0 +1,30 @@
+# Controlli di AGENTS.md ("Run typecheck, lint, unit tests and build") a ogni push e pull request.
+# I test RLS (pgTAP) restano in locale: servono Supabase e Docker.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # PageProps e LayoutProps sono tipi generati da Next: senza typegen tsc non li trova.
+      - run: pnpm exec next typegen
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
