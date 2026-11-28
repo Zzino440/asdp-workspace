@@ -28,6 +28,12 @@
     `src/lib/turn.ts` (lo usa anche il Prossimo passo del Percorso);
   - **0.27.0** risposta alle D[N] con un clic («Rispondi» nel riquadro della domanda).
   Da fare: prova nel browser (vedi "Da provare"), merge in `master`, tag `0.26.0` e `0.27.0`.
+- **Branch impilati `feat/`** (decisione del 2026-11-28): ogni sviluppo nuovo su un branch che
+  parte dal precedente, pushato, senza merge in `master`; versione e numero del CHANGELOG al
+  merge (voce «[da numerare]»), tranne per l'MCP. Pila attuale:
+  `master` → `ccr-88cd4cbd-ityukw` → **`feat/skill-approvati-t43`** (le skill in aggiornamento
+  su un documento Approvato non vengono più rifiutate a chi non approva; file `T4.3-F…-US…`
+  riconosciuti come `T4.3-part`).
 - **Branch**: `master` (principale), `consolidamento` (unito in `master`, si può eliminare), `develop` (fermo a
   `0.19.1`, `c62abf0`), `feat/domande-evidenziate` (unita in `master`, si può eliminare).
 - **0.23.0** su `master`: editor con menu "/" e menu sulla selezione.
@@ -87,6 +93,12 @@ Funzioni committate ma non provate fino in fondo. Prove con file e Teams **sempr
   risposta», «Da decidere» (rimandata), conflitto con un salvataggio da un'altra scheda; diff in
   Cronologia solo sulle righe delle opzioni; pulsante assente nella T1.4 e per chi ha solo "view".
 - **CI**: primo run su GitHub dopo il push del branch.
+- **Skill su un documento Approvato** (`feat/skill-approvati-t43`): con `af@` aggiornare via MCP i
+  Requisiti Consolidati approvati (stato In corso, approvazione vuota, testo cambiato): il
+  salvataggio passa e il commit ha «Approvazione annullata». Lo stesso senza cambi al testo deve
+  essere rifiutato.
+- **File T4.3 per User Story** (`feat/skill-approvati-t43`): un `T4.3-F01-US01.md` senza
+  `template_origine`, dopo «Reindicizza», compare nella Fase 4 sotto Task + Scaffold.
 
 - **«Tocca a te»** (0.24.0): con un utente del seed che ha il ruolo del passo (es. TL su Portale
   Fornitori) la scheda «Prossimo passo» mostra il badge.
