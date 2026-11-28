@@ -25,6 +25,40 @@
 
 ## Storia
 
+## [0.28.0] 2026-11-28 — File di supporto nella repo documenti
+
+**Autore**: Lorenzo Belli con Claude Code (branch `feat/file-supporto`, sopra
+`feat/skill-approvati-t43`: numero dato subito perché cambia il server MCP; se i due branch
+entrano insieme in `master`, le correzioni «da numerare» qui sotto escono con 0.28.0)
+
+### Cosa è cambiato
+- **File di supporto**: Markdown liberi (note, checklist, verbali) in `asdp/supporto/` nella repo
+  documenti, fuori dal flusso ASDP: niente stato, approvazione, gate o D[N]. Li modifica ogni
+  membro del progetto (permesso `edit` a tutti i ruoli, cambiabile in Amministrazione → Permessi).
+- Scheda **File** del progetto: due fonti, Teams e **File di supporto**. Il navigatore dei file
+  di supporto ha cartelle, ordinamento per nome e data, **Nuovo file** (anche in sottocartelle),
+  **Rinomina o sposta** ed **Elimina** (commit a nome dell'utente) e Apri in GitLab. Senza
+  Microsoft configurato la scheda c'è lo stesso, con i soli file di supporto.
+- Pagina del documento: per i file fuori dal flusso (supporto, allegati) l'editor è lo stesso,
+  senza stato, approvazione, pubblicazione e Rispondi sulle D[N]; dai file di supporto il
+  percorso in testa torna alla scheda File.
+- Percorso: i file di supporto non compaiono più tra gli «Altri file».
+- MCP: nuovi tool `move_document` e `delete_document` (solo file di supporto);
+  `create_document`, `update_document`, `list_documents` e le istruzioni del server spiegano i
+  file di supporto.
+- Codice: icona e intestazione ordinabile dei navigatori in `src/components/file-table.tsx`;
+  `detectType` riconosce `supporto/` prima del prefisso del nome.
+
+### Migrazioni e configurazione
+- `20261128150000_support_files.sql`: tipo `SUPPORTO`, permessi `edit` per tutti i ruoli,
+  policy di eliminazione della riga d'indice solo per i file di supporto.
+- I file già presenti in `asdp/supporto/` prendono il tipo con «Reindicizza» o al prossimo push.
+
+### Test eseguiti
+- `tsc --noEmit`, `pnpm lint`, `pnpm test` (42 test), `pnpm build`: ok.
+- Nuovo test pgTAP `support_files.test.sql`: scritto, non eseguito (Supabase locale non si
+  avvia in questa sessione). Non provato nel browser.
+
 ## [da numerare] 2026-11-28 — Correzioni: skill sui documenti approvati, file T4.3 per User Story
 
 **Autore**: Lorenzo Belli con Claude Code (branch `feat/skill-approvati-t43`; numero di versione

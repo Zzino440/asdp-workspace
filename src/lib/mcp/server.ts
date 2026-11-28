@@ -4,10 +4,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
   createDocument,
+  deleteDocument,
   documentLevel,
   DocumentError,
   listActivity,
   listVersions,
+  moveDocument,
   readDocument,
   saveDocument,
 } from "@/lib/documents";
@@ -63,7 +65,8 @@ const BASE_INSTRUCTIONS = `Server MCP di ASDP Workspace: progetti e documenti de
 - I documenti sono file Markdown con frontespizio YAML (GUIDA-FRONT) tra due righe "---", salvati su GitLab.
 - Prima di modificare un documento leggilo con read_document; poi cambia solo le parti necessarie di content e passalo intero a update_document con il last_commit_id letto. Lascia invariato tutto il resto, commenti del frontespizio compresi.
 - Stati del documento: Da fare, In corso, Completo, Approvato. Lo stato Approvato e i campi approvato_da, approvato_il, versione_approvata, evidenza_approvazione li cambia solo chi approva; non modificare versione_frontespizio. Se cambi il testo di un documento Approvato, il server lo riporta In corso e svuota i dati di approvazione: va riapprovato.
-- Quando una skill ASDP legge o scrive un file asdp/..., di norma usa questo server: read_document per gli input, create_document per un file nuovo, update_document per uno esistente, con lo stesso percorso. Quando una skill aggiorna un documento esistente lo salva sullo stesso file con update_document e porta versione da vX.Y a vX.Y+1 nel frontespizio, senza chiedere la modalità di salvataggio. I nomi dei file non contengono la versione. Salva su file locale solo se l'utente lo chiede o se la cartella di lavoro è un clone della repo documenti (il push lo porta nell'app). Il server non cancella file.
+- Quando una skill ASDP legge o scrive un file asdp/..., di norma usa questo server: read_document per gli input, create_document per un file nuovo, update_document per uno esistente, con lo stesso percorso. Quando una skill aggiorna un documento esistente lo salva sullo stesso file con update_document e porta versione da vX.Y a vX.Y+1 nel frontespizio, senza chiedere la modalità di salvataggio. I nomi dei file non contengono la versione. Salva su file locale solo se l'utente lo chiede o se la cartella di lavoro è un clone della repo documenti (il push lo porta nell'app). Il server non cancella documenti ASDP.
+- File di supporto: Markdown liberi in <docs_root>supporto/ (es. asdp/supporto/note/riunione-kickoff.md), tipo SUPPORTO in list_documents. Note, checklist, appunti: fuori dal flusso ASDP, senza frontespizio obbligatorio, stato o approvazione; li modifica ogni membro del progetto. Si creano con create_document, si salvano con update_document, si rinominano o spostano con move_document e si eliminano con delete_document (solo questi; elimina solo se l'utente lo chiede).
 - Ogni salvataggio è un commit a nome dell'utente: scrivi messaggi di commit brevi e chiari in italiano.
 - Se get_project.setup.missing contiene docs_repository il progetto non ha una repo documenti e non si può salvare: dillo all'utente e rimandalo alla scheda "Prepara l'area di lavoro" del progetto nell'app. Gli altri passi di setup.missing citali solo se servono a ciò che l'utente chiede. Il server non crea repo, canali o team.`;
 
@@ -177,7 +180,8 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       description:
         "Documenti ASDP del progetto visibili all'utente: percorso, tipo (es. T1.4), titolo, stato, versione, " +
         "Feature, owner, scadenza, domande D[N] (status, answer: vedi le istruzioni del server) e " +
-        "changes_requested (chi ha chiesto modifiche e perché, se il documento è tornato In corso).",
+        "changes_requested (chi ha chiesto modifiche e perché, se il documento è tornato In corso). Comprende i file " +
+        "di supporto (tipo SUPPORTO, cartella <docs_root>supporto/).",
       inputSchema: z.object({ project: z.string().describe("Codice del progetto, es. PFS") }),
     },
     async ({ project }, ctx) => {
@@ -296,7 +300,8 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         "Sostituisce il testo completo di un documento ASDP (frontespizio YAML + Markdown) con un commit a nome " +
         "dell'utente. Parti dal content di read_document, modificando solo le parti necessarie, e passa il suo last_commit_id: se nel " +
         "frattempo è cambiato il salvataggio viene rifiutato. Non cambiare stato Approvato né i campi approvato_* " +
-        "se l'utente non è approvatore.",
+        "se l'utente non è approvatore. Vale anche per i file di supporto (<docs_root>supporto/), che non hanno " +
+        "stato né approvazione.",
       inputSchema: z.object({
         project: z.string().describe("Codice del progetto, es. PFS"),
         path: z.string().describe("Percorso nella repo documenti"),
@@ -335,7 +340,8 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
         "Crea un documento ASDP nuovo (Markdown con frontespizio GUIDA-FRONT, o il CSV del backlog) con un commit a " +
         "nome dell'utente. Il percorso è quello indicato dalla skill (es. asdp/backlog/T4.1-BACKLOG.md), sotto la " +
         "cartella documenti del progetto. Il contenuto parte dal template della skill. Se il file esiste già usa " +
-        "read_document e update_document.",
+        "read_document e update_document. Sotto <docs_root>supporto/ crea invece un file di supporto: Markdown libero, " +
+        "senza frontespizio obbligatorio né approvazione.",
       inputSchema: z.object({
         project: z.string().describe("Codice del progetto, es. PFS"),
         path: z.string().describe("Percorso nella repo documenti, es. asdp/backlog/T4.1-BACKLOG.md"),
@@ -350,6 +356,68 @@ export function registerTools(server: McpServer, clientFor: ClientFor) {
       try {
         const created = await createDocument(supabase, { projectId: id, path, content, message, via: "mcp", userId });
         return text({ created: true, path, type: created.documentType, last_commit_id: created.lastCommitId });
+      } catch (e) {
+        if (!(e instanceof DocumentError)) throw e;
+        return failure(SAVE_ERRORS[e.code]);
+      }
+    },
+  );
+
+  server.registerTool(
+    "move_document",
+    {
+      title: "Rinomina o sposta file di supporto",
+      description:
+        "Rinomina o sposta un file di supporto (<docs_root>supporto/) dentro la stessa cartella supporto/, con un " +
+        "commit a nome dell'utente. Passa il last_commit_id di read_document. I documenti ASDP " +
+        "non si spostano.",
+      inputSchema: z.object({
+        project: z.string().describe("Codice del progetto, es. PFS"),
+        path: z.string().describe("Percorso attuale, es. asdp/supporto/note.md"),
+        to: z.string().describe("Nuovo percorso, sempre sotto supporto/ e .md, es. asdp/supporto/archivio/note.md"),
+        last_commit_id: z.string().describe("last_commit_id restituito da read_document"),
+      }),
+    },
+    async ({ project, path, to, last_commit_id }, ctx) => {
+      const { supabase, userId } = clientFor(ctx);
+      const id = await projectId(supabase, project);
+      if (!id) return failure(NOT_FOUND);
+      try {
+        const moved = await moveDocument(supabase, { projectId: id, from: path, to, lastCommitId: last_commit_id, via: "mcp", userId });
+        return text({ moved: true, path: moved.path, last_commit_id: moved.lastCommitId });
+      } catch (e) {
+        if (!(e instanceof DocumentError)) throw e;
+        return failure(
+          e.code === "invalid_path"
+            ? "Percorso non valido: la destinazione deve stare sotto <docs_root>supporto/, finire in .md ed essere diversa dall'origine."
+            : e.code === "exists"
+              ? "Esiste già un file alla destinazione: scegli un altro nome."
+              : SAVE_ERRORS[e.code],
+        );
+      }
+    },
+  );
+
+  server.registerTool(
+    "delete_document",
+    {
+      title: "Elimina file di supporto",
+      description:
+        "Elimina un file di supporto (<docs_root>supporto/) con un commit a nome dell'utente; resta nello storico di " +
+        "GitLab. Solo se l'utente lo chiede. I documenti ASDP non si eliminano.",
+      inputSchema: z.object({
+        project: z.string().describe("Codice del progetto, es. PFS"),
+        path: z.string().describe("Percorso del file, es. asdp/supporto/note.md"),
+        last_commit_id: z.string().describe("last_commit_id restituito da read_document"),
+      }),
+    },
+    async ({ project, path, last_commit_id }, ctx) => {
+      const { supabase, userId } = clientFor(ctx);
+      const id = await projectId(supabase, project);
+      if (!id) return failure(NOT_FOUND);
+      try {
+        const deleted = await deleteDocument(supabase, { projectId: id, path, lastCommitId: last_commit_id, via: "mcp", userId });
+        return text({ deleted: true, path, last_commit_id: deleted.lastCommitId });
       } catch (e) {
         if (!(e instanceof DocumentError)) throw e;
         return failure(SAVE_ERRORS[e.code]);
