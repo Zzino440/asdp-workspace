@@ -1,19 +1,7 @@
 import Link from "next/link";
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronRight,
-  Download,
-  ExternalLink,
-  File,
-  FileImage,
-  FileSpreadsheet,
-  FileText,
-  Folder,
-  Presentation,
-} from "lucide-react";
+import { ChevronRight, Download, ExternalLink, FileText } from "lucide-react";
 import { cn } from "cn";
+import { FileIcon, SortHead } from "@/components/file-table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -71,22 +59,6 @@ function sortRows<T extends { item: DriveItem }>(rows: T[], key: SortKey, desc: 
         : String(x).localeCompare(String(y), "it", { numeric: true, sensitivity: "base" });
     return desc ? -order : order;
   });
-}
-
-// Icona per tipo di file, dall'estensione.
-export function FileIcon({ item }: { item: DriveItem }) {
-  if (item.folder) return <Folder className="size-4 shrink-0 text-muted-foreground" />;
-  const ext = item.name.split(".").pop()?.toLowerCase() ?? "";
-  const Icon = ["doc", "docx", "pdf", "txt", "md", "rtf"].includes(ext)
-    ? FileText
-    : ["xls", "xlsx", "csv"].includes(ext)
-      ? FileSpreadsheet
-      : ["ppt", "pptx"].includes(ext)
-        ? Presentation
-        : ["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext)
-          ? FileImage
-          : File;
-  return <Icon className="size-4 shrink-0 text-muted-foreground" />;
 }
 
 const formatSize = (bytes = 0) =>
@@ -263,34 +235,23 @@ export async function ProjectFiles({
     sortKey ?? "nome",
     desc,
   );
-  // Intestazione ordinabile, a tre stati: crescente → decrescente → nessun ordinamento.
-  const sortHead = (key: SortKey, label: string, className?: string) => {
-    const active = sortKey === key;
-    const reset = active && desc;
-    const Icon = !active ? ArrowUpDown : desc ? ArrowDown : ArrowUp;
-    return (
-      <TableHead className={className} aria-sort={active ? (desc ? "descending" : "ascending") : undefined}>
-        <Link
-          href={href({
-            file: location.id,
-            cartella: folder || undefined,
-            cerca: query || undefined,
-            ordina: reset ? undefined : key,
-            verso: active && !desc ? "desc" : undefined,
-          })}
-          scroll={false}
-          title={reset ? "Togli ordinamento" : active ? "Ordina decrescente" : "Ordina crescente"}
-          className={cn(
-            "inline-flex items-center gap-1 hover:text-foreground",
-            !active && "text-muted-foreground",
-          )}
-        >
-          {label}
-          <Icon className={cn("size-3.5", !active && "opacity-50")} />
-        </Link>
-      </TableHead>
-    );
-  };
+  const sortHead = (key: SortKey, label: string, className?: string) => (
+    <SortHead
+      label={label}
+      className={className}
+      active={sortKey === key}
+      desc={desc}
+      href={(sort) =>
+        href({
+          file: location.id,
+          cartella: folder || undefined,
+          cerca: query || undefined,
+          ordina: sort.reset ? undefined : key,
+          verso: sort.desc ? "desc" : undefined,
+        })
+      }
+    />
+  );
 
   return (
     <div className="flex flex-col gap-4">

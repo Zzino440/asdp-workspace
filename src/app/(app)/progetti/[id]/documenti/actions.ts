@@ -1,7 +1,18 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { answerQuestion, changeApproval, DocumentError, listVersions, saveDocument } from "@/lib/documents";
+import {
+  answerQuestion,
+  changeApproval,
+  createDocument,
+  deleteDocument,
+  DocumentError,
+  listVersions,
+  moveDocument,
+  saveDocument,
+} from "@/lib/documents";
+import { SUPPORT_FOLDER, validSupportPath } from "@/lib/document-type";
 import { EXPORT_FORMATS } from "@/lib/documents/export";
 import { type Publication, PublishError, publishDocument } from "@/lib/documents/publish";
 import { MicrosoftError } from "@/lib/microsoft";
@@ -166,4 +177,116 @@ export async function publishDocumentAction(
     console.error(e);
     return { error: "Pubblicazione non riuscita." };
   }
+}
+
+// File di supporto (asdp/supporto/): creazione, rinomina o spostamento ed eliminazione dalla scheda
+// File. I percorsi arrivano relativi a supporto/ ("note/riunione.md").
+export type SupportResult = { error: string | null; href?: string };
+
+const SUPPORT_MESSAGES = {
+  ...MESSAGES,
+  exists: "Esiste già un file con questo nome in questa cartella.",
+  invalid_path: "Nome non valido: usa lettere, numeri, spazi o trattini; le cartelle si separano con «/».",
+  not_supported: "Si possono spostare o eliminare solo i file di supporto.",
+  unknown_type: "Il file non è nella cartella dei file di supporto.",
+};
+
+const relativePath = z
+  .string()
+  .trim()
+  .min(1)
+  .max(200)
+  .transform((p) => p.replace(/^\/+|\/+$/g, "").replace(/\s*\/\s*/g, "/"))
+  .transform((p) => (/\.md$/i.test(p) ? p : `${p}.md`));
+
+async function supportContext(projectId: string) {
+  const supabase = await createClient();
+  const [{ data: claims }, { data: project }] = await Promise.all([
+    supabase.auth.getClaims(),
+    supabase.from("projects").select("docs_root").eq("id", projectId).maybeSingle(),
+  ]);
+  if (!claims || !project) return null;
+  const root = `${project.docs_root.replace(/\/?$/, "/")}${SUPPORT_FOLDER}`;
+  return { supabase, userId: claims.claims.sub, root, docsRoot: project.docs_root as string };
+}
+
+const documentHref = (projectId: string, path: string) =>
+  `/progetti/${projectId}/documenti/${path.split("/").map(encodeURIComponent).join("/")}`;
+
+function supportError(e: unknown, fallback: string): SupportResult {
+  if (e instanceof DocumentError && e.code === "conflict")
+    return { error: "Il file è cambiato dopo che hai aperto la pagina: aggiornala e riprova." };
+  if (e instanceof DocumentError)
+    return { error: SUPPORT_MESSAGES[e.code as keyof typeof SUPPORT_MESSAGES] ?? fallback };
+  console.error(e);
+  return { error: fallback };
+}
+
+const createSupportSchema = z.object({ projectId: z.guid(), path: relativePath });
+
+export async function createSupportFileAction(input: z.input<typeof createSupportSchema>): Promise<SupportResult> {
+  const parsed = createSupportSchema.safeParse(input);
+  if (!parsed.success) return { error: SUPPORT_MESSAGES.invalid_path };
+  const context = await supportContext(parsed.data.projectId);
+  if (!context) return { error: "Sessione scaduta: rifai il login." };
+  const path = `${context.root}${parsed.data.path}`;
+  if (!validSupportPath(path, context.docsRoot)) return { error: SUPPORT_MESSAGES.invalid_path };
+  const title = parsed.data.path.split("/").pop()!.replace(/\.md$/i, "");
+  try {
+    await createDocument(context.supabase, {
+      projectId: parsed.data.projectId,
+      path,
+      content: `# ${title}\n`,
+      via: "app",
+      userId: context.userId,
+    });
+  } catch (e) {
+    return supportError(e, "Creazione non riuscita.");
+  }
+  revalidatePath(`/progetti/${parsed.data.projectId}/file`);
+  return { error: null, href: documentHref(parsed.data.projectId, path) };
+}
+
+const moveSupportSchema = z.object({
+  projectId: z.guid(),
+  path: z.string().min(1),
+  lastCommitId: z.string().min(1),
+  to: relativePath,
+});
+
+export async function moveSupportFileAction(input: z.input<typeof moveSupportSchema>): Promise<SupportResult> {
+  const parsed = moveSupportSchema.safeParse(input);
+  if (!parsed.success) return { error: SUPPORT_MESSAGES.invalid_path };
+  const context = await supportContext(parsed.data.projectId);
+  if (!context) return { error: "Sessione scaduta: rifai il login." };
+  try {
+    await moveDocument(context.supabase, {
+      projectId: parsed.data.projectId,
+      from: parsed.data.path,
+      to: `${context.root}${parsed.data.to}`,
+      lastCommitId: parsed.data.lastCommitId,
+      via: "app",
+      userId: context.userId,
+    });
+  } catch (e) {
+    return supportError(e, "Spostamento non riuscito.");
+  }
+  revalidatePath(`/progetti/${parsed.data.projectId}/file`);
+  return { error: null };
+}
+
+const deleteSupportSchema = z.object({ projectId: z.guid(), path: z.string().min(1), lastCommitId: z.string().min(1) });
+
+export async function deleteSupportFileAction(input: z.input<typeof deleteSupportSchema>): Promise<SupportResult> {
+  const parsed = deleteSupportSchema.safeParse(input);
+  if (!parsed.success) return { error: "Dati non validi." };
+  const context = await supportContext(parsed.data.projectId);
+  if (!context) return { error: "Sessione scaduta: rifai il login." };
+  try {
+    await deleteDocument(context.supabase, { ...parsed.data, via: "app", userId: context.userId });
+  } catch (e) {
+    return supportError(e, "Eliminazione non riuscita.");
+  }
+  revalidatePath(`/progetti/${parsed.data.projectId}/file`);
+  return { error: null };
 }

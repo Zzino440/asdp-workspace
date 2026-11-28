@@ -173,7 +173,7 @@ async function DocumentView({
           <ChevronRight className="size-3.5" aria-hidden />
           {support ? (
             <Link
-              href={`/progetti/${id}/file${supportFolder ? `?supporto=${encodeURIComponent(supportFolder)}` : ""}`}
+              href={`/progetti/${id}/file?fonte=supporto${supportFolder ? `&supporto=${encodeURIComponent(supportFolder)}` : ""}`}
               className="hover:text-foreground hover:underline"
             >
               File di supporto

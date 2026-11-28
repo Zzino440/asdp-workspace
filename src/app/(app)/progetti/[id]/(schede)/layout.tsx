@@ -58,7 +58,7 @@ async function Header({ params }: { params: Promise<{ id: string }> }) {
         {canManage && <ReindexButton projectId={project.id} />}
       </div>
       <Suspense fallback={null}>
-        <ProjectTabs projectId={project.id} files={microsoftEnabled()} settings={canManage} />
+        <ProjectTabs projectId={project.id} files={microsoftEnabled() || Boolean(project.gitlab_project_path)} settings={canManage} />
       </Suspense>
     </StickyHeader>
   );

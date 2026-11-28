@@ -20,7 +20,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { createTeamsChannel, linkFolder } from "../../../../file-actions";
 import { TEAMS_FOLDERS } from "@/lib/workspace";
-import { FileIcon } from "../../../project-files";
+import { FileIcon } from "@/components/file-table";
 import { CreateChannelButton } from "./create-channel-button";
 
 // Collega una cartella di Teams al progetto (PM o admin): Team → canale → cartella, poi un nome.

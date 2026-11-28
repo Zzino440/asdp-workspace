@@ -681,11 +681,16 @@ export function SelectionBar({ projectId, locationId, children }: Target & { chi
   );
 }
 
+// Esito di un'azione dei dialoghi: un errore da mostrare o niente. Li usa anche il navigatore dei
+// file di supporto (support-files.tsx).
+type DialogResult = { error?: string | null };
+
 // Dialogo con un campo nome: aperto da un trigger o controllato dall'esterno.
-function NameDialog({
+export function NameDialog({
   title,
   submitLabel,
   defaultValue = "",
+  hint,
   trigger,
   open,
   onOpenChange,
@@ -694,10 +699,11 @@ function NameDialog({
   title: string;
   submitLabel: string;
   defaultValue?: string;
+  hint?: string;
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onSubmit: (name: string) => Promise<FileResult>;
+  onSubmit: (name: string) => Promise<DialogResult>;
 }) {
   const [ownOpen, setOwnOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -727,6 +733,7 @@ function NameDialog({
           className="flex flex-col gap-3"
         >
           <Input name="name" defaultValue={defaultValue} required maxLength={200} autoFocus aria-label="Nome" />
+          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={pending}>
@@ -739,7 +746,7 @@ function NameDialog({
   );
 }
 
-function ConfirmDialog({
+export function ConfirmDialog({
   open,
   onClose,
   title,
@@ -750,7 +757,7 @@ function ConfirmDialog({
   onClose: () => void;
   title: string;
   description: string;
-  onConfirm: () => Promise<FileResult>;
+  onConfirm: () => Promise<DialogResult>;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

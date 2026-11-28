@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { listActivity, listDocuments } from "@/lib/documents";
+import { SUPPORT_TYPE } from "@/lib/document-type";
 import { featureOf } from "@/lib/features";
 import { isDone } from "@/lib/phase-progress";
 import type { Question } from "@/lib/questions";
@@ -92,7 +93,11 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
     docs: documents.filter((d) => d.document_type === t.code).map(toDoc),
   }));
   const catalog = new Set(mapTypes.map((t) => t.code));
-  const otherFiles = documents.filter((d) => !d.document_type || !catalog.has(d.document_type)).map(toDoc);
+  // I file di supporto hanno il loro navigatore nella scheda File: nel Percorso restano fuori.
+  const supportFiles = documents.filter((d) => d.document_type === SUPPORT_TYPE).map(toDoc);
+  const otherFiles = documents
+    .filter((d) => (!d.document_type || !catalog.has(d.document_type)) && d.document_type !== SUPPORT_TYPE)
+    .map(toDoc);
   const features = [
     ...new Set(mapTypes.filter((t) => t.perFeature).flatMap((t) => t.docs.map((d) => d.feature ?? ""))),
   ].sort();
@@ -109,7 +114,7 @@ export async function projectSteps(supabase: SupabaseClient, projectId: string) 
         open.push({ code: type.code, name: type.name, phase: type.phase, skill: type.skill, perFeature: type.perFeature, feature, doc: docs.find((d) => !isDone(d)) ?? null });
     }
   }
-  return { mapTypes, otherFiles, features, open, activity };
+  return { mapTypes, otherFiles, supportFiles, features, open, activity };
 }
 
 // Prossimo passo: il primo aperto dalla fase attuale in poi (se non ce ne sono, il primo arretrato).
