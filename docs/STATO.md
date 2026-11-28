@@ -8,7 +8,7 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (0.26.0 e 0.27.0 sul branch `ccr-88cd4cbd-ityukw`, 0.28.0 su `feat/file-supporto`, non unite in `master`)
+**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (0.26.0 e 0.27.0 sul branch `ccr-88cd4cbd-ityukw`, 0.28.0 su `feat/file-supporto`, non unite in `master`; checklist «Prova in locale della pila feat/»)
 
 ## Dove siamo
 
@@ -83,6 +83,36 @@
    dashboard «Tocca a me» fatte il 2026-11-28 (0.26.0–0.27.0). Da allineare prima del ponte: le
    skill in aggiornamento svuotano l'approvazione e il server rifiuta il salvataggio a chi non
    approva (`TODO.md`, "Framework e permessi"). Dettagli in `docs/ARCHITETTURA.md` §7.
+
+## Prova in locale della pila feat/
+
+Da fare al PC per provare tutta la pila fino a `feat/file-supporto`, poi le prove di "Da provare".
+
+1. **Branch**: `git fetch && git switch feat/file-supporto && git pull` (contiene anche
+   `ccr-88cd4cbd-ityukw` e `feat/skill-approvati-t43`).
+2. **Dipendenze**: `pnpm install`.
+3. **Database** (Docker acceso): `pnpm exec supabase start`, poi una delle due:
+   - `pnpm exec supabase migration up`: applica solo le migrazioni nuove (tra cui
+     `20261128150000_support_files.sql`) e **tiene i dati locali** (PSW, account Microsoft
+     collegati). Consigliato.
+   - `pnpm exec supabase db reset`: database pulito con il solo seed; **cancella PSW** e gli altri
+     dati locali.
+4. **Test RLS**: `pnpm exec supabase test db` (c'è il nuovo `support_files.test.sql`). Con i dati
+   locali in più 7 test falliscono per i conteggi: è noto, non dipende dalle migrazioni.
+5. **Controlli**: `pnpm exec next typegen && pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm test`,
+   `pnpm build`.
+6. **App**: `pnpm dev`, accesso con gli utenti del seed `admin@`, `pm@`, `tl@`, `af@`, `nessuno@`
+   (dominio `asdp.test`).
+7. **Reindicizza** su ogni progetto con file (PSW compreso): i file `T4.3-F…-US…` diventano
+   `T4.3-part` e quelli in `asdp/supporto/` prendono il tipo `SUPPORTO`.
+8. **MCP**: ricollegare Claude al server locale; `serverInfo` deve dire **0.28.0** e devono
+   esserci i tool `move_document` e `delete_document`. Con la Desktop Extension di `mcpb/`, se i
+   tool non compaiono reinstallarla.
+9. **Prove**, in quest'ordine, con le voci di "Da provare" qui sotto: Dashboard (0.26.0), Rispondi
+   alle D[N] (0.27.0), skill su un documento Approvato e file T4.3 per User Story
+   (`feat/skill-approvati-t43`), file di supporto (0.28.0). Prove con file e Teams solo su PSW.
+10. **Dopo**: un problema si corregge sul branch della pila che lo contiene; se va tutto bene,
+    merge in `master` e tag (`0.25.0` mancante, poi `0.26.0`, `0.27.0`, `0.28.0`).
 
 ## Da provare
 
