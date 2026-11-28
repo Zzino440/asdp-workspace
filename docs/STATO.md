@@ -8,7 +8,7 @@
 > Regola di scrittura: qui solo ciò che serve per ripartire. Quando una cosa è fatta e provata
 > esce da "Da provare"; il racconto di come è stata fatta sta nel CHANGELOG e nei commit.
 
-**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (lista delle priorità in `docs/ROADMAP.md`, prima voce il profilo progetto Nuovo/Evolutiva; 0.26.0 e 0.27.0 sul branch `ccr-88cd4cbd-ityukw`, 0.28.0 su `feat/file-supporto`, non unite in `master`; checklist «Prova in locale della pila feat/»)
+**Ultimo aggiornamento**: 2026-11-28 — Lorenzo Belli con Claude Code (lista delle priorità in `docs/ROADMAP.md`, prima voce il profilo progetto Nuovo/Evolutiva; 0.26.0 e 0.27.0 in `feat/skill-approvati-t43`, 0.28.0 su `feat/file-supporto`, non unite in `master`; checklist «Prova in locale della pila feat/»)
 
 ## Dove siamo
 
@@ -21,8 +21,8 @@
 - **0.25.0** su `master` (commit `ae90628`, pushato): punti risolti evidenziati nella pagina del
   documento; istruzione MCP e guide allineate alla versione solo nel frontespizio. **Tag `0.25.0`
   da creare.**
-- **Branch `ccr-88cd4cbd-ityukw`** (da `master` `ae90628`, pushato, **non unito**), un commit per
-  sviluppo:
+- **Base della pila** (da `master` `ae90628`, **non unita**; il vecchio branch `ccr-88cd4cbd-ityukw`
+  è da eliminare, i suoi commit sono in `feat/skill-approvati-t43`), un commit per sviluppo:
   - CI GitHub Actions (`.github/workflows/ci.yml`): typegen, tsc, lint, test, build a ogni push;
   - **0.26.0** Dashboard «Tocca a me», pagina d'arrivo dopo l'accesso; «a chi tocca» in
     `src/lib/turn.ts` (lo usa anche il Prossimo passo del Percorso);
@@ -31,7 +31,7 @@
 - **Branch impilati `feat/`** (decisione del 2026-11-28): ogni sviluppo nuovo su un branch che
   parte dal precedente, pushato, senza merge in `master`; versione e numero del CHANGELOG al
   merge (voce «[da numerare]»), tranne per l'MCP. Pila attuale:
-  `master` → `ccr-88cd4cbd-ityukw` → **`feat/skill-approvati-t43`** (le skill in aggiornamento
+  `master` → **`feat/skill-approvati-t43`** (CI, 0.26.0, 0.27.0 e poi: le skill in aggiornamento
   su un documento Approvato non vengono più rifiutate a chi non approva; file `T4.3-F…-US…`
   riconosciuti come `T4.3-part`) → **`feat/file-supporto`** (**0.28.0**, numero subito perché
   cambia l'MCP: file di supporto Markdown in `asdp/supporto/`, navigatore nella scheda File,
@@ -92,7 +92,7 @@ profilo progetto Nuovo/Evolutiva). Qui sotto il dettaglio dei lavori già avviat
 Da fare al PC per provare tutta la pila fino a `feat/file-supporto`, poi le prove di "Da provare".
 
 1. **Branch**: `git fetch && git switch feat/file-supporto && git pull` (contiene anche
-   `ccr-88cd4cbd-ityukw` e `feat/skill-approvati-t43`).
+   `feat/skill-approvati-t43`, con CI, 0.26.0 e 0.27.0).
 2. **Dipendenze**: `pnpm install`.
 3. **Database** (Docker acceso): `pnpm exec supabase start`, poi una delle due:
    - `pnpm exec supabase migration up`: applica solo le migrazioni nuove (tra cui
